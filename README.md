@@ -129,13 +129,10 @@ scripts/               maintenance scripts
   zero network calls.
 - Carousels and a few exotic tile layouts aren't scanned yet
   (`TILE_SELECTORS` in `src/content.js` is the extension point).
-- Detection quality varies by marketplace. The brand lists and the product-page
-  brand chip are locale-agnostic, but the name heuristics and generic-word list
-  are still English-tuned, so suspect-name scoring on non-English stores is
-  best-effort (a real local brand not on any list may slip through — the known
-  and community lists still catch the ones that are). Listings in non-Latin
-  scripts (Japanese, Arabic) are detected and skipped rather than mis-filtered,
-  so the extension is safe everywhere, even on a store switched to another language.
+- Non-English stores are best-effort. Brand lists and the product-page chip work
+  everywhere, but the name heuristics are English-tuned, so an unlisted local
+  brand can slip through. Non-Latin listings (Japanese, Arabic) are skipped rather
+  than mis-filtered, so nothing breaks on any marketplace.
 
 ## Prior art
 
