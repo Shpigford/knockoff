@@ -1,5 +1,6 @@
 -- Knockoff — one-time seed for the `brands` base allowlist,
--- taken from https://github.com/chris-mosley/AmazonBrandFilterList (MIT)
+-- taken from https://github.com/chris-mosley/AmazonBrandFilterList
+-- (MIT License, Copyright (c) 2023 Chris Mosley)
 -- on 2026-07-07 (3784 brands). Apply once after schema.sql:
 --   wrangler d1 execute knockoff-reports --file=seed-brands.sql --remote
 -- Ongoing additions go through the /review dashboard or /curate, not here.
