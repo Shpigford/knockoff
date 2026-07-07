@@ -252,6 +252,7 @@ var KO_KNOWN_BRANDS = [
   "Pampers", "Huggies", "Luvs", "Honest", "The Honest Company", "Coterie",
   "Seventh Generation Baby", "WaterWipes", "Desitin", "Boudreaux's",
   "Aquaphor Baby", "Johnson's", "Cetaphil Baby", "Babyganics", "Puracy",
+  "The Children's Place",
   // ── Office & stationery ───────────────────────────────────────
   "Pilot", "Uni-ball", "Uniball", "Zebra", "Pentel", "Paper Mate",
   "Sharpie", "Bic", "Staedtler", "Faber-Castell", "Lamy", "Kaweco",
