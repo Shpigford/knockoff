@@ -15,7 +15,6 @@ Knockoff is a cross-browser MV3 extension (Chrome/Firefox/Safari) that filters t
 - **Package for Chrome Web Store:** `scripts/package.sh` (version read from `manifest.json`). Actual CWS release is the manual-dispatch GitHub Action `cws-release.yml`; check status with `scripts/cws-status.sh`.
 - **Firefox / AMO release:** `scripts/release-firefox.sh` — lints and submits a listed version via `web-ext`, pulling version notes from `store-assets/release-notes.md`; needs `.env.amo` (see `.env.amo.example`).
 - **Safari App Store release:** `scripts/release-safari.sh` (archive + upload), then `scripts/submit-appstore.rb`.
-- **Refresh bundled community list:** `scripts/update-community-list.sh` regenerates `data/abf-brands.js` (generated file — never hand-edit).
 - **Deploy workers:** `wrangler deploy` inside `report-worker/` or `site/`. First-time D1/secret setup is documented in the header of `report-worker/worker.js`.
 
 ## Architecture
@@ -37,7 +36,7 @@ user allowlist → user blocklist → seed blocklist (`data/flagged-brands.js`) 
 
 ### Server side (all optional to the shopping path)
 
-- **`report-worker/`** — Cloudflare Worker + D1 at `api.knockoff.shopping`: accepts one-click misclassification reports, serves the proxied/edge-cached community allowlist (`/brands`) and curated blocklist additions (`/flagged`), and hosts a token-gated `/review` curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. Endpoints documented in `worker.js` header.
+- **`report-worker/`** — Cloudflare Worker + D1 at `api.knockoff.shopping`: accepts one-click misclassification reports, serves the community allowlist (`/brands`, D1-backed and edge-cached; the base list was seeded once from `seed-brands.sql`, `data/abf-brands.js` is a frozen bundled snapshot of it) and curated blocklist additions (`/flagged`), and hosts a token-gated `/review` curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. Endpoints documented in `worker.js` header.
 - **`site/`** — static landing page (Cloudflare Worker assets) at knockoff.shopping.
 
 Everything else runs locally in the content script; the extension's only first-party network dependency is `api.knockoff.shopping`.

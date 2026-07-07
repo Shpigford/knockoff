@@ -9,10 +9,9 @@
 (function () {
   "use strict";
 
-  // Community allowlist refresh: once a day, re-fetch the AmazonBrandFilterList
-  // snapshot so new brands don't require an extension update. Served from our
-  // own API (which proxies + edge-caches the upstream GitHub list) so the
-  // extension has exactly one first-party network dependency.
+  // Community allowlist refresh: once a day, re-fetch our curated brand list
+  // so new brands don't require an extension update. Served from our own API,
+  // so the extension has exactly one first-party network dependency.
   var ABF_URL = "https://api.knockoff.shopping/brands";
   var ABF_REFRESH_MS = 24 * 60 * 60 * 1000;
 

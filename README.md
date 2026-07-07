@@ -48,7 +48,7 @@ resolved through this pipeline (first match wins):
 | 2 | Your blocklist | `blocked`, always filtered |
 | 3 | Seed list of notorious pseudo-brands ([`data/flagged-brands.js`](data/flagged-brands.js)) | `flagged` |
 | 4 | Established Chinese-owned brands ([`data/chinese-major.js`](data/chinese-major.js)) | `known`, or `flagged` if you enable that setting |
-| 5 | ~5,000 established brands ([`data/known-brands.js`](data/known-brands.js) + the community [AmazonBrandFilterList](https://github.com/chris-mosley/AmazonBrandFilterList), bundled, and refreshed daily from `api.knockoff.shopping/brands`) | `known` |
+| 5 | ~5,000 established brands ([`data/known-brands.js`](data/known-brands.js) + the community allowlist in [`data/abf-brands.js`](data/abf-brands.js), refreshed daily from `api.knockoff.shopping/brands`) | `known` |
 | 6 | Name heuristics (see below) | `flagged` / `suspect` / `unknown` |
 | - | No brand at the front of the title at all | `unbranded` |
 
@@ -106,7 +106,7 @@ data/known-brands.js   curated established brands (edit this one!)
 data/chinese-major.js  established Chinese-owned brands (toggleable)
 data/flagged-brands.js seed blocklist of notorious pseudo-brands
 data/generic-words.js  common title words, for unbranded detection
-data/abf-brands.js     bundled AmazonBrandFilterList snapshot (generated, don't edit)
+data/abf-brands.js     bundled community allowlist snapshot (frozen, don't edit)
 src/detector.js        detection engine (pure logic, no DOM)
 src/content.js         page scanning, badges, actions, in-page control panel
 src/background.js      toolbar button → panel toggle (or options page)
@@ -137,7 +137,8 @@ scripts/               maintenance scripts
 ## Prior art
 
 Research that shaped this design: [AmazonBrandFilter](https://github.com/chris-mosley/AmazonBrandFilter)
-(allowlist approach), [SoldBy](https://github.com/tadwohlrapp/soldby)
+(allowlist approach; its MIT-licensed community brand list seeded Knockoff's
+allowlist), [SoldBy](https://github.com/tadwohlrapp/soldby)
 (seller-country lookup and its rate-limit lessons), and The Markup's
 [Amazon Brand Detector](https://github.com/the-markup/tool-amazon-brand-detector).
 Knockoff's contribution is combining a community allowlist with a

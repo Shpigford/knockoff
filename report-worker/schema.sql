@@ -18,6 +18,14 @@ CREATE INDEX IF NOT EXISTS idx_reports_brand_key ON reports (brand_key);
 CREATE INDEX IF NOT EXISTS idx_reports_created ON reports (created_at);
 CREATE INDEX IF NOT EXISTS idx_reports_ip ON reports (ip_hash, created_at);
 
+-- Base known-brands allowlist, served via GET /brands. Seeded once from
+-- seed-brands.sql; ongoing additions land in `curated` instead so they stay
+-- visible (and removable) on the /review dashboard.
+CREATE TABLE IF NOT EXISTS brands (
+  brand TEXT NOT NULL,            -- brand as displayed ("Black+Decker")
+  brand_key TEXT NOT NULL PRIMARY KEY  -- normalized key ("blackdecker")
+);
+
 -- Curated verdicts, maintained from the /review dashboard. Served to every
 -- extension install via GET /flagged and GET /brands, so a curation decision
 -- reaches users within their next daily refresh — no extension release.
