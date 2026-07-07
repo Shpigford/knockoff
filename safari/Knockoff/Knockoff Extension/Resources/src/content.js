@@ -23,7 +23,7 @@
 
   var DEFAULTS = {
     enabled: true,
-    action: "hide",           // hide | dim | label
+    action: "dim",            // hide | dim | label
     level: "standard",        // relaxed | standard | strict
     flagChineseMajor: false,  // also flag established Chinese brands
     showKnownBadge: false,    // show a ✓ badge on recognized brands too
