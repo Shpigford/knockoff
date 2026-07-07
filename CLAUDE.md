@@ -33,6 +33,8 @@ All files in `manifest.json`'s `content_scripts.js` are classic scripts sharing 
 
 user allowlist → user blocklist → seed blocklist (`data/flagged-brands.js`) → Chinese-major list (`known`, or `flagged` if the user enables that setting) → known-brands lists (`data/known-brands.js` + `data/community-brands.js` + daily-refreshed community list) → name heuristics (`scoreBrand()`: score ≥ 6 `flagged`, ≥ 3 `suspect`, else `unknown`) → no brand at all = `unbranded`. Filter levels (relaxed/standard/strict) decide which verdicts get acted on; strict is allowlist-only.
 
+Media/digital categories (Books, Kindle, Audible, music, movies, apps…) are skipped before any of this: their titles are works, not brand-led product names. `content.js` reads the page's department (`#searchDropdownBox` value, URL `i=` fallback) and sits out when `Knockoff.isMediaAlias()` matches.
+
 **The known-brands list always vetoes the heuristics** — real brands like ASICS, HOKA, RYOBI would otherwise look like gibberish. So a new heuristic signal only needs to be safe for brands *not* on any list.
 
 ### Server side (all optional to the shopping path)

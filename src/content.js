@@ -611,22 +611,21 @@
 
   // ── Scanning ───────────────────────────────────────────────────────────────
 
-  function scan() {
-    // Sponsored-hiding is a DOM property, not a brand verdict, so it's a plain
-    // CSS toggle (see styles.css) rather than part of the classify() pipeline.
-    document.documentElement.classList.toggle(
-      "ko-hide-sponsored", settings.enabled && settings.hideSponsored);
-    if (settings.enabled) {
-      document.querySelectorAll(TILE_SELECTORS).forEach(processTile);
-      processProductPage();
-    }
-    updatePill();
-    updatePanelState();
+  // The page's department, as a search alias ("stripbooks", "tools", ...).
+  // The search dropdown is the authoritative signal: it reflects the current
+  // department on every path — i= searches, left-nav rh=n: refinements (whose
+  // node IDs are marketplace-specific), and /b?node= browse pages. The URL i=
+  // param is only a fallback for layouts without the dropdown.
+  function pageSearchAlias() {
+    var dd = document.getElementById("searchDropdownBox");
+    if (dd && dd.value) return dd.value.replace("search-alias=", "");
+    return new URLSearchParams(location.search).get("i") || "";
   }
 
-  // Wipe all Knockoff state from the page and re-apply from scratch.
-  // Used when settings or lists change.
-  function rescan() {
+  // Wipe all Knockoff marks from the page. Used before re-applying from
+  // scratch, and when an in-page navigation lands on a media category where
+  // previously-badged tiles must be released.
+  function clearMarks() {
     stats = { scanned: 0, filtered: 0, byVerdict: {} };
     document.querySelectorAll("[data-ko-verdict]").forEach(function (tile) {
       tile.removeAttribute("data-ko-verdict");
@@ -636,6 +635,36 @@
     document.querySelectorAll(".ko-badge, .ko-menu, #ko-pill").forEach(function (el) {
       el.remove();
     });
+  }
+
+  function scan() {
+    // Sponsored-hiding is a DOM property, not a brand verdict, so it's a plain
+    // CSS toggle (see styles.css) that stays active even in media categories.
+    document.documentElement.classList.toggle(
+      "ko-hide-sponsored", settings.enabled && settings.hideSponsored);
+    if (settings.enabled) {
+      if (Knockoff.isMediaAlias(pageSearchAlias())) {
+        // Books, music, movies...: titles are works, not brand-led product
+        // names, so classification is skipped wholesale (see detector.js).
+        // Clearing marks handles in-page flips into a media category; the
+        // wipe re-triggers the observer once, then finds nothing and settles.
+        if (document.querySelector("[data-ko-verdict]")) clearMarks();
+      } else {
+        document.querySelectorAll(TILE_SELECTORS).forEach(processTile);
+      }
+      // Product pages stay badged regardless: the dropdown can carry a stale
+      // department onto a PDP, and book PDPs are inherently safe (their
+      // byline is an author div the brand extractor returns nothing for).
+      processProductPage();
+    }
+    updatePill();
+    updatePanelState();
+  }
+
+  // Wipe all Knockoff state from the page and re-apply from scratch.
+  // Used when settings or lists change.
+  function rescan() {
+    clearMarks();
     scan();
   }
 

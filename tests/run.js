@@ -49,6 +49,21 @@ for (const [title, expected] of fixtures) {
     r.brand ? `brand "${r.brand}", ${r.reason}` : r.reason);
 }
 
+// Media-category aliases: creator-titled/digital departments the content
+// script skips entirely (book/album/movie titles aren't brand-led).
+const mediaAliases = [
+  "stripbooks", "stripbooks-intl-ship", "english-books", "digital-text",
+  "audible", "popular", "digital-music", "movies-tv", "dvd", "instant-video",
+  "magazines", "mobile-apps", "software", "gift-cards"
+];
+const productAliases = ["aps", "videogames", "tools", "electronics", ""];
+for (const alias of mediaAliases) {
+  check(`media alias "${alias}"`, Knockoff.isMediaAlias(alias), true);
+}
+for (const alias of productAliases) {
+  check(`product alias "${alias}"`, Knockoff.isMediaAlias(alias), false);
+}
+
 // Product-detail-page byline extraction: a fake byline node with the localized
 // text Amazon shows and the href it links to (the href carries the brand).
 function byline(text, href) {

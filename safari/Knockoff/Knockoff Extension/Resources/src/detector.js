@@ -269,6 +269,38 @@ var Knockoff = (function () {
     return { score: s, reasons: reasons };
   }
 
+  // ── Media categories ───────────────────────────────────────────────────────
+  // In creator-titled and digital categories (books, music, movies, apps...)
+  // the tile title is the work, not a brand-led product name, so the whole
+  // extraction model misfires ("The Midnight Library" → unbranded, "SPQR" →
+  // flagged). The content script skips scanning entirely when the page's
+  // search alias is one of these. Alias strings are identical across
+  // marketplaces (verified on .com/.co.uk/.de/.co.jp); only Movies & TV
+  // varies ("movies-tv" US, "dvd" elsewhere). "videogames" is deliberately
+  // absent: it's dominated by physical accessories, prime pseudo-brand
+  // territory.
+
+  var MEDIA_ALIASES = new Set([
+    "english-books",  // foreign-language books (.co.jp)
+    "digital-text",   // Kindle Store
+    "audible",
+    "popular",        // CDs & Vinyl (historic alias)
+    "digital-music",
+    "movies-tv",
+    "dvd",
+    "instant-video",  // Prime Video
+    "magazines",
+    "mobile-apps",
+    "software",
+    "gift-cards"
+  ]);
+
+  function isMediaAlias(alias) {
+    if (!alias) return false;
+    // prefix match covers "stripbooks" and "stripbooks-intl-ship"
+    return alias.indexOf("stripbooks") === 0 || MEDIA_ALIASES.has(alias);
+  }
+
   // ── Verdict ────────────────────────────────────────────────────────────────
   // settings: { level, flagChineseMajor }
   // userAllow / userBlock: Sets of normalized keys.
@@ -348,6 +380,7 @@ var Knockoff = (function () {
     scoreBrand: scoreBrand,
     classify: classify,
     shouldAct: shouldAct,
+    isMediaAlias: isMediaAlias,
     displayName: displayName,
     _idx: idx // exposed for tests/debugging
   };
