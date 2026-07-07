@@ -101,21 +101,21 @@ The easiest, highest-value contributions are brand list fixes; see
 plain JavaScript, loadable directly from the repo.
 
 ```
-manifest.json          MV3 manifest
-data/known-brands.js   curated established brands (edit this one!)
-data/chinese-major.js  established Chinese-owned brands (toggleable)
-data/flagged-brands.js seed blocklist of notorious pseudo-brands
-data/generic-words.js  common title words, for unbranded detection
+manifest.json             MV3 manifest
+data/known-brands.js      curated established brands (edit this one!)
+data/chinese-major.js     established Chinese-owned brands (toggleable)
+data/flagged-brands.js    seed blocklist of notorious pseudo-brands
+data/generic-words.js     common title words, for unbranded detection
 data/community-brands.js  bundled community allowlist snapshot (generated, don't edit)
-src/detector.js        detection engine (pure logic, no DOM)
-src/content.js         page scanning, badges, actions, in-page control panel
-src/background.js      toolbar button → panel toggle (or options page)
-options/               settings page (rules, allow/blocklist)
-report-worker/         Cloudflare Worker: reports, curation, brand-list API
-safari/                Xcode wrapper app for Safari (macOS)
-site/                  knockoff.shopping landing page (static, Cloudflare)
-store-assets/          Chrome Web Store images + the HTML frames that render them
-scripts/               maintenance scripts
+src/detector.js           detection engine (pure logic, no DOM)
+src/content.js            page scanning, badges, actions, in-page control panel
+src/background.js         toolbar button → panel toggle (or options page)
+options/                  settings page (rules, allow/blocklist)
+report-worker/            Cloudflare Worker: reports, curation, brand-list API
+safari/                   Xcode wrapper app for Safari (macOS)
+site/                     knockoff.shopping landing page (static, Cloudflare)
+store-assets/             Chrome Web Store images + the HTML frames that render them
+scripts/                  maintenance scripts
 ```
 
 ## Known limitations
@@ -137,8 +137,8 @@ scripts/               maintenance scripts
 ## Prior art
 
 Research that shaped this design: [AmazonBrandFilter](https://github.com/chris-mosley/AmazonBrandFilter)
-(allowlist approach; its MIT-licensed community brand list seeded Knockoff's
-allowlist), [SoldBy](https://github.com/tadwohlrapp/soldby)
+(allowlist approach; its MIT-licensed community list seeded Knockoff's own),
+[SoldBy](https://github.com/tadwohlrapp/soldby)
 (seller-country lookup and its rate-limit lessons), and The Markup's
 [Amazon Brand Detector](https://github.com/the-markup/tool-amazon-brand-detector).
 Knockoff's contribution is combining a community allowlist with a
