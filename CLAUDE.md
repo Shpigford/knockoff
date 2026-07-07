@@ -14,7 +14,7 @@ Knockoff is a cross-browser MV3 extension (Chrome/Firefox/Safari) that filters t
 - **Package for Chrome Web Store:** `scripts/package.sh` (version read from `manifest.json`). Actual CWS release is the manual-dispatch GitHub Action `cws-release.yml`; check status with `scripts/cws-status.sh`.
 - **Safari App Store release:** `scripts/release-safari.sh` (archive + upload), then `scripts/submit-appstore.rb`.
 - **Refresh bundled community list:** `scripts/update-community-list.sh` regenerates `data/abf-brands.js` (generated file — never hand-edit).
-- **Deploy workers:** `wrangler deploy` inside `report-worker/` or `site/`. First-time D1/secret setup is documented in the header of `report-worker/worker.js`.
+- **Deploy workers:** merging to `main` auto-deploys via `cf-deploy.yml` when `report-worker/` or `site/` change; `wrangler deploy` inside either directory still works for manual deploys. First-time D1/secret setup is documented in the header of `report-worker/worker.js`.
 
 ## Architecture
 

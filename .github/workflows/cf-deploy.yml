@@ -1,0 +1,37 @@
+name: Deploy Cloudflare Workers
+
+# Auto-deploys both workers when their files change on main.
+# Both jobs run on any matching push — redeploying an unchanged worker is
+# an idempotent no-op, and skipping it isn't worth the change-detection code.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "report-worker/**"
+      - "site/**"
+      - ".github/workflows/cf-deploy.yml"
+  workflow_dispatch:
+
+jobs:
+  report-worker:
+    name: Deploy report worker (api.knockoff.shopping)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: report-worker
+
+  site:
+    name: Deploy site (knockoff.shopping)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: site
