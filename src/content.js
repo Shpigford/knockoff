@@ -637,6 +637,11 @@
     });
   }
 
+  function hasSearchState() {
+    return stats.scanned || stats.filtered ||
+      document.querySelector("[data-ko-verdict], #ko-pill");
+  }
+
   function scan() {
     // Sponsored-hiding is a DOM property, not a brand verdict, so it's a plain
     // CSS toggle (see styles.css) that stays active even in media categories.
@@ -648,7 +653,7 @@
         // names, so classification is skipped wholesale (see detector.js).
         // Clearing marks handles in-page flips into a media category; the
         // wipe re-triggers the observer once, then finds nothing and settles.
-        if (document.querySelector("[data-ko-verdict]")) clearMarks();
+        if (hasSearchState()) clearMarks();
       } else {
         document.querySelectorAll(TILE_SELECTORS).forEach(processTile);
       }
