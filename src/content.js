@@ -27,6 +27,7 @@
     level: "standard",        // relaxed | standard | strict
     flagChineseMajor: false,  // also flag established Chinese brands
     showKnownBadge: false,    // show a ✓ badge on recognized brands too
+    hideSponsored: false,     // hide Amazon "Sponsored" search tiles (opt-in)
     allow: [],                // user allowlist (display names)
     block: []                 // user blocklist (display names)
   };
@@ -541,6 +542,24 @@
     var hint = el("p", "ko-panel-hint");
     hint.id = "ko-panel-hint";
     card.appendChild(hint);
+    // Hide-sponsored is orthogonal to the brand filter (it's a DOM property,
+    // not a verdict), so it gets its own toggle rather than a segmented control.
+    card.appendChild(el("div", "ko-panel-rule"));
+    var spRow = el("label", "ko-panel-toggle");
+    var spText = el("span", "ko-panel-toggle-label");
+    spText.textContent = "Hide sponsored listings";
+    var spSwitch = el("span", "ko-switch");
+    var spInput = document.createElement("input");
+    spInput.type = "checkbox";
+    spInput.id = "ko-panel-sponsored";
+    spInput.addEventListener("change", function () {
+      chrome.storage.sync.set({ hideSponsored: spInput.checked });
+    });
+    spSwitch.appendChild(spInput);
+    spSwitch.appendChild(el("span", "ko-switch-slider"));
+    spRow.appendChild(spText);
+    spRow.appendChild(spSwitch);
+    card.appendChild(spRow);
     panel.appendChild(card);
 
     // footer
@@ -571,6 +590,7 @@
     if (!panel) return;
     panel.classList.toggle("ko-panel-off", !settings.enabled);
     document.getElementById("ko-panel-enabled").checked = settings.enabled;
+    document.getElementById("ko-panel-sponsored").checked = settings.hideSponsored;
     document.getElementById("ko-panel-num").textContent = stats.filtered;
     document.getElementById("ko-panel-hint").textContent = LEVEL_HINTS[settings.level];
     panel.querySelectorAll("[data-ko-seg]").forEach(function (track) {
@@ -591,6 +611,10 @@
   // ── Scanning ───────────────────────────────────────────────────────────────
 
   function scan() {
+    // Sponsored-hiding is a DOM property, not a brand verdict, so it's a plain
+    // CSS toggle (see styles.css) rather than part of the classify() pipeline.
+    document.documentElement.classList.toggle(
+      "ko-hide-sponsored", settings.enabled && settings.hideSponsored);
     if (settings.enabled) {
       document.querySelectorAll(TILE_SELECTORS).forEach(processTile);
       processProductPage();
