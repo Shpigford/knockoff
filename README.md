@@ -22,8 +22,7 @@ Or load it unpacked for development:
 3. Turn on **Developer mode** (top right)
 4. Click **Load unpacked** and select the repo folder
 
-Works on every Amazon marketplace — amazon.com, .ca, .co.uk, .de, .fr, .it,
-.es, .co.jp, .in, and the rest (23 storefronts).
+Works on every Amazon marketplace.
 
 ### Safari
 
