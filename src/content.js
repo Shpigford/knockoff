@@ -398,13 +398,26 @@
 
   // ── Product detail page byline ─────────────────────────────────────────────
 
+  function bylineBrandName(byline) {
+    var text = (byline.textContent || "").trim().replace(/\s+/g, " ");
+    var label = text.match(/^(?:Brand|Marca|Marke|Marque|Marchio|Merk|ブランド|品牌|العلامة التجارية)\s*[:：]\s*(.+)$/i);
+    if (label) return label[1].trim();
+
+    var store = text.match(/^(?:Visit the|Visita (?:la tienda de|lo Store di)|Visiter la boutique|Besuche den)\s+(.+?)(?:\s+(?:Store|Shop|ストア|Boutique)|-Store)?$/i);
+    if (store) return store[1].trim();
+
+    var href = byline.getAttribute("href") || "";
+    var pathStore = href.match(/\/stores\/([^/?#]+)/i);
+    if (pathStore) return decodeURIComponent(pathStore[1]).replace(/[+_-]+/g, " ").trim();
+
+    return "";
+  }
+
   function processProductPage() {
     var byline = document.getElementById("bylineInfo");
     if (!byline || document.querySelector(".ko-pdp-badge")) return;
-    // "Brand: LATTOOK" or "Visit the LATTOOK Store"
-    var m = (byline.textContent || "").match(/^(?:Brand:\s*|Visit the\s+)(.+?)(?:\s+Store)?$/);
-    if (!m) return;
-    var brandName = m[1].trim();
+    var brandName = bylineBrandName(byline);
+    if (!brandName) return;
     var result = Knockoff.classify(brandName, settings, userAllow, userBlock);
     // On the product page, always label, never hide the page out from under
     // the user, and include known/unknown verdicts for context.

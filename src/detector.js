@@ -97,11 +97,124 @@ var Knockoff = (function () {
     return normalize(tokens.slice(0, n).join(""));
   }
 
+  function hasLocalScriptLetters(s) {
+    var chars = Array.from(s || "");
+    for (var i = 0; i < chars.length; i++) {
+      if (/\p{L}/u.test(chars[i]) && !/\p{Script=Latin}/u.test(chars[i])) return true;
+    }
+    return false;
+  }
+
+  function hasLatinLetters(s) {
+    return /\p{Script=Latin}/u.test(s || "");
+  }
+
+  function firstLetterIsLatin(s) {
+    var chars = Array.from(s || "");
+    for (var i = 0; i < chars.length; i++) {
+      if (/\p{L}/u.test(chars[i])) return /\p{Script=Latin}/u.test(chars[i]);
+    }
+    return false;
+  }
+
+  function firstLetterIsHomoglyphRisk(s) {
+    if (!hasLatinLetters(s)) return false;
+    var chars = Array.from(s || "");
+    for (var i = 0; i < chars.length; i++) {
+      if (/\p{L}/u.test(chars[i])) return /[\u0370-\u03FF\u0400-\u04FF]/.test(chars[i]);
+    }
+    return false;
+  }
+
+  function startsWithLocalScript(title) {
+    var tokens = (title || "").trim().split(/\s+/);
+    for (var i = 0; i < tokens.length; i++) {
+      if (hasLocalScriptLetters(tokens[i])) {
+        return !firstLetterIsLatin(tokens[i]) && !firstLetterIsHomoglyphRisk(tokens[i]);
+      }
+      var key = normalize(tokens[i]);
+      if (!key) continue;
+      if (/^\d+$/.test(key)) continue;
+      return false;
+    }
+    return false;
+  }
+
+  function isLocalPromoPrefix(token) {
+    if (!hasLocalScriptLetters(token) || firstLetterIsLatin(token)) return false;
+    return /^\d/.test(token) || /^[\[\](){}【】「」『』（）]/.test(token) ||
+      /^(最新版|新版|最新|新款|最新款|升级版|升級版)(?:$|[A-Za-z])/.test(token);
+  }
+
+  function tokensForTitle(title) {
+    return (title || "").trim().split(/\s+/).filter(function (t) {
+      return normalize(t).length > 0 || hasLocalScriptLetters(t);
+    }).slice(0, 8);
+  }
+
+  function asciiSuffixFromPromoPrefix(token) {
+    var m = (token || "").match(/[A-Za-z][A-Za-z0-9-]*/);
+    return m ? m[0] : "";
+  }
+
+  function stripLocalPromoPrefixes(tokens) {
+    var out = tokens.slice();
+    var i = 0;
+    while (i < out.length) {
+      var key = normalize(out[i]);
+      if (/^\d+$/.test(key) && isLocalPromoPrefix(out[i + 1] || "")) {
+        i++;
+        continue;
+      }
+      if (!isLocalPromoPrefix(out[i])) break;
+      var suffix = asciiSuffixFromPromoPrefix(out[i]);
+      if (suffix) {
+        out[i] = suffix;
+        return { stripped: true, tokens: out.slice(i) };
+      }
+      i++;
+    }
+    return { stripped: i > 0, tokens: out.slice(i) };
+  }
+
+  function hasAsciiAfterLocalPromoPrefixes(title) {
+    var stripped = stripLocalPromoPrefixes(tokensForTitle(title));
+    return stripped.stripped && !startsWithLocalScript(stripped.tokens.join(" ")) &&
+      stripped.tokens.some(function (t) { return normalize(t).length > 0; });
+  }
+
+  function listedBrandInTokens(tokens, userKeys, includeKnown) {
+    var asciiTokens = tokens.filter(function (t) { return normalize(t).length > 0; });
+    var maxStart = Math.min(3, asciiTokens.length - 1);
+    for (var start = 0; start <= maxStart; start++) {
+      var maxWin = Math.min(idx.knownMaxWords, 4, asciiTokens.length - start);
+      for (var n = maxWin; n >= 1; n--) {
+        var key = normalize(asciiTokens.slice(start, start + n).join(""));
+        if (!key) continue;
+        var listed = idx.flagged.has(key) || (userKeys && userKeys.has(key)) ||
+                     (includeKnown && (idx.known.has(key) || idx.chineseMajor.has(key)));
+        if (listed) return { name: asciiTokens.slice(start, start + n).join(" "), key: key, listed: true };
+      }
+    }
+    return null;
+  }
+
   function extractBrand(title, userKeys) {
     if (!title) return null;
-    var tokens = title.trim().split(/\s+/).filter(function (t) {
+    var rawTokens = tokensForTitle(title);
+    if (!rawTokens.length) return null;
+
+    if (startsWithLocalScript(title)) {
+      var stripped = stripLocalPromoPrefixes(rawTokens);
+      if (!stripped.stripped) return listedBrandInTokens(rawTokens, userKeys, false);
+      rawTokens = stripped.tokens;
+      if (!rawTokens.length) return null;
+      if (startsWithLocalScript(rawTokens.join(" "))) return listedBrandInTokens(rawTokens, userKeys, false);
+    }
+
+    var tokens = rawTokens.filter(function (t) {
       return normalize(t).length > 0; // drop lone punctuation ("WERA - 0505...")
-    }).slice(0, 8);
+    });
     if (!tokens.length) return null;
 
     var maxWin = Math.min(idx.knownMaxWords, 4, tokens.length);
@@ -192,6 +305,10 @@ var Knockoff = (function () {
 
     var b = extractBrand(title, userKeys);
     if (!b) {
+      if (startsWithLocalScript(title) && !hasAsciiAfterLocalPromoPrefixes(title)) {
+        return { verdict: "unknown", brand: null, key: null,
+                 reason: "localized title needs manual review" };
+      }
       return { verdict: "unbranded", brand: null, key: null,
                reason: "no brand at the front of the listing title" };
     }

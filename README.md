@@ -22,7 +22,9 @@ Or load it unpacked for development:
 3. Turn on **Developer mode** (top right)
 4. Click **Load unpacked** and select the repo folder
 
-Works on amazon.com, .ca, .co.uk, and .com.au.
+Works on Amazon marketplaces worldwide: amazon.ae, .ca, .cn, .co.jp,
+.co.uk, .co.za, .com, .com.au, .com.be, .com.br, .com.mx, .com.tr,
+.de, .eg, .es, .fr, .ie, .in, .it, .nl, .pl, .sa, .se, and .sg.
 
 ### Safari
 
@@ -129,7 +131,8 @@ scripts/               maintenance scripts
   zero network calls.
 - Carousels and a few exotic tile layouts aren't scanned yet
   (`TILE_SELECTORS` in `src/content.js` is the extension point).
-- English marketplaces only for now; the heuristics are tuned for English.
+- Name heuristics are primarily tuned for English-style brand names and may be
+  less precise on localized product titles.
 
 ## Prior art
 
