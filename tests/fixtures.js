@@ -41,7 +41,27 @@ var KO_FIXTURES = [
   ["Mulwark 86PC Magnetic Nut Driver Set", "unknown"],
   // Sponsored prefix must be stripped by the content script before classify;
   // classify itself should read the brand normally
-  ["BOEN 1/4 inch Magnetic Nut Driver Set", "suspect"]
+  ["BOEN 1/4 inch Magnetic Nut Driver Set", "suspect"],
+  // Accented brand spellings still match the list — normalize folds diacritics
+  // ("Wüsthof" → "wusthof", "Kärcher" → "karcher").
+  ["Wüsthof Classic 8-Inch Chef's Knife", "known"],
+  ["Kärcher K5 Premium Full Control Pressure Washer", "known"],
+  // A Latin brand at the front still reads even when a local-language
+  // description follows it (we key off the leading token, not a char ratio).
+  ["3M スコッチ テープ", "known"],
+  ["Anker モバイルバッテリー 10000mAh", "known"],
+  ["HORUSDY ドライバー セット 45本", "flagged"],
+  // A listed pseudo-brand is still caught behind a CJK promo prefix, and a
+  // Cyrillic homoglyph on a Latin word is scored, not skipped.
+  ["【最新版】HORUSDY ドライバーセット", "flagged"],
+  ["НORUSDY 2-Piece Bit Driver", "flagged"],
+  // Local-script lead with no listed brand: the heuristics can't read it, so it
+  // fails open as "foreign" — never "unbranded", which standard level would
+  // filter, dimming the entire page on .co.jp/.sa/.eg.
+  ["任天堂 Joy-Con コントローラー", "foreign"],
+  ["ソニー ワイヤレスノイズキャンセリングヘッドホン WH-1000XM5", "foreign"],
+  ["エレコム USB Type-C ケーブル 2m 充電 データ転送", "foreign"],
+  ["مجموعة مفكات براغي مغناطيسية ٦ قطع متعددة الوظائف", "foreign"]
 ];
 
 if (typeof module !== "undefined") module.exports = KO_FIXTURES;

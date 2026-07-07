@@ -22,7 +22,8 @@ Or load it unpacked for development:
 3. Turn on **Developer mode** (top right)
 4. Click **Load unpacked** and select the repo folder
 
-Works on amazon.com, .ca, .co.uk, and .com.au.
+Works on every Amazon marketplace — amazon.com, .ca, .co.uk, .de, .fr, .it,
+.es, .co.jp, .in, and the rest (23 storefronts).
 
 ### Safari
 
@@ -129,7 +130,13 @@ scripts/               maintenance scripts
   zero network calls.
 - Carousels and a few exotic tile layouts aren't scanned yet
   (`TILE_SELECTORS` in `src/content.js` is the extension point).
-- English marketplaces only for now; the heuristics are tuned for English.
+- Detection quality varies by marketplace. The brand lists and the product-page
+  brand chip are locale-agnostic, but the name heuristics and generic-word list
+  are still English-tuned, so suspect-name scoring on non-English stores is
+  best-effort (a real local brand not on any list may slip through — the known
+  and community lists still catch the ones that are). Listings in non-Latin
+  scripts (Japanese, Arabic) are detected and skipped rather than mis-filtered,
+  so the extension is safe everywhere, even on a store switched to another language.
 
 ## Prior art
 

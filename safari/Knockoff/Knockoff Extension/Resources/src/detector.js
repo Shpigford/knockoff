@@ -10,6 +10,7 @@
 //   5. known-brands lists    → "known"     (data/known-brands.js + data/abf-brands.js)
 //   6. name heuristics       → "flagged" (score ≥ 6) / "suspect" (score ≥ 3) / "unknown"
 //   -  no brand in title     → "unbranded"
+//   -  non-Latin script      → "foreign"    (fail open: acted on by no level)
 //
 // Which verdicts get acted on depends on the filter level:
 //
@@ -27,8 +28,65 @@ var Knockoff = (function () {
 
   // Normalize a brand string to a lookup key: lowercase alphanumeric only.
   // "Black+Decker" → "blackdecker", "L'Oreal" → "loreal", "PB Swiss" → "pbswiss"
+  // Diacritics are folded, not dropped, so accented spellings collapse onto the
+  // plain key: "Müller"/"Muller" → "muller", "Nestlé"/"Nestle" → "nestle". This
+  // matters on non-US stores (Wüsthof, Kärcher) and helps the US store too.
   function normalize(s) {
-    return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    return (s || "").toLowerCase()
+      .normalize("NFD").replace(/\p{Mn}/gu, "")          // fold diacritics: é→e, ü→u
+      .replace(/[^a-z0-9]/g, "");
+  }
+
+  // ── Script detection ─────────────────────────────────────────────────────
+  // The name heuristics assume a Latin-script brand at the front of the title.
+  // A title that *leads* with non-Latin script (Japanese, Arabic, Cyrillic — or
+  // an English-default store a user switched to such a language) can't be scored
+  // that way, so callers only trust the blocklist there and otherwise fail open.
+  // We key off the leading brand token, not a whole-title character ratio, so a
+  // Latin brand ahead of a local-language description still reads ("3M スコッチ",
+  // "Anker モバイルバッテリー" → the brand, not "foreign").
+
+  function firstLetter(s) {
+    var chars = Array.from(s || "");
+    for (var i = 0; i < chars.length; i++) {
+      if (/\p{L}/u.test(chars[i])) return chars[i];
+    }
+    return "";
+  }
+
+  function hasLatinLetters(s) {
+    return /\p{Script=Latin}/u.test(s || "");
+  }
+
+  // A letter from another script inside an otherwise-Latin name: CJK, or a
+  // Cyrillic/Greek homoglyph ("НORUSDY"). Latin accents (ü, é, ñ) are Latin
+  // script, so they never count here.
+  function hasNonLatinLetter(s) {
+    return Array.from(s || "").some(function (c) {
+      return /\p{L}/u.test(c) && !/\p{Script=Latin}/u.test(c);
+    });
+  }
+
+  // Does the title lead with a script we can't score? Decided by the first
+  // token that carries a letter (numbers/punctuation are skipped), so a Latin
+  // brand ahead of local-language text is NOT treated as foreign.
+  function startsWithLocalScript(title) {
+    var tokens = (title || "").trim().split(/\s+/);
+    for (var i = 0; i < tokens.length; i++) {
+      var letter = firstLetter(tokens[i]);
+      if (letter) {
+        if (/\p{Script=Latin}/u.test(letter)) return false; // Latin brand leads
+        // A Greek/Cyrillic first letter on an otherwise-Latin word is a
+        // homoglyph trick — let the heuristics score it, don't fail open.
+        if ((/\p{Script=Greek}/u.test(letter) || /\p{Script=Cyrillic}/u.test(letter)) &&
+            hasLatinLetters(tokens[i])) return false;
+        return true; // genuine local-script lead
+      }
+      var key = normalize(tokens[i]); // no letters: number or punctuation
+      if (key && !/^\d+$/.test(key)) return false; // an ASCII code leads ("A4")
+      // pure digits / punctuation ("2024", "【") — keep scanning
+    }
+    return false;
   }
 
   // ── Indexes ────────────────────────────────────────────────────────────────
@@ -97,8 +155,36 @@ var Knockoff = (function () {
     return normalize(tokens.slice(0, n).join(""));
   }
 
+  // Scan the leading ASCII tokens of a local-script title for a *listed*
+  // pseudo-brand ("任天堂 … HORUSDY" → HORUSDY). Only the blocklist/user lists
+  // count — a known brand mentioned mid-title is usually just compatibility text
+  // ("charger for Samsung"), so we don't greenlight those.
+  function flaggedBrandInTokens(tokens, userKeys) {
+    var ascii = tokens.filter(function (t) { return normalize(t).length > 0; });
+    var maxStart = Math.min(3, ascii.length - 1);
+    for (var start = 0; start <= maxStart; start++) {
+      var maxWin = Math.min(idx.knownMaxWords, 4, ascii.length - start);
+      for (var n = maxWin; n >= 1; n--) {
+        var key = normalize(ascii.slice(start, start + n).join(""));
+        if (!key) continue;
+        if (idx.flagged.has(key) || (userKeys && userKeys.has(key))) {
+          return { name: ascii.slice(start, start + n).join(" "), key: key, listed: true };
+        }
+      }
+    }
+    return null;
+  }
+
   function extractBrand(title, userKeys) {
     if (!title) return null;
+
+    // Local-script lead (Japanese, Arabic, …): the leading brand can't be read
+    // or scored, so only the blocklist is reliable here. Find a listed
+    // pseudo-brand if one appears; otherwise let classify() fail open.
+    if (startsWithLocalScript(title)) {
+      return flaggedBrandInTokens(title.trim().split(/\s+/).slice(0, 8), userKeys);
+    }
+
     var tokens = title.trim().split(/\s+/).filter(function (t) {
       return normalize(t).length > 0; // drop lone punctuation ("WERA - 0505...")
     }).slice(0, 8);
@@ -145,8 +231,10 @@ var Knockoff = (function () {
     var letters = name.replace(/[^a-zA-Z]/g, "");
     if (!letters) return { score: 0, reasons: reasons };
 
-    // Non-Latin characters in a brand on the US store: near-certain junk.
-    if (/[^\x00-\x7F]/.test(name)) { s += 4; reasons.push("non-latin characters"); }
+    // A non-Latin-script letter inside an otherwise-Latin name (CJK, or a
+    // Cyrillic/Greek homoglyph like "НORUSDY") is near-certain junk. Latin
+    // accents (ü, é, ñ) are Latin script and exempt, so real brands don't trip it.
+    if (hasNonLatinLetter(name)) { s += 4; reasons.push("non-Latin characters"); }
 
     var isAllCaps = letters === letters.toUpperCase() && letters.length >= 3;
     if (isAllCaps) {
@@ -192,6 +280,13 @@ var Knockoff = (function () {
 
     var b = extractBrand(title, userKeys);
     if (!b) {
+      // Local-script title with no listed pseudo-brand: we can't read it, so
+      // fail open. "foreign" is acted on by no filter level (unlike "unbranded",
+      // which standard would filter — dimming whole pages on .co.jp/.sa/.eg).
+      if (startsWithLocalScript(title)) {
+        return { verdict: "foreign", brand: null, key: null,
+                 reason: "listing isn't in a script Knockoff can read yet" };
+      }
       return { verdict: "unbranded", brand: null, key: null,
                reason: "no brand at the front of the listing title" };
     }
