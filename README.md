@@ -22,7 +22,9 @@ Or load it unpacked for development:
 3. Turn on **Developer mode** (top right)
 4. Click **Load unpacked** and select the repo folder
 
-Works on amazon.com, .ca, .co.uk, and .com.au.
+Works on major Amazon marketplaces: amazon.com, .ca, .com.mx, .com.br,
+.co.uk, .ie, .de, .fr, .it, .es, .nl, .se, .pl, .com.be, .com.tr,
+.ae, .sa, .eg, .co.za, .in, .co.jp, .sg, and .com.au.
 
 ## How it works
 
@@ -96,6 +98,7 @@ data/flagged-brands.js seed blocklist of notorious pseudo-brands
 data/generic-words.js  common title words, for unbranded detection
 data/abf-brands.js     bundled AmazonBrandFilterList snapshot (generated, don't edit)
 src/detector.js        detection engine (pure logic, no DOM)
+src/pdp-brand.js       product-detail-page brand extraction
 src/content.js         page scanning, badges, actions, in-page control panel
 src/background.js      toolbar button → panel toggle (or options page)
 options/               settings page (rules, allow/blocklist)
@@ -116,7 +119,8 @@ scripts/               maintenance scripts
   zero network calls.
 - Carousels and a few exotic tile layouts aren't scanned yet
   (`TILE_SELECTORS` in `src/content.js` is the extension point).
-- English marketplaces only for now; the heuristics are tuned for English.
+- Non-English marketplaces are best-effort for now; the heuristics are still
+  tuned mostly for English-language product titles.
 
 ## Prior art
 

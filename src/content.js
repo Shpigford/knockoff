@@ -401,10 +401,8 @@
   function processProductPage() {
     var byline = document.getElementById("bylineInfo");
     if (!byline || document.querySelector(".ko-pdp-badge")) return;
-    // "Brand: LATTOOK" or "Visit the LATTOOK Store"
-    var m = (byline.textContent || "").match(/^(?:Brand:\s*|Visit the\s+)(.+?)(?:\s+Store)?$/);
-    if (!m) return;
-    var brandName = m[1].trim();
+    var brandName = KnockoffPdp.brandFromByline(byline, location.href);
+    if (!brandName) return;
     var result = Knockoff.classify(brandName, settings, userAllow, userBlock);
     // On the product page, always label, never hide the page out from under
     // the user, and include known/unknown verdicts for context.
