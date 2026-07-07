@@ -24,6 +24,18 @@ Or load it unpacked for development:
 
 Works on amazon.com, .ca, .co.uk, and .com.au.
 
+### Safari
+
+Safari requires the extension to be wrapped in a native app. Open
+[`safari/Knockoff/Knockoff.xcodeproj`](safari/Knockoff) in Xcode, run the
+**Knockoff** scheme, then enable Knockoff in Safari → Settings →
+Extensions. For unsigned local builds, first check "Allow unsigned
+extensions" in Safari's Develop menu.
+
+The Xcode project carries its own copy of the extension files; after
+editing the extension, run [`scripts/sync-safari.sh`](scripts/sync-safari.sh)
+to update it before rebuilding.
+
 ## How it works
 
 Everything runs locally in a content script. No accounts, no tracking, no
@@ -100,6 +112,7 @@ src/content.js         page scanning, badges, actions, in-page control panel
 src/background.js      toolbar button → panel toggle (or options page)
 options/               settings page (rules, allow/blocklist)
 report-worker/         Cloudflare Worker: reports, curation, brand-list API
+safari/                Xcode wrapper app for Safari (macOS)
 site/                  knockoff.shopping landing page (static, Cloudflare)
 store-assets/          Chrome Web Store images + the HTML frames that render them
 scripts/               maintenance scripts

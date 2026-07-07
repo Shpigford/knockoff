@@ -1,0 +1,549 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Knockoff: injected page styles.
+
+   Discipline over decoration: these surfaces should feel like native OS
+   chrome that happens to live on Amazon. One background per surface, dense
+   quiet rows, monochrome icons, verdict color used exactly once per surface.
+   Everything prefixed ko- to stay out of Amazon's way.
+
+   Filter actions:
+     .ko-hide : remove from view (floating pill offers reveal)
+     .ko-dim  : fade + desaturate, restore on hover
+     .ko-label: badge only
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.ko-act.ko-hide {
+  display: none !important;
+}
+
+/* "Show" was clicked: hidden items come back in the dim treatment. No
+   borders or outlines here: Amazon's tile elements extend into the grid
+   gutters, so any ring drawn on them clips and merges between cards. The
+   badge chip identifies the item; the fade says why it was hidden. */
+.ko-revealed .ko-act.ko-hide {
+  display: revert !important;
+}
+
+/* Dim Amazon's content but never our own chrome: opacity on the tile
+   itself would wash out the badge and menu with it. */
+.ko-act.ko-dim > :not(.ko-badge):not(.ko-menu),
+.ko-revealed .ko-act.ko-hide > :not(.ko-badge):not(.ko-menu) {
+  opacity: 0.32;
+  filter: grayscale(0.85);
+  transition: opacity 0.18s ease, filter 0.18s ease;
+}
+
+.ko-act.ko-dim:hover > :not(.ko-badge):not(.ko-menu),
+.ko-revealed .ko-act.ko-hide:hover > :not(.ko-badge):not(.ko-menu) {
+  opacity: 1;
+  filter: none;
+}
+
+/* ── Verdict colors: the only color these surfaces use ──────────────────
+   --ko-tint     fill color (chip background, menu dot)
+   --ko-on-tint  text/icon color on top of the fill
+   --ko-text     the verdict color as readable text on white               */
+
+.ko-v-flagged,
+.ko-v-blocked   { --ko-tint: #dc2626; --ko-on-tint: #fff;    --ko-text: #dc2626; }
+.ko-v-suspect,
+.ko-v-unbranded { --ko-tint: #f59e0b; --ko-on-tint: #221503; --ko-text: #b45309; }
+.ko-v-unknown   { --ko-tint: #52525b; --ko-on-tint: #fff;    --ko-text: #52525b; }
+.ko-v-known,
+.ko-v-allowed   { --ko-tint: #047857; --ko-on-tint: #fff;    --ko-text: #047857; }
+
+/* ── Badge chip ─────────────────────────────────────────────────────────────
+   Filled with the verdict color: a status chip must be readable at a
+   glance from across the page. Top-right corner: Amazon owns the top-left
+   ("Sponsored", "Overall Pick") and our chip must not sit on top of theirs. */
+.ko-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 82%;
+  padding: 3px 9px 3px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--ko-tint, #52525b);
+  font: 600 11px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.01em;
+  color: var(--ko-on-tint, #fff);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  /* the punched hole: the chip is a price tag; the page shows through it */
+  -webkit-mask: radial-gradient(circle 2.5px at 8.5px 50%, transparent 96%, #000 100%);
+          mask: radial-gradient(circle 2.5px at 8.5px 50%, transparent 96%, #000 100%);
+  transition: transform 0.1s ease, filter 0.12s ease;
+}
+
+.ko-badge:hover {
+  filter: brightness(1.08);
+}
+
+.ko-badge:active {
+  transform: scale(0.96);
+}
+
+.ko-badge svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--ko-on-tint, #fff);
+  opacity: 0.95;
+}
+
+.ko-badge span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Product-page chip sits in normal flow beside the byline */
+.ko-pdp-badge {
+  position: static;
+  margin-left: 10px;
+  vertical-align: middle;
+  font-size: 12px;
+}
+
+/* ── Popover menu ───────────────────────────────────────────────────────── */
+
+.ko-menu {
+  position: absolute;
+  top: 34px;
+  right: 8px;
+  z-index: 60;
+  width: 232px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  box-shadow:
+    0 10px 38px -10px rgba(22, 23, 24, 0.32),
+    0 10px 20px -15px rgba(22, 23, 24, 0.2);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0;
+  transform-origin: top right;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ko-menu {
+    animation: ko-menu-in 0.12s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+}
+
+@keyframes ko-menu-in {
+  from { opacity: 0; transform: scale(0.97) translateY(-2px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.ko-menu-head {
+  padding: 8px 10px 2px;
+}
+
+.ko-menu-brand {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #18181b;
+  overflow: hidden;
+}
+
+.ko-menu-brand > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* verdict, right-aligned: a 6px dot + label in the verdict color */
+.ko-menu-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ko-text, #71717a);
+}
+
+.ko-menu-verdict::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ko-tint, #71717a);
+}
+
+.ko-menu-reason {
+  padding: 1px 10px 8px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #71717a;
+}
+
+.ko-menu-sep {
+  height: 1px;
+  margin: 4px -4px;
+  background: rgba(17, 17, 17, 0.07);
+}
+
+.ko-menu-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.ko-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  font: 400 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0;
+  color: #18181b;
+  cursor: pointer;
+}
+
+.ko-menu-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #71717a;
+}
+
+.ko-menu-btn:hover {
+  background: #f4f4f5;
+}
+
+.ko-menu-btn:hover svg {
+  color: #18181b;
+}
+
+.ko-menu-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Report row: same register, just quieter text */
+.ko-menu-foot .ko-menu-btn,
+.ko-menu-foot .ko-menu-btn:hover svg + .ko-menu-label {
+  color: #52525b;
+}
+
+.ko-menu-btn:disabled,
+.ko-menu-btn:disabled:hover {
+  color: #047857;
+  background: none;
+  cursor: default;
+}
+
+.ko-menu-btn:disabled svg {
+  color: #047857;
+}
+
+/* ── Control panel ──────────────────────────────────────────────────────────
+   Toggled by the toolbar button. Same visual system as the popover menu:
+   white card, hairline structure, zinc neutrals, one red accent. */
+
+#ko-panel {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 2147483647;
+  width: 296px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  box-shadow:
+    0 10px 38px -10px rgba(22, 23, 24, 0.32),
+    0 10px 20px -15px rgba(22, 23, 24, 0.2);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0;
+  color: #18181b;
+  transform-origin: top right;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #ko-panel {
+    animation: ko-menu-in 0.14s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+}
+
+.ko-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 2px;
+}
+
+.ko-panel-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ko-panel-logo svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+}
+
+.ko-panel-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.ko-panel-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  border: 1px solid #e4e4e7;
+  background: #fafafa;
+}
+
+.ko-panel-num {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #dc2626;
+  font-variant-numeric: tabular-nums;
+  min-width: 24px;
+  text-align: center;
+}
+
+.ko-panel-statcopy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-left: 1px solid #e4e4e7;
+  padding-left: 12px;
+}
+
+.ko-panel-overline {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ko-panel-sub {
+  font-size: 11px;
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
+.ko-panel-card {
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  padding: 11px;
+  margin-bottom: 10px;
+}
+
+#ko-panel.ko-panel-off .ko-panel-stats,
+#ko-panel.ko-panel-off .ko-panel-card {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.ko-panel-rule {
+  height: 1px;
+  background: #e4e4e7;
+  margin: 11px -11px;
+}
+
+.ko-panel-label {
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #71717a;
+}
+
+.ko-seg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: #f4f4f5;
+}
+
+.ko-seg button {
+  flex: 1;
+  height: 25px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font: 450 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0;
+  color: #71717a;
+  cursor: pointer;
+}
+
+.ko-seg button:hover {
+  color: #18181b;
+}
+
+.ko-seg button.ko-seg-active {
+  background: #fff;
+  border-color: #e4e4e7;
+  color: #18181b;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ko-panel-hint {
+  margin: 7px 1px 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #71717a;
+}
+
+.ko-panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+
+.ko-panel-link {
+  border: 0;
+  background: none;
+  padding: 4px 6px;
+  margin-left: -6px;
+  border-radius: 6px;
+  font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #52525b;
+  cursor: pointer;
+}
+
+.ko-panel-link:hover {
+  color: #18181b;
+  background: #f4f4f5;
+}
+
+.ko-panel-version {
+  font-size: 10.5px;
+  color: #a1a1aa;
+  font-variant-numeric: tabular-nums;
+}
+
+.ko-switch {
+  position: relative;
+  width: 36px;
+  height: 21px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.ko-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.ko-switch-slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #e4e4e7;
+  transition: background 0.15s;
+  cursor: pointer;
+}
+
+.ko-switch-slider::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ko-switch input:checked + .ko-switch-slider {
+  background: #059669;
+}
+
+.ko-switch input:checked + .ko-switch-slider::before {
+  transform: translateX(15px);
+}
+
+/* ── Floating count pill ────────────────────────────────────────────────── */
+
+#ko-pill {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483646;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 8px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: #18181b;
+  color: #fafafa;
+  font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+#ko-pill:hover {
+  background: #27272a;
+}
+
+#ko-pill svg {
+  width: 12px;
+  height: 12px;
+  color: #a1a1aa;
+}
+
+#ko-pill b {
+  display: inline-block;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the count springs when it climbs */
+@media (prefers-reduced-motion: no-preference) {
+  #ko-pill b.ko-tick {
+    animation: ko-tick 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+  }
+}
+
+@keyframes ko-tick {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+#ko-pill i {
+  font-style: normal;
+  color: #a1a1aa;
+}

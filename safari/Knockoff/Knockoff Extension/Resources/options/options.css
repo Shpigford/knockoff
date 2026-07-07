@@ -1,0 +1,280 @@
+/* Knockoff: options page. Same disciplined system as the popup: neutral
+   palette, hairline structure, no ornament.                                 */
+
+:root {
+  --bg: #f4f4f5;
+  --card: #ffffff;
+  --ink: #18181b;
+  --ink-2: #52525b;
+  --ink-3: #71717a;
+  --line: #e4e4e7;
+  --track: #f4f4f5;
+  --red: #dc2626;
+  --green: #059669;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-m: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18181b;
+    --card: #232327;
+    --ink: #f4f4f5;
+    --ink-2: #b5b5bd;
+    --ink-3: #85858f;
+    --line: #35353b;
+    --track: #2b2b30;
+    --red: #f87171;
+    --green: #34d399;
+    --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-m: 0 1px 2px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 400 13.5px/1.55 var(--sans);
+  letter-spacing: 0;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 44px 24px 64px;
+}
+
+/* ── Masthead ───────────────────────────────────────────────────────────── */
+
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+.overline {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ink-3);
+}
+
+h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+/* ── Sections ───────────────────────────────────────────────────────────── */
+
+section {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-m);
+}
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.hint {
+  margin: -6px 0 10px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* toggle rows */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.row + .row {
+  border-top: 1px solid var(--line);
+}
+
+.row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.row-title {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.row-sub {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+/* ── Textareas ──────────────────────────────────────────────────────────── */
+
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 12.5px/1.8 var(--mono);
+  resize: vertical;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--ink-3);
+  box-shadow: 0 0 0 3px rgba(113, 113, 122, 0.12);
+}
+
+textarea::placeholder {
+  color: var(--ink-3);
+  opacity: 0.7;
+}
+
+/* ── Actions ────────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 2px;
+}
+
+button.primary {
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--bg);
+  font: 500 12.5px/1.4 var(--sans);
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+button.primary:hover { opacity: 0.85; }
+button.primary:active { opacity: 0.75; }
+
+.saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--green);
+  font-weight: 500;
+  font-size: 12.5px;
+}
+
+.saved svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Colophon ───────────────────────────────────────────────────────────── */
+
+.colophon {
+  margin-top: 32px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.colophon h3 {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.colophon p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--ink-3);
+}
+
+.colophon a {
+  color: var(--ink-2);
+  font-weight: 500;
+  text-underline-offset: 2px;
+}
+
+.colophon a:hover { color: var(--ink); }
+
+/* ── Switch ─────────────────────────────────────────────────────────────── */
+
+.switch {
+  position: relative;
+  width: 36px;
+  height: 21px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 0.15s;
+  cursor: pointer;
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.switch input:checked + .slider {
+  background: var(--green);
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(15px);
+}
+
+.switch input:focus-visible + .slider {
+  outline: 2px solid var(--ink-3);
+  outline-offset: 2px;
+}

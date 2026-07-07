@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Knockoff mark: a white price tag struck through in signal red, on a
+       near-black ground. Source of truth for the rasterized icons —
+       regenerate them with scripts/render-icons.sh after editing. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#292929"/>
+      <stop offset="1" stop-color="#0a0a0a"/>
+    </linearGradient>
+    <linearGradient id="tag" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f1f1f1"/>
+    </linearGradient>
+    <linearGradient id="wax" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#dc2626"/>
+      <stop offset="1" stop-color="#f43f3f"/>
+    </linearGradient>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="2.5" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="128" height="128" rx="30" fill="url(#bg)"/>
+  <rect x="2" y="2" width="124" height="124" rx="28" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2.5"/>
+  <g transform="translate(64 66) scale(4.35) translate(-12 -12)" filter="url(#ds)">
+    <path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z" fill="url(#tag)"/>
+    <circle cx="6.9" cy="6.9" r="1.55" fill="#0a0a0a"/>
+    <path d="M4.6 21 21 4.6" stroke="url(#wax)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>

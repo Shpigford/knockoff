@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Knockoff Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header class="masthead">
+      <svg class="logo" viewBox="0 0 128 128" aria-hidden="true">
+        <defs>
+          <linearGradient id="lg-bg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#292929"/>
+            <stop offset="1" stop-color="#0a0a0a"/>
+          </linearGradient>
+          <linearGradient id="lg-tag" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ffffff"/>
+            <stop offset="1" stop-color="#f1f1f1"/>
+          </linearGradient>
+          <linearGradient id="lg-wax" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stop-color="#dc2626"/>
+            <stop offset="1" stop-color="#f43f3f"/>
+          </linearGradient>
+        </defs>
+        <rect x="4" y="4" width="120" height="120" rx="30" fill="url(#lg-bg)"/>
+        <rect x="6" y="6" width="116" height="116" rx="28" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2.5"/>
+        <g transform="translate(64 66) scale(4.1) translate(-12 -12)">
+          <path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z" fill="url(#lg-tag)"/>
+          <circle cx="6.9" cy="6.9" r="1.55" fill="#0a0a0a"/>
+          <path d="M4.6 21 21 4.6" stroke="url(#lg-wax)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+        </g>
+      </svg>
+      <div>
+        <p class="overline">Knockoff</p>
+        <h1>Settings</h1>
+      </div>
+    </header>
+
+    <section>
+      <h2>Rules</h2>
+      <label class="row">
+        <span class="row-copy">
+          <span class="row-title">Flag established Chinese brands</span>
+          <span class="row-sub">Anker, TP-Link, DJI, Roborock… Real companies, not
+          pseudo-brands, so they pass by default.</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="flagChineseMajor"><span class="slider"></span></span>
+      </label>
+      <label class="row">
+        <span class="row-copy">
+          <span class="row-title">Mark recognized brands too</span>
+          <span class="row-sub">Adds a small green check to established brands.
+          By default only filtered items get a badge.</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="showKnownBadge"><span class="slider"></span></span>
+      </label>
+    </section>
+
+    <section>
+      <h2>Your allowlist</h2>
+      <p class="hint">Brands you trust. Never filtered, at any level. One per line.</p>
+      <textarea id="allow" rows="8" spellcheck="false" placeholder="Anker&#10;Some small maker I like"></textarea>
+    </section>
+
+    <section>
+      <h2>Your blocklist</h2>
+      <p class="hint">Brands you never want to see, even ones on the known-brands list. One per line.</p>
+      <textarea id="block" rows="8" spellcheck="false" placeholder="AmazonBasics"></textarea>
+    </section>
+
+    <div class="actions">
+      <button id="save" class="primary">Save changes</button>
+      <span id="saved" class="saved" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg>
+        Saved
+      </span>
+    </div>
+
+    <footer class="colophon">
+      <h3>How detection works</h3>
+      <p>
+        Every listing's brand is checked against a bundled register of roughly
+        5,000 established brands, including the community-maintained
+        <a href="https://github.com/chris-mosley/AmazonBrandFilterList" target="_blank" rel="noreferrer">AmazonBrandFilterList</a>,
+        refreshed daily. Unknown names are scored on the linguistic signature
+        of trademark-squat brands: all-caps strings, vanishing vowels,
+        unpronounceable consonant runs. Your lists above override everything.
+        It all runs locally; the only network request is the daily list
+        refresh from api.knockoff.shopping.
+      </p>
+    </footer>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>
