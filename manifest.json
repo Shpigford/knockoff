@@ -41,7 +41,8 @@
         "https://www.amazon.com/*",
         "https://www.amazon.ca/*",
         "https://www.amazon.co.uk/*",
-        "https://www.amazon.com.au/*"
+        "https://www.amazon.com.au/*",
+        "https://www.amazon.ie/*"
       ],
       "js": [
         "data/abf-brands.js",

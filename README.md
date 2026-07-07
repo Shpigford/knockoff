@@ -22,7 +22,7 @@ Or load it unpacked for development:
 3. Turn on **Developer mode** (top right)
 4. Click **Load unpacked** and select the repo folder
 
-Works on amazon.com, .ca, .co.uk, and .com.au.
+Works on amazon.com, .ca, .co.uk, .com.au, and .ie.
 
 ### Safari
 
