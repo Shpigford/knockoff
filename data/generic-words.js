@@ -75,5 +75,5 @@ var KO_GENERIC_WORDS = [
   "with", "for", "and", "or", "of", "in", "on", "by", "to", "from",
   "inch", "inches", "ft", "feet", "foot", "cm", "mm", "meter", "gallon",
   "quart", "oz", "lb", "lbs", "count", "ct", "value", "family", "size",
-  "xl", "xxl", "xs", "medium"
+  "xl", "xxl", "xs", "medium", "hdmi", "rca", "midi"
 ];
