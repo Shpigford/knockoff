@@ -10,6 +10,7 @@ var KO_FLAGGED_BRANDS = [
   "Austor", "Homitt", "Sable", "Vtin",
   // Prolific pseudo-brands
   "LATTOOK", "DOZAWA", "HORUSDY", "SZHLUX", "QWORK", "AIRAJ",
+  "WNPETHOME", "EHEYCIGA",
   "TEKPREM", "ORIA", "HOLIFE", "MOSFiATA", "OMOTON", "LETSCOM",
   "VANKYO", "DOSS", "DODOCOOL", "BOVKE", "MoKo", "Fintie", "TiMOVO",
   "ProCase", "Ailun", "Mkeke", "Trianium", "LK", "Syncwire",
