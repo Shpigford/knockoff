@@ -15,6 +15,7 @@ Knockoff is a cross-browser MV3 extension (Chrome/Firefox/Safari) that filters t
 - **Package for Chrome Web Store:** `scripts/package.sh` (version read from `manifest.json`). Actual CWS release is the manual-dispatch GitHub Action `cws-release.yml`; check status with `scripts/cws-status.sh`.
 - **Firefox / AMO release:** `scripts/release-firefox.sh` — lints and submits a listed version via `web-ext`, pulling version notes from `store-assets/release-notes.md`; needs `.env.amo` (see `.env.amo.example`).
 - **Safari App Store release:** `scripts/release-safari.sh` (archive + upload), then `scripts/submit-appstore.rb`.
+- **Refresh bundled community list:** `scripts/update-bundled-brands.sh` regenerates `data/community-brands.js` from the live `/brands` endpoint (generated file — never hand-edit). `/release` runs it at release time.
 - **Deploy workers:** `wrangler deploy` inside `report-worker/` or `site/`. First-time D1/secret setup is documented in the header of `report-worker/worker.js`.
 
 ## Architecture
@@ -30,13 +31,13 @@ All files in `manifest.json`'s `content_scripts.js` are classic scripts sharing 
 
 ### Verdict pipeline (first match wins)
 
-user allowlist → user blocklist → seed blocklist (`data/flagged-brands.js`) → Chinese-major list (`known`, or `flagged` if the user enables that setting) → known-brands lists (`data/known-brands.js` + `data/abf-brands.js` + daily-refreshed community list) → name heuristics (`scoreBrand()`: score ≥ 6 `flagged`, ≥ 3 `suspect`, else `unknown`) → no brand at all = `unbranded`. Filter levels (relaxed/standard/strict) decide which verdicts get acted on; strict is allowlist-only.
+user allowlist → user blocklist → seed blocklist (`data/flagged-brands.js`) → Chinese-major list (`known`, or `flagged` if the user enables that setting) → known-brands lists (`data/known-brands.js` + `data/community-brands.js` + daily-refreshed community list) → name heuristics (`scoreBrand()`: score ≥ 6 `flagged`, ≥ 3 `suspect`, else `unknown`) → no brand at all = `unbranded`. Filter levels (relaxed/standard/strict) decide which verdicts get acted on; strict is allowlist-only.
 
 **The known-brands list always vetoes the heuristics** — real brands like ASICS, HOKA, RYOBI would otherwise look like gibberish. So a new heuristic signal only needs to be safe for brands *not* on any list.
 
 ### Server side (all optional to the shopping path)
 
-- **`report-worker/`** — Cloudflare Worker + D1 at `api.knockoff.shopping`: accepts one-click misclassification reports, serves the community allowlist (`/brands`, D1-backed and edge-cached; the base list was seeded once from `seed-brands.sql`, `data/abf-brands.js` is a frozen bundled snapshot of it) and curated blocklist additions (`/flagged`), and hosts a token-gated `/review` curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. Endpoints documented in `worker.js` header.
+- **`report-worker/`** — Cloudflare Worker + D1 at `api.knockoff.shopping`: accepts one-click misclassification reports, serves the community allowlist (`/brands`, D1-backed and edge-cached; the base list was seeded once from `seed-brands.sql`, and `data/community-brands.js` is its bundled snapshot, regenerated at release time) and curated blocklist additions (`/flagged`), and hosts a token-gated `/review` curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. Endpoints documented in `worker.js` header.
 - **`site/`** — static landing page (Cloudflare Worker assets) at knockoff.shopping.
 
 Everything else runs locally in the content script; the extension's only first-party network dependency is `api.knockoff.shopping`.

@@ -25,8 +25,8 @@ brand "Flexible") → add the word to `data/generic-words.js`.
 
 Matching is case-insensitive on lowercased alphanumerics ("Black+Decker" ≡
 "blackdecker"), so don't add capitalization or punctuation variants. Brands
-already in the bundled community snapshot (`data/abf-brands.js`) don't need
-duplicating here.
+already in the bundled community snapshot (`data/community-brands.js`) don't
+need duplicating here.
 
 ## Testing your change
 
