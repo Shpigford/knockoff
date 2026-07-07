@@ -1,0 +1,66 @@
+{
+  "_readme": [
+    "Canonical store-listing copy for Knockoff. This is the single source of truth —",
+    "edit here, then propagate to each store. `shared` holds the copy used everywhere;",
+    "per-store blocks add fields a store needs (or override `shared` where a char limit",
+    "forces a shorter version). charLimit fields are the store's hard maximums.",
+    "",
+    "Propagation:",
+    "  chrome  — dashboard-only (the CWS API can't set listing text). Paste `shared.summary`",
+    "            into 'Summary' and `shared.description` into 'Description'.",
+    "  firefox — settable via the AMO add-on API (name, summary, description, categories).",
+    "  safari  — settable via the App Store Connect API (see scripts/submit-appstore.rb).",
+    "",
+    "Keep manifest.json's `description` and the landing page hero in sync with `shared.summary`."
+  ],
+
+  "name": "Knockoff — Amazon Brand Filter",
+
+  "shared": {
+    "summary": "Filters pseudo-brand junk out of Amazon and optionally hides sponsored listings. Buy from real, established brands.",
+    "description": "Amazon is flooded with trademark-squat \"brands\": random strings like SZHLUX, HORUSDY, and LATTOOK, registered at the USPTO purely to unlock Amazon Brand Registry. They sell commodity goods with no company, no warranty, and no reputation behind them.\n\nKnockoff appraises every listing's brand right in your search results and hides, dims, or labels the junk, so what's left is brands with a reputation to lose.\n\nHOW IT WORKS\n• Every brand is checked against a bundled register of ~5,000 established brands (including the community AmazonBrandFilterList), refreshed daily.\n• Unknown names are scored on the linguistic signature of pseudo-brands: all-caps squat-length strings, vanishing vowels, unpronounceable consonant runs.\n• Your allowlist and blocklist override everything.\n\nFEATURES\n• Hide, dim, or label flagged listings, with a one-click reveal.\n• Optionally hide Amazon's paid \"Sponsored\" listings too (off by default).\n• Three filter levels: Relaxed, Standard, Strict.\n• Trust or block any brand in one click, right from the results.\n• One-click misclassification reporting that improves the shared lists for everyone.\n\nPRIVATE BY DESIGN\nEverything runs locally in your browser. No accounts, no analytics, no tracking. The only network request is a daily brand-list refresh. Reports are opt-in and anonymous.\n\nFree and fair source (FSL-1.1-MIT). Works on amazon.com, .ca, .co.uk, and .com.au.",
+    "category": "Shopping",
+    "keywords": [
+      "amazon",
+      "sponsored",
+      "hide sponsored",
+      "sponsored ads",
+      "ad blocker",
+      "pseudo-brand",
+      "brand filter",
+      "fake brands",
+      "trademark squatting",
+      "knockoff",
+      "amazon shopping",
+      "product filter"
+    ],
+    "homepageUrl": "https://knockoff.shopping",
+    "supportUrl": "https://github.com/Shpigford/knockoff/issues",
+    "privacyUrl": "https://knockoff.shopping/privacy.html"
+  },
+
+  "chrome": {
+    "storeUrl": "https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce",
+    "summaryCharLimit": 132,
+    "descriptionCharLimit": 16000,
+    "hasKeywordsField": false,
+    "note": "Listing text is dashboard-only. Paste shared.summary + shared.description in the Store listing tab; CWS has no keyword field, so discovery comes from the description."
+  },
+
+  "firefox": {
+    "summary": "Filters trademark-squat pseudo-brands (SZHLUX, HORUSDY…) out of Amazon search, and optionally hides sponsored listings. Buy from real, established brands. Runs locally. No accounts, no tracking.",
+    "summaryCharLimit": 250,
+    "tagsMax": 20,
+    "note": "Set via the AMO add-on submission API (name, summary, description, categories)."
+  },
+
+  "safari": {
+    "subtitle": "Filter Amazon's pseudo-brands",
+    "subtitleCharLimit": 30,
+    "keywords": "amazon,sponsored,ads,brand filter,pseudo-brand,knockoff,fake brands,shopping,ad blocker",
+    "keywordsCharLimit": 100,
+    "promotionalText": "Cut the trademark-squat junk brands out of Amazon search, and optionally the sponsored ads too. Buy from real brands. Runs locally, no tracking.",
+    "promotionalTextCharLimit": 170,
+    "note": "Set via the App Store Connect API (see scripts/submit-appstore.rb)."
+  }
+}

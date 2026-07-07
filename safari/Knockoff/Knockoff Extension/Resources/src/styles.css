@@ -16,6 +16,16 @@
   display: none !important;
 }
 
+/* Sponsored-listing hide (opt-in). Sponsored is a DOM property, not a brand
+   verdict, so it lives outside the ko-act pipeline and hides silently: no
+   reveal pill, no filtered count. The user asked to never see ads.
+   Scoped to the "Sponsored" aria-label *inside* the label so Amazon's own
+   "Featured from Amazon brands" tiles — which reuse .puis-sponsored-label-text
+   with a different label — are left untouched. */
+html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-sponsored-label-text [aria-label*="Sponsored"]) {
+  display: none !important;
+}
+
 /* "Show" was clicked: hidden items come back in the dim treatment. No
    borders or outlines here: Amazon's tile elements extend into the grid
    gutters, so any ring drawn on them clips and merges between cards. The
@@ -417,6 +427,22 @@
   font-size: 11px;
   line-height: 1.45;
   color: #71717a;
+}
+
+/* Hide-sponsored toggle: label left, switch right. Same register as the
+   header master switch, sharing .ko-switch. */
+.ko-panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.ko-panel-toggle-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #18181b;
 }
 
 .ko-panel-foot {

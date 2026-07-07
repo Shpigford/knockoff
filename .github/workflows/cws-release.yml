@@ -57,9 +57,15 @@ jobs:
             echo "Version changed: ${{ steps.published.outputs.version }} → ${{ steps.local.outputs.version }}"
           fi
 
+      - name: Validate store listing
+        if: steps.check.outputs.skip == 'false'
+        run: node scripts/render-listing.js --check
+
       - name: Package zip
         if: steps.check.outputs.skip == 'false'
-        run: zip -r knockoff.zip manifest.json src data options icons -x "*.DS_Store"
+        run: |
+          bash scripts/package.sh
+          mv "knockoff-v${{ steps.local.outputs.version }}.zip" knockoff.zip
 
       - name: Upload to Chrome Web Store
         if: steps.check.outputs.skip == 'false'
