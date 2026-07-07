@@ -13,7 +13,9 @@ labels them, right in the search results.
 
 ## Install
 
-Not yet on the Chrome Web Store. Load it unpacked:
+**[Add to Chrome](https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce)** from the Chrome Web Store.
+
+Or load it unpacked for development:
 
 1. Clone this repo
 2. Open `chrome://extensions`
