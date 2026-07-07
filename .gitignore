@@ -4,6 +4,7 @@ report-worker/.secrets.local
 report-worker/.wrangler/
 .env.cws
 .env.asc
+.env.amo
 knockoff-v*.zip
 safari/Knockoff/build/
 xcuserdata/

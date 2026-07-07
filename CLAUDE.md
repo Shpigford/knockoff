@@ -11,7 +11,9 @@ Knockoff is a cross-browser MV3 extension (Chrome/Firefox/Safari) that filters t
 - **Run tests:** `node tests/run.js` — the only test command. No test framework; it loads the data files + detector into a `vm` sandbox and checks every fixture in `tests/fixtures.js`. There is no lint step.
 - **Manual verification:** reload the extension at `chrome://extensions`, reload an Amazon search page. Every processed tile carries `data-ko-verdict` / `data-ko-brand` attributes; click a badge for the human-readable reason.
 - **Sync Safari wrapper:** `scripts/sync-safari.sh` — the Xcode project (`safari/Knockoff/`) carries its own copy of the extension files; run this after editing `manifest.json`, `src/`, `data/`, `options/`, or `icons/`, before rebuilding in Xcode. Also bumps the app's marketing version from `manifest.json`.
+- **Cut a release (all stores):** the `/release` skill (`.claude/skills/release/SKILL.md`) — bumps `manifest.json`, rolls `store-assets/release-notes.md`, tags `v<version>`, then ships Chrome + Firefox + Safari. The store-specific commands below are what it orchestrates.
 - **Package for Chrome Web Store:** `scripts/package.sh` (version read from `manifest.json`). Actual CWS release is the manual-dispatch GitHub Action `cws-release.yml`; check status with `scripts/cws-status.sh`.
+- **Firefox / AMO release:** `scripts/release-firefox.sh` — lints and submits a listed version via `web-ext`, pulling version notes from `store-assets/release-notes.md`; needs `.env.amo` (see `.env.amo.example`).
 - **Safari App Store release:** `scripts/release-safari.sh` (archive + upload), then `scripts/submit-appstore.rb`.
 - **Refresh bundled community list:** `scripts/update-community-list.sh` regenerates `data/abf-brands.js` (generated file — never hand-edit).
 - **Deploy workers:** `wrangler deploy` inside `report-worker/` or `site/`. First-time D1/secret setup is documented in the header of `report-worker/worker.js`.
