@@ -112,11 +112,8 @@
   .results { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 22px; }
   .product { position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; }
   .product .img {
-    height: 120px; border-radius: 8px; margin-bottom: 10px;
-    background:
-      radial-gradient(circle at 65% 30%, #ececee 12%, transparent 13%),
-      radial-gradient(circle at 30% 65%, #ececee 18%, transparent 19%),
-      linear-gradient(145deg, #f6f6f7, #ebebed);
+    display: block; width: 100%; height: 120px; border-radius: 8px; margin-bottom: 10px;
+    object-fit: contain; background: #fff;
   }
   .product .t { font-size: 12.5px; font-weight: 600; line-height: 1.4; }
   .product .t small { display: block; font-weight: 400; color: var(--ink-3); }
@@ -252,40 +249,40 @@
     <div class="browser">
       <div class="browser-bar">
         <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        <div class="urlbar">amazon.com/s?k=drill+bit+set</div>
+        <div class="urlbar">amazon.com/s?k=dog+bed</div>
       </div>
       <div class="results">
         <div class="product junk">
-          <span class="chip red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><path d="M4.2 21.5 21.5 4.2"/></svg>VRLKZOP</span>
-          <div class="img"></div>
-          <div class="t">VRLKZOP 148Pcs Drill Bit Set Titanium Upgraded<small>Sponsored</small></div>
-          <div class="stars">★★★★★</div>
-          <div class="price">$8.99</div>
+          <span class="chip red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><path d="M4.2 21.5 21.5 4.2"/></svg>MIXJOY</span>
+          <img class="img" src="/demo/mixjoy.jpg" alt="MIXJOY dog bed listing" loading="lazy">
+          <div class="t">MIXJOY Orthopedic Dog Bed Donut Cuddler Round Pet Bed<small>On the pseudo-brand list</small></div>
+          <div class="stars">★★★★☆</div>
+          <div class="price">$17.84</div>
         </div>
         <div class="product">
-          <span class="chip green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg>Halverson</span>
-          <div class="img"></div>
-          <div class="t">Halverson &amp; Sons 21-Piece Drill Bit Set, Hardened Steel<small>Established 1946</small></div>
-          <div class="stars">★★★★★</div>
-          <div class="price">$34.99</div>
+          <span class="chip green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg>Casper</span>
+          <img class="img" src="/demo/casper.jpg" alt="Casper dog bed listing" loading="lazy">
+          <div class="t">Casper Dog Bed, Plush Memory Foam, Large, Sand<small>Established brand</small></div>
+          <div class="stars">★★★★☆</div>
+          <div class="price">$224.10</div>
         </div>
         <div class="product junk">
           <span class="chip amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 4.4 21.6 18a2 2 0 0 1-1.73 3H4.13A2 2 0 0 1 2.4 18L10.27 4.4a2 2 0 0 1 3.46 0Z"/><path d="M12 9.4v4.2"/><circle cx="12" cy="17.2" r="1.1" fill="currentColor" stroke="none"/></svg>No brand</span>
-          <div class="img"></div>
-          <div class="t">99-Piece Drill Bit Set Quick Change Hex Shank Multi<small>Sponsored</small></div>
+          <img class="img" src="/demo/nobrand.jpg" alt="Unbranded dog bed listing" loading="lazy">
+          <div class="t">Waterproof Dog Bed Medium Size Dog Orthopedic for Crate<small>No brand in the title</small></div>
           <div class="stars">★★★★☆</div>
-          <div class="price">$6.49</div>
+          <div class="price">$20.99</div>
         </div>
         <div class="product">
-          <span class="chip green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg>Meridian</span>
-          <div class="img"></div>
-          <div class="t">Meridian Tool Co. Pro Twist Bits, 13pc Cobalt<small>Lifetime warranty</small></div>
-          <div class="stars">★★★★★</div>
-          <div class="price">$27.99</div>
+          <span class="chip green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg>Carhartt</span>
+          <img class="img" src="/demo/carhartt.jpg" alt="Carhartt pet bed listing" loading="lazy">
+          <div class="t">Carhartt Durable Canvas Pet Bed, Water Resistant Duck<small>Established brand</small></div>
+          <div class="stars">★★★★☆</div>
+          <div class="price">$139.99</div>
         </div>
       </div>
       <div style="position:relative;height:52px">
-        <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><path d="M4.2 21.5 21.5 4.2"/></svg><b>23</b> filtered <i>· Show</i></span>
+        <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><path d="M4.2 21.5 21.5 4.2"/></svg><b>25</b> filtered <i>· Show</i></span>
       </div>
     </div>
     <p class="demo-caption">Junk gets flagged, dimmed, or hidden. Your call. Real brands pass untouched.</p>
@@ -386,7 +383,8 @@
       <a href="https://x.com/Shpigford">@Shpigford</a>
     </div>
     <p class="fine">Not affiliated with Amazon. Brand verdicts are heuristics plus community lists, always
-    one click from being corrected. Product names shown above are illustrative.</p>
+    one click from being corrected. Products shown above are real listings from an amazon.com
+    search for &ldquo;dog bed&rdquo;; badges are Knockoff's actual verdicts.</p>
   </div>
 </footer>
 
