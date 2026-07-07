@@ -81,6 +81,13 @@ h1 {
   line-height: 1.25;
 }
 
+.context {
+  margin: -12px 0 20px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
 /* ── Sections ───────────────────────────────────────────────────────────── */
 
 section {
@@ -136,6 +143,75 @@ h2 {
   color: var(--ink-3);
 }
 
+/* segmented controls (same look as the in-page panel, on page variables) */
+.field {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.field + .row {
+  border-top: 1px solid var(--line);
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.field .hint {
+  margin: 7px 1px 0;
+}
+
+.seg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--track);
+}
+
+.seg label {
+  flex: 1;
+}
+
+.seg input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.seg span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 25px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.seg span:hover {
+  color: var(--ink);
+}
+
+.seg input:checked + span {
+  background: var(--card);
+  border-color: var(--line);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: var(--shadow-s);
+}
+
+.seg input:focus-visible + span {
+  outline: 2px solid var(--ink-3);
+  outline-offset: -1px;
+}
+
 /* ── Textareas ──────────────────────────────────────────────────────────── */
 
 textarea {
@@ -184,6 +260,10 @@ button.primary {
 
 button.primary:hover { opacity: 0.85; }
 button.primary:active { opacity: 0.75; }
+button.primary:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
 
 .saved {
   display: inline-flex;

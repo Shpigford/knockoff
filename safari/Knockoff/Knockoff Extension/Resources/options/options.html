@@ -37,6 +37,44 @@
       </div>
     </header>
 
+    <p class="context">Knockoff runs on Amazon search pages. On Amazon, click
+    the toolbar icon for the quick panel and a live count of what's filtered.</p>
+
+    <section>
+      <h2>Filtering</h2>
+      <label class="row">
+        <span class="row-copy">
+          <span class="row-title">Filter Amazon results</span>
+          <span class="row-sub">The master switch. Turn off to browse unfiltered.</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="enabled"><span class="slider"></span></span>
+      </label>
+      <div class="field">
+        <span class="field-label">Flagged items are</span>
+        <div class="seg">
+          <label><input type="radio" name="action" value="hide"><span>Hidden</span></label>
+          <label><input type="radio" name="action" value="dim"><span>Dimmed</span></label>
+          <label><input type="radio" name="action" value="label"><span>Labeled</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <span class="field-label">Filter level</span>
+        <div class="seg">
+          <label><input type="radio" name="level" value="relaxed"><span>Relaxed</span></label>
+          <label><input type="radio" name="level" value="standard"><span>Standard</span></label>
+          <label><input type="radio" name="level" value="strict"><span>Strict</span></label>
+        </div>
+        <p class="hint" id="levelHint"></p>
+      </div>
+      <label class="row">
+        <span class="row-copy">
+          <span class="row-title">Hide sponsored listings</span>
+          <span class="row-sub">Removes Amazon's Sponsored tiles from search results.</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="hideSponsored"><span class="slider"></span></span>
+      </label>
+    </section>
+
     <section>
       <h2>Rules</h2>
       <label class="row">
@@ -70,7 +108,7 @@
     </section>
 
     <div class="actions">
-      <button id="save" class="primary">Save changes</button>
+      <button id="save" class="primary" disabled>Save changes</button>
       <span id="saved" class="saved" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg>
         Saved
