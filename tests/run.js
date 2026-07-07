@@ -12,7 +12,7 @@ const vm = require("vm");
 const root = path.join(__dirname, "..");
 const ctx = vm.createContext({ URL });
 [
-  "data/abf-brands.js",
+  "data/community-brands.js",
   "data/known-brands.js",
   "data/chinese-major.js",
   "data/flagged-brands.js",

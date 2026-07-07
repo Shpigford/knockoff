@@ -7,7 +7,7 @@
 //   2. user blocklist        → "blocked"   (always acted on)
 //   3. seed blocklist        → "flagged"   (data/flagged-brands.js)
 //   4. Chinese-major list    → "known" or "flagged" (depends on setting)
-//   5. known-brands lists    → "known"     (data/known-brands.js + data/abf-brands.js)
+//   5. known-brands lists    → "known"     (data/known-brands.js + data/community-brands.js)
 //   6. name heuristics       → "flagged" (score ≥ 6) / "suspect" (score ≥ 3) / "unknown"
 //   -  no brand in title     → "unbranded"
 //   -  non-Latin script      → "foreign"    (fail open: acted on by no level)
@@ -94,7 +94,7 @@ var Knockoff = (function () {
   // plus user lists / refreshed community list from storage.
 
   var idx = {
-    known: new Set(),        // established brands (curated + community ABF list)
+    known: new Set(),        // established brands (curated + community list)
     knownMaxWords: 1,        // longest multi-word brand, for title matching
     chineseMajor: new Set(), // established Chinese-owned brands
     flagged: new Set(),      // seed blocklist
@@ -125,7 +125,7 @@ var Knockoff = (function () {
     idx.knownMaxWords = 1;
 
     addBrands(idx.known, KO_KNOWN_BRANDS);
-    addBrands(idx.known, KO_ABF_BRANDS);
+    addBrands(idx.known, KO_COMMUNITY_BRANDS);
     if (extraKnown && extraKnown.length) addBrands(idx.known, extraKnown);
     addBrands(idx.chineseMajor, KO_CHINESE_MAJOR);
     idx.chineseMajor.forEach(function (k) { idx.known.add(k); });

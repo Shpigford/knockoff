@@ -66,11 +66,16 @@ Never skip this step, even for a "trivial" release.
 ## Step 3 — Bump, commit, tag, push
 
 1. Edit `manifest.json` `.version` to the new version.
-2. Run `./scripts/sync-safari.sh` — this is what carries the version into the
+2. Run `./scripts/update-bundled-brands.sh` — bakes the current curated
+   community list into `data/community-brands.js` so fresh installs start
+   with the same list existing installs have. If it fails (API unreachable),
+   warn the user and continue with the committed snapshot; a stale bundle is
+   not a release blocker.
+3. Run `./scripts/sync-safari.sh` — this is what carries the version into the
    Xcode project (`MARKETING_VERSION`) and syncs the extension resources.
    Never edit `MARKETING_VERSION` by hand.
-3. Re-run `node scripts/render-listing.js --check` and `node tests/run.js`.
-4. Commit everything as `Release v<version>`, tag `v<version>`, and
+4. Re-run `node scripts/render-listing.js --check` and `node tests/run.js`.
+5. Commit everything as `Release v<version>`, tag `v<version>`, and
    `git push origin main --follow-tags`.
 
 ## Step 4 — Ship all three stores

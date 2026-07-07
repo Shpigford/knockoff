@@ -9,12 +9,11 @@
 (function () {
   "use strict";
 
-  // Community allowlist refresh: once a day, re-fetch the AmazonBrandFilterList
-  // snapshot so new brands don't require an extension update. Served from our
-  // own API (which proxies + edge-caches the upstream GitHub list) so the
-  // extension has exactly one first-party network dependency.
-  var ABF_URL = "https://api.knockoff.shopping/brands";
-  var ABF_REFRESH_MS = 24 * 60 * 60 * 1000;
+  // Community allowlist refresh: once a day, re-fetch our curated brand list
+  // so new brands don't require an extension update. Served from our own API,
+  // so the extension has exactly one first-party network dependency.
+  var BRANDS_URL = "https://api.knockoff.shopping/brands";
+  var BRANDS_REFRESH_MS = 24 * 60 * 60 * 1000;
 
   // One-click misclassification reports (see report-worker/). Set this to your
   // deployed worker URL. Leave empty to fall back to opening a GitHub issue.
@@ -108,11 +107,11 @@
   }
 
   function loadCommunityList() {
-    return chrome.storage.local.get(["abfList", "remoteFlagged", "abfFetchedAt"]).then(function (c) {
-      var stale = !c.abfFetchedAt || Date.now() - c.abfFetchedAt > ABF_REFRESH_MS;
+    return chrome.storage.local.get(["communityBrands", "remoteFlagged", "communityFetchedAt"]).then(function (c) {
+      var stale = !c.communityFetchedAt || Date.now() - c.communityFetchedAt > BRANDS_REFRESH_MS;
       if (stale) {
         Promise.all([
-          fetch(ABF_URL).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); }),
+          fetch(BRANDS_URL).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); }),
           // curated blocklist additions; empty response is a valid state
           fetch(REPORT_ENDPOINT + "/flagged").then(function (r) { return r.ok ? r.text() : ""; })
         ])
@@ -121,10 +120,12 @@
             var flagged = parseLines(texts[1]);
             if (brands.length > 1000) { // sanity check before trusting the fetch
               chrome.storage.local.set({
-                abfList: brands,
+                communityBrands: brands,
                 remoteFlagged: flagged,
-                abfFetchedAt: Date.now()
+                communityFetchedAt: Date.now()
               });
+              // pre-0.3 versions cached under these keys
+              chrome.storage.local.remove(["abfList", "abfFetchedAt"]);
               Knockoff.buildIndexes(brands, flagged);
               rescan();
             }
@@ -664,7 +665,7 @@
   loadSettings()
     .then(loadCommunityList)
     .then(function (cached) {
-      Knockoff.buildIndexes(cached.abfList || null, cached.remoteFlagged || null);
+      Knockoff.buildIndexes(cached.communityBrands || null, cached.remoteFlagged || null);
       scan();
       new MutationObserver(scheduleScan).observe(document.body, {
         childList: true,

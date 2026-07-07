@@ -7,9 +7,8 @@
 //
 //   POST /report                     one report (JSON body, see below)
 //   GET  /brands                     known-brands list (text, one per line;
-//                                    proxied from AmazonBrandFilterList and
-//                                    edge-cached 6h; the extension's daily
-//                                    refresh hits this, not GitHub)
+//                                    served from D1 and edge-cached 6h; the
+//                                    extension's daily refresh hits this)
 //   GET  /flagged                    curated blocklist additions (text, one
 //                                    per line; extensions fetch daily)
 //   GET  /review?token=...           HTML review dashboard (tallies + stream
@@ -22,6 +21,7 @@
 // Deploy (from this directory):
 //   wrangler d1 create knockoff-reports          # once; put the id in wrangler.toml
 //   wrangler d1 execute knockoff-reports --file=schema.sql --remote
+//   wrangler d1 execute knockoff-reports --file=seed-brands.sql --remote  # once
 //   wrangler secret put REVIEW_TOKEN             # any long random string
 //   wrangler secret put IP_SALT                  # any long random string
 //   wrangler deploy
@@ -36,8 +36,6 @@ const CORS = {
 
 const MAX_REPORTS_PER_IP_PER_HOUR = 30;
 
-const BRANDS_UPSTREAM =
-  "https://raw.githubusercontent.com/chris-mosley/AmazonBrandFilterList/main/brands.txt";
 const BRANDS_CACHE_SECONDS = 6 * 60 * 60;
 
 function json(body, status = 200) {
@@ -95,38 +93,30 @@ async function handleReport(request, env) {
   return json({ ok: true });
 }
 
-// Serve the community brand list from our own domain: proxy the upstream
-// GitHub file with edge caching, and sanity-check it so a truncated or
-// error response never reaches clients.
+// Serve the known-brands allowlist: the seeded base list plus known-brand
+// additions curated from the review dashboard, edge-cached. A failed D1 read
+// throws and 500s, which clients treat like any bad refresh — they keep
+// their last good copy.
 async function handleBrands(request, env, ctx) {
   // The Cache API only works on custom-domain zones; touching it with a
   // workers.dev URL dies at the edge with error 1042 (uncatchable), so on
-  // the workers.dev alias we just proxy uncached.
+  // the workers.dev alias we just serve uncached.
   const url = new URL(request.url);
   const useCache = !url.hostname.endsWith("workers.dev");
   const cache = caches.default;
-  const cacheKey = new Request(url.origin + "/brands-v2");
+  const cacheKey = new Request(url.origin + "/brands-v3");
   if (useCache) {
     const cached = await cache.match(cacheKey);
     if (cached) return cached;
   }
 
-  const upstream = await fetch(BRANDS_UPSTREAM);
-  if (!upstream.ok) return json({ error: "upstream unavailable" }, 502);
-  const text = await upstream.text();
-  if (text.split("\n").filter((l) => l.trim()).length < 1000) {
-    return json({ error: "upstream returned a suspiciously short list" }, 502);
-  }
-
-  // Merge in known-brand additions curated from the review dashboard.
-  const { results: curatedKnown } = await env.DB.prepare(
-    "SELECT brand FROM curated WHERE list = 'known' ORDER BY brand"
+  const { results } = await env.DB.prepare(
+    `SELECT brand FROM brands
+     UNION SELECT brand FROM curated WHERE list = 'known'
+     ORDER BY brand`
   ).all();
-  const full = curatedKnown.length
-    ? text.trimEnd() + "\n" + curatedKnown.map((r) => r.brand).join("\n")
-    : text;
 
-  const res = new Response(full, {
+  const res = new Response(results.map((r) => r.brand).join("\n"), {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "public, max-age=" + BRANDS_CACHE_SECONDS,
@@ -255,8 +245,7 @@ async function handleDashboard(env, url) {
 <main>
   <h1>Knockoff report review</h1>
   <p class="sub">Block/Trust decisions ship to every install within its next daily
-  refresh. No extension release needed. Consider also upstreaming real brands to the
-  community AmazonBrandFilterList.</p>
+  refresh. No extension release needed.</p>
   <h2>Brand tallies</h2>
   <table><tr><th>Brand</th><th>Junk votes</th><th>Real votes</th><th>Total</th><th>Last report</th><th></th></tr>
   ${tallyRows || empty}</table>

@@ -25,9 +25,8 @@ brand "Flexible") → add the word to `data/generic-words.js`.
 
 Matching is case-insensitive on lowercased alphanumerics ("Black+Decker" ≡
 "blackdecker"), so don't add capitalization or punctuation variants. Brands
-also on the community [AmazonBrandFilterList](https://github.com/chris-mosley/AmazonBrandFilterList)
-don't need duplicating here. Consider upstreaming there too; Knockoff
-bundles and daily-refreshes that list.
+already in the bundled community snapshot (`data/community-brands.js`) don't
+need duplicating here.
 
 ## Testing your change
 
@@ -61,9 +60,9 @@ One-click reports from the badge menu land in a D1 table (see
 Block/Trust click curates the brand, and curated verdicts are served by the API
 (`/flagged`, merged into `/brands`) and reach every install within its next
 daily refresh, no extension release needed. Brands that prove permanent
-should still graduate into the bundled data files (and real brands upstream
-to AmazonBrandFilterList) so fresh installs are covered before their first
-refresh. Endpoints are documented in `report-worker/worker.js`.
+should still graduate into the bundled data files so fresh installs are
+covered before their first refresh. Endpoints are documented in
+`report-worker/worker.js`.
 
 ## Pull requests
 
