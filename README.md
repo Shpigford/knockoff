@@ -2,7 +2,7 @@
 
 # Knockoff
 
-**A Chrome extension that filters pseudo-brand junk out of Amazon.** Buy from
+**A browser extension that filters pseudo-brand junk out of Amazon.** Buy from
 real, established brands, even when that means paying more.
 
 Amazon is flooded with trademark-squat "brands" (SZHLUX, HORUSDY, LATTOOK,
@@ -13,7 +13,8 @@ labels them, right in the search results.
 
 ## Install
 
-**[Add to Chrome](https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce)** from the Chrome Web Store.
+**[Add to Chrome](https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce)** from the Chrome Web Store, or
+**[Add to Firefox](https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/)** from Firefox Add-ons.
 
 Or load it unpacked for development:
 
