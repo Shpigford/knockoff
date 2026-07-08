@@ -244,7 +244,10 @@ async function handleDashboard(env, url) {
     // judge a brand), falling back to the detector's reason for old reports.
     const context = t.title || t.reason
       ? `<div class="t" title="${esc(t.reason || "")}">${esc(t.title || t.reason)}</div>` : "";
-    return `<tr data-brand="${esc(t.brand)}">` +
+    // Single, uncorroborated reports start collapsed behind the section's
+    // toggle; search still reaches them.
+    const single = t.total === 1 ? ' class="single" hidden' : "";
+    return `<tr data-brand="${esc(t.brand)}"${single}>` +
       `<td class="sel"><input type="checkbox" class="pick"></td>` +
       `<td class="b">${esc(t.brand)}${context}</td>` +
       `<td class="real">${t.real_votes || ""}</td>` +
@@ -259,6 +262,13 @@ async function handleDashboard(env, url) {
   const queueHead = `<tr><th class="sel"><input type="checkbox" class="selall" title="Select all"></th>` +
     `<th>Brand</th><th>Real</th><th>Junk</th><th>Reported as</th><th>Last</th><th>Product</th><th></th></tr>`;
   const queueEmpty = `<tr><td colspan="8" class="dim">Queue clear.</td></tr>`;
+  const queueTable = (items) => {
+    const singles = items.filter((t) => t.total === 1).length;
+    const more = singles
+      ? `<tr class="more"><td colspan="8"><button data-toggle>Show ${singles} single-report brand${singles === 1 ? "" : "s"}</button></td></tr>`
+      : "";
+    return `<table class="queue" data-collapsed="1">${queueHead}${items.map(queueRow).join("") || queueEmpty}${more}</table>`;
+  };
 
   const curatedRows = curated.map((c) =>
     `<tr><td class="b">${esc(c.brand)}</td>` +
@@ -303,6 +313,9 @@ async function handleDashboard(env, url) {
   tr.cursor td:first-child{box-shadow:inset 3px 0 0 #2563eb}
   tr.busy{opacity:.4;pointer-events:none}
   .acts{white-space:nowrap}
+  .more td{padding:6px 14px;background:#fafafa}
+  .more button{border:0;background:none;color:#71717a;font:500 12px/1.6 inherit;font-family:inherit;cursor:pointer;padding:2px 0}
+  .more button:hover{color:#18181b}
   .acts button{border:1px solid #e4e4e7;background:#fff;border-radius:6px;padding:3px 10px;
     font:500 12px/1.4 inherit;font-family:inherit;color:#18181b;cursor:pointer;margin-right:4px}
   .acts button:hover{border-color:#18181b}
@@ -323,9 +336,9 @@ async function handleDashboard(env, url) {
   <b>t</b> trust · <b>b</b> block · <b>d</b> dismiss · <b>o</b> open product · <b>/</b> search</p>
   <input id="q" type="search" placeholder="Filter brands and titles…">
   <h2>Possible false positives <span class="count">${fp.length}</span></h2>
-  <table class="queue">${queueHead}${fp.map(queueRow).join("") || queueEmpty}</table>
+  ${queueTable(fp)}
   <h2>Reported junk <span class="count">${junk.length}</span></h2>
-  <table class="queue">${queueHead}${junk.map(queueRow).join("") || queueEmpty}</table>
+  ${queueTable(junk)}
   <details><summary>Curated <span class="count">${curated.length}</span></summary>
   <table><tr><th>Brand</th><th>List</th><th>Added</th><th></th></tr>
   ${curatedRows || `<tr><td colspan="4" class="dim">Nothing curated yet.</td></tr>`}</table></details>
@@ -381,6 +394,29 @@ async function handleDashboard(env, url) {
     $("#bn").textContent = n + " selected";
   }
 
+  // One place decides row visibility: the search query wins, otherwise
+  // single-report rows stay behind their section's toggle.
+  function applyVisibility() {
+    const q = $("#q").value.trim().toLowerCase();
+    $$("table.queue").forEach((table) => {
+      const collapsed = table.dataset.collapsed !== "0";
+      let singles = 0;
+      $$("tr[data-brand]", table).forEach((tr) => {
+        const single = tr.classList.contains("single");
+        if (single) singles++;
+        const match = !q || tr.textContent.toLowerCase().includes(q);
+        tr.hidden = !match || (single && collapsed && !q);
+      });
+      const more = $("tr.more", table);
+      if (more) {
+        more.hidden = !!q || !singles;
+        $("button", more).textContent = collapsed
+          ? "Show " + singles + " single-report brand" + (singles === 1 ? "" : "s")
+          : "Hide single-report brands";
+      }
+    });
+  }
+
   // Decide a set of rows. Rows disappear as each request succeeds; a few
   // requests run at once so bulk actions on dozens of brands stay quick.
   async function act(list, trs) {
@@ -393,6 +429,7 @@ async function handleDashboard(env, url) {
         if (ok) removeRow(tr); else tr.classList.remove("busy");
       }
     }));
+    applyVisibility();
     setCur(cur);
     updateBulk();
   }
@@ -418,6 +455,14 @@ async function handleDashboard(env, url) {
       updateBulk();
       return;
     }
+    const toggle = e.target.closest("button[data-toggle]");
+    if (toggle) {
+      const table = toggle.closest("table");
+      table.dataset.collapsed = table.dataset.collapsed === "0" ? "1" : "0";
+      applyVisibility();
+      updateBulk();
+      return;
+    }
     const act1 = e.target.closest("button[data-act]");
     if (act1) { act(act1.dataset.list, [act1.closest("tr")]); return; }
     const bulk = e.target.closest("button[data-bulk]");
@@ -439,10 +484,7 @@ async function handleDashboard(env, url) {
   });
 
   $("#q").addEventListener("input", () => {
-    const q = $("#q").value.trim().toLowerCase();
-    $$("table.queue tr[data-brand]").forEach((tr) => {
-      tr.hidden = !!q && !tr.textContent.toLowerCase().includes(q);
-    });
+    applyVisibility();
     setCur(0);
     updateBulk();
   });
