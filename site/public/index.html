@@ -222,14 +222,16 @@
   .band .btn.ghost:hover { border-color: #71717a; }
   .band .btn.white { background: #fff; color: var(--ink); position: relative; }
 
-  footer { padding: 36px 0 56px; border-top: 1px solid var(--line); }
-  .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  footer { padding: 44px 0 56px; border-top: 1px solid var(--line); }
+  .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 36px 48px; }
+  .foot-brand { max-width: 300px; }
   .foot .mark svg { width: 24px; height: 24px; }
   .foot .mark b { font-size: 15px; }
-  .foot-links { display: flex; flex-wrap: wrap; gap: 12px 22px; font-size: 13.5px; }
-  .foot-links a { color: var(--ink-3); text-decoration: none; }
-  .foot-links a:hover { color: var(--ink); }
-  .foot .fine { width: 100%; font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
+  .foot .fine { font-size: 12.5px; color: var(--ink-3); margin-top: 14px; }
+  .foot-cols { display: flex; flex-wrap: wrap; gap: 28px 56px; }
+  .foot-col h4 { font: 650 11.5px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px; }
+  .foot-col a { display: block; color: var(--ink-2); text-decoration: none; font-size: 13.5px; padding: 3px 0; }
+  .foot-col a:hover { color: var(--ink); }
 
   @media (max-width: 860px) {
     .results { grid-template-columns: repeat(2, 1fr); }
@@ -410,24 +412,35 @@
 
 <footer>
   <div class="wrap foot">
-    <a class="mark" href="/">
-      <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="30" fill="#101012"/><g transform="translate(64 66) scale(4.35) translate(-12 -12)"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z" fill="#fff"/><circle cx="6.9" cy="6.9" r="1.55" fill="#101012"/><path d="M4.6 21 21 4.6" stroke="#dc2626" stroke-width="2.4" stroke-linecap="round" fill="none"/></g></svg>
-      <b>Knockoff</b>
-    </a>
-    <div class="foot-links">
-      <a href="https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce">Chrome Web Store</a>
-      <a href="https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/">Firefox Add-ons</a>
-      <a href="https://github.com/Shpigford/knockoff">GitHub</a>
-      <a href="/fakespot-alternative">Fakespot alternatives</a>
-      <a href="/amazon-fake-brands">Fake brands, explained</a>
-      <a href="/hide-amazon-sponsored-products">Hide sponsored ads</a>
-      <a href="https://github.com/Shpigford/knockoff/blob/main/LICENSE">License</a>
-      <a href="https://github.com/Shpigford/knockoff/issues">Report an issue</a>
-      <a href="/privacy">Privacy</a>
-      <a href="https://x.com/Shpigford">@Shpigford</a>
+    <div class="foot-brand">
+      <a class="mark" href="/">
+        <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="30" fill="#101012"/><g transform="translate(64 66) scale(4.35) translate(-12 -12)"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z" fill="#fff"/><circle cx="6.9" cy="6.9" r="1.55" fill="#101012"/><path d="M4.6 21 21 4.6" stroke="#dc2626" stroke-width="2.4" stroke-linecap="round" fill="none"/></g></svg>
+        <b>Knockoff</b>
+      </a>
+      <p class="fine">Not affiliated with Amazon. Brand verdicts are heuristics plus community lists, always
+      one click from being corrected.</p>
     </div>
-    <p class="fine">Not affiliated with Amazon. Brand verdicts are heuristics plus community lists, always
-    one click from being corrected.</p>
+    <div class="foot-cols">
+      <div class="foot-col">
+        <h4>Get Knockoff</h4>
+        <a href="https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce">Chrome Web Store</a>
+        <a href="https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/">Firefox Add-ons</a>
+        <a href="https://github.com/Shpigford/knockoff">GitHub</a>
+      </div>
+      <div class="foot-col">
+        <h4>Guides</h4>
+        <a href="/fakespot-alternative">Fakespot alternatives</a>
+        <a href="/amazon-fake-brands">Fake brands, explained</a>
+        <a href="/hide-amazon-sponsored-products">Hide sponsored ads</a>
+      </div>
+      <div class="foot-col">
+        <h4>Project</h4>
+        <a href="https://github.com/Shpigford/knockoff/blob/main/LICENSE">License</a>
+        <a href="https://github.com/Shpigford/knockoff/issues">Report an issue</a>
+        <a href="/privacy">Privacy</a>
+        <a href="https://x.com/Shpigford">@Shpigford</a>
+      </div>
+    </div>
   </div>
 </footer>
 
