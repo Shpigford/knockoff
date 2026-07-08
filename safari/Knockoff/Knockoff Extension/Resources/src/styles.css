@@ -21,8 +21,27 @@
    reveal pill, no filtered count. The user asked to never see ads.
    Scoped to the "Sponsored" aria-label *inside* the label so Amazon's own
    "Featured from Amazon brands" tiles — which reuse .puis-sponsored-label-text
-   with a different label — are left untouched. */
-html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-sponsored-label-text [aria-label*="Sponsored"]) {
+   with a different label — are left untouched. Amazon localizes the label, so
+   match each marketplace's word for "Sponsored". */
+html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-sponsored-label-text :is(
+  [aria-label*="Sponsored" i], [aria-label*="Gesponsert" i], [aria-label*="Sponsoris" i],
+  [aria-label*="Sponsorizzat" i], [aria-label*="Patrocinad" i], [aria-label*="Gesponsord" i],
+  [aria-label*="Sponsrad" i], [aria-label*="Sponsorowan" i], [aria-label*="Sponsorlu" i],
+  [aria-label*="スポンサー" i])) {
+  display: none !important;
+}
+
+/* Sponsored *modules* — full-width widget rows, not search-result tiles, so
+   the rule above never matches them: "Shop X by type" (SHOPPING_ADVISER),
+   "Picks from Amazon Influencers" (FEATURED_ASINS_LIST), sponsored video rows
+   (VIDEO_SINGLE_PRODUCT). Matched by Amazon's ad-disclosure classes, which
+   unlike the label text are not localized, so no aria-label list here:
+   .s-widget-sponsored-label-text is the widget-level "Sponsored" link, and
+   the video row's only reliable marker is its label wrapper (its "Sponsored"
+   is plain text with no aria-label). Hide the .s-result-item row, not the
+   inner .s-widget-container, or an empty grid row is left behind. */
+html.ko-hide-sponsored .s-result-item.s-widget:has(
+  .s-widget-sponsored-label-text, .sponsored-brand-label-info-desktop) {
   display: none !important;
 }
 
