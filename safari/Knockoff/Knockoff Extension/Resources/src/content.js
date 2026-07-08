@@ -696,6 +696,12 @@
     }
   });
 
+  // Close any open badge menu on an outside click.
+  document.addEventListener("mousedown", function (event) {
+    if (event.target.closest && (event.target.closest(".ko-menu") || event.target.closest(".ko-badge"))) return;
+    document.querySelectorAll(".ko-menu").forEach(function (menu) { menu.remove(); });
+  }, true);
+
   loadSettings()
     .then(loadCommunityList)
     .then(function (cached) {
