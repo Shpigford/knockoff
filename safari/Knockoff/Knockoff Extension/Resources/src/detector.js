@@ -254,7 +254,11 @@ var Knockoff = (function () {
     else if (ratio < 0.28) { s += 1; reasons.push("few vowels"); }
     else if (ratio > 0.62) { s += 1; reasons.push("mostly vowels"); }
 
-    if (/[bcdfghjklmnpqrstvwxz]{4,}/i.test(letters)) {
+    // A run spanning a lowercase→uppercase seam is a compound of two
+    // pronounceable words ("SuperStroke" → r|Str), not gibberish — break at
+    // the seams first. Squat names are all-caps or all-lower, so no seams.
+    var seamed = letters.replace(/([a-z])([A-Z])/g, "$1 $2");
+    if (/[bcdfghjklmnpqrstvwxz]{4,}/i.test(seamed)) {
       s += 3; reasons.push("unpronounceable consonant run");
     }
 
