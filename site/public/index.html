@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Knockoff: Amazon, without the knockoffs</title>
-<meta name="description" content="A free, fair-source Chrome extension that filters trademark-squat pseudo-brands out of Amazon. Buy from real, established brands.">
+<meta name="description" content="A free, fair-source browser extension for Chrome and Firefox that filters trademark-squat pseudo-brands out of Amazon. Buy from real, established brands.">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon128.png">
 <meta property="og:title" content="Knockoff: Amazon, without the knockoffs">
-<meta property="og:description" content="A free, fair-source Chrome extension that filters pseudo-brand junk out of Amazon search results.">
+<meta property="og:description" content="A free, fair-source browser extension that filters pseudo-brand junk out of Amazon search results. For Chrome and Firefox.">
 <meta property="og:image" content="https://knockoff.shopping/og.png">
 <meta property="og:url" content="https://knockoff.shopping">
 <meta name="twitter:card" content="summary_large_image">
@@ -91,6 +91,8 @@
   .btn.ghost:hover { border-color: var(--ink-3); }
   .btn svg { width: 18px; height: 18px; }
   .hero .note { margin-top: 16px; font-size: 13px; color: var(--ink-3); }
+  .hero .note a { color: var(--ink-2); text-underline-offset: 2px; }
+  .hero .note a:hover { color: var(--ink); }
 
   /* ── Demo ── */
   .demo { padding: 40px 0 30px; }
@@ -227,7 +229,8 @@
     </a>
     <div class="nav-links">
       <a href="https://github.com/Shpigford/knockoff">GitHub</a>
-      <a class="solid" href="https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce">Add to Chrome</a>
+      <a class="solid" data-browser="chrome" href="https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce">Add to Chrome</a>
+      <a class="solid" data-browser="firefox" style="display:none" href="https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/">Add to Firefox</a>
     </div>
   </nav>
 </div>
@@ -238,16 +241,21 @@
     <p class="sub">Knockoff filters the trademark-squat pseudo-brands (the SZHLUXes and
     HORUSDYs) out of your search results, so what's left is brands with a reputation to lose.</p>
     <div class="ctas" id="install">
-      <a class="btn primary" href="https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce">
+      <a class="btn primary" data-browser="chrome" href="https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="3.6"/><path d="M12 8.4h9.1M8.9 14.2 4.4 6.4M15.2 14.2l-4.6 7.9"/></svg>
         Add to Chrome
+      </a>
+      <a class="btn primary" data-browser="firefox" style="display:none" href="https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        Add to Firefox
       </a>
       <a class="btn ghost" href="https://github.com/Shpigford/knockoff">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.58 9.58 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.94.36.31.68.92.68 1.85V21c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
         Star on GitHub
       </a>
     </div>
-    <p class="note">Free, fair source (FSL), no accounts, no tracking. Works on every Amazon marketplace.</p>
+    <p class="note"><span data-browser="chrome">Also on <a href="https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/">Firefox</a>.</span><span data-browser="firefox" style="display:none">Also on <a href="https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce">Chrome</a>.</span>
+    Free, fair source (FSL), no accounts, no tracking. Works on every Amazon marketplace.</p>
   </div>
 
   <div class="wrap demo">
@@ -387,16 +395,31 @@
       <b>Knockoff</b>
     </a>
     <div class="foot-links">
+      <a href="https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce">Chrome Web Store</a>
+      <a href="https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/">Firefox Add-ons</a>
       <a href="https://github.com/Shpigford/knockoff">GitHub</a>
       <a href="https://github.com/Shpigford/knockoff/blob/main/LICENSE">License</a>
       <a href="https://github.com/Shpigford/knockoff/issues">Report an issue</a>
       <a href="https://x.com/Shpigford">@Shpigford</a>
     </div>
     <p class="fine">Not affiliated with Amazon. Brand verdicts are heuristics plus community lists, always
-    one click from being corrected. Products shown above are real listings from an amazon.com
-    search for &ldquo;dog bed&rdquo;; badges are Knockoff's actual verdicts.</p>
+    one click from being corrected.</p>
   </div>
 </footer>
+
+<script>
+// Firefox visitors get the Firefox Add-ons CTA. Everything Chromium (Edge,
+// Brave, Arc, Opera) can install from the Chrome Web Store, so Chrome is the
+// default — and the fallback when JS is off or detection guesses wrong. The
+// "Also on …" note and footer links keep both stores one click away either way.
+(function () {
+  if (!/Firefox\//.test(navigator.userAgent)) return;
+  var els = document.querySelectorAll('[data-browser]');
+  for (var i = 0; i < els.length; i++) {
+    els[i].style.display = els[i].getAttribute('data-browser') === 'firefox' ? '' : 'none';
+  }
+})();
+</script>
 
 </body>
 </html>
