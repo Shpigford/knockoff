@@ -1,4 +1,5 @@
 name = "knockoff-site"
+main = "worker.js"
 compatibility_date = "2026-07-01"
 workers_dev = false
 
@@ -10,3 +11,5 @@ routes = [
 
 [assets]
 directory = "./public"
+binding = "ASSETS"
+run_worker_first = true

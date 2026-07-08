@@ -1,0 +1,16 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+# Files copied from the root repo into each new workspace. Setting this
+# replaces Conductor's default (.env*), so the env files are re-listed.
+# Only gitignored, untracked files are eligible.
+file_include_globs = """
+.env.amo
+.env.asc
+.env.cws
+"""
+
+[scripts]
+# .seo/ (brand voice, editorial rules, content ledger) is SHARED, not copied:
+# a symlink to the root checkout means ledger updates made in any workspace
+# land in the one canonical copy instead of dying with the worktree.
+setup = '[ ! -d "$CONDUCTOR_ROOT_PATH/.seo" ] || { [ -L .seo ] || rm -rf .seo; ln -sfn "$CONDUCTOR_ROOT_PATH/.seo" .seo; }'

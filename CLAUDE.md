@@ -40,7 +40,7 @@ Media/digital categories (Books, Kindle, Audible, music, movies, apps…) are sk
 ### Server side (all optional to the shopping path)
 
 - **`report-worker/`** — Cloudflare Worker + D1 at `api.knockoff.shopping`: accepts one-click misclassification reports, serves the community allowlist (`/brands`, D1-backed and edge-cached; the base list was seeded once from `seed-brands.sql`, and `data/community-brands.js` is its bundled snapshot, regenerated at release time) and curated blocklist additions (`/flagged`), and hosts a token-gated `/review` curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. Endpoints documented in `worker.js` header.
-- **`site/`** — static landing page (Cloudflare Worker assets) at knockoff.shopping.
+- **`site/`** — static landing page + SEO guide pages (Cloudflare Worker assets, plus `site/worker.js` for canonical-host 301s) at knockoff.shopping. For any SEO/content work, read `.seo/brand.md` first (voice, forbidden words, editorial rules) and log shipped pieces in `.seo/content-ledger.md`; new pages go in `site/public/sitemap.xml` and every page's footer.
 
 Everything else runs locally in the content script; the extension's only first-party network dependency is `api.knockoff.shopping`.
 
