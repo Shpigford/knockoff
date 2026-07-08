@@ -210,10 +210,13 @@ var Knockoff = (function () {
     var fkey = normalize(first);
     if (!fkey || fkey.length < 2) return null;
     if (/^\d/.test(first)) return null;             // "2-Piece", "26Pcs", "1/4"
-    // Model/spec codes ("CR2032", "MR16", "ESP32") are parts, not brands.
-    // Real brands of this shape (WD-40, K2, No7) are on the lists, which
-    // matched above; this only rejects unlisted candidates.
-    if (/^[a-z]{1,3}\d+[a-z]?$/.test(fkey)) return null;
+    // Model/spec codes ("CR2032", "MR16", "ESP32") and metric fastener sizes
+    // ("M6x1.0", "M6/M8/M10", "M6*20mm" → "m6x10", "m6m8m10", "m620mm") are
+    // parts, not brands: a short letter prefix then digits, with at most
+    // 2-letter runs between digit groups. Real brands of this shape (WD-40,
+    // K2, No7) are on the lists, which matched above; this only rejects
+    // unlisted candidates.
+    if (/^[a-z]{1,3}\d+(?:[a-z]{0,2}\d+)*[a-z]{0,2}$/.test(fkey)) return null;
     if (idx.generic.has(fkey)) return null;         // "Magnetic Bit Driver..."
     return { name: first, key: fkey, listed: false };
   }
