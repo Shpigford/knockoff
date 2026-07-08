@@ -5,25 +5,22 @@
 // this list guarantees the notorious ones.
 var KO_FLAGGED_BRANDS = [
   // 2021 Amazon review-abuse ban wave
-  "Aukey", "Mpow", "RavPower", "TaoTronics", "VicTsing", "Vava",
-  "Atmoko", "HOMASY", "OMORC", "TopElek", "Victony", "Tacklife",
-  "Austor", "Homitt", "Sable", "Vtin",
+  "Atmoko", "Aukey", "Austor", "HOMASY", "Homitt", "Mpow", "OMORC", "RavPower",
+  "Sable", "Tacklife", "TaoTronics", "TopElek", "Vava", "Victony", "VicTsing",
+  "Vtin",
   // Prolific pseudo-brands
-  "LATTOOK", "DOZAWA", "HORUSDY", "SZHLUX", "QWORK", "AIRAJ",
-  "WNPETHOME", "EHEYCIGA",
-  "TEKPREM", "ORIA", "HOLIFE", "MOSFiATA", "OMOTON", "LETSCOM",
-  "VANKYO", "DOSS", "DODOCOOL", "BOVKE", "MoKo", "Fintie", "TiMOVO",
-  "ProCase", "Ailun", "Mkeke", "Trianium", "LK", "Syncwire",
-  "UMIDIGI", "Blackview", "Oukitel", "Doogee", "Cubot", "Ulefone",
-  "HAOBAIMEI", "GOOACC", "NOCOEX", "YITAMOTOR", "AUXITO", "LASFIT",
-  "SEALIGHT", "Fahren", "Cougar Motor", "BEAMTECH",
-  "KKmoon", "Walfront", "Zerone", "Fdit", "Hilitand", "Mgaxyff",
-  "Ejoyous", "Qiilu", "Yosoo", "Dioche", "EBTOOLS", "VGEBY",
-  "Tbest", "Alomejor", "Dilwe", "Pwshymi", "Jectse", "Ymiko",
-  "Fockety", "Naroote", "Septpenta", "Shanrya", "SPYMINNPOO",
-  "BORDSTRACT", "MAGT", "Pilipane", "Vikye", "Doact", "Sonew",
-  "Okuyonic", "Zyyini", "Salutuy", "Emoshayoga", "Gedourain",
-  "Airshi", "Yosooo", "Annadue", "Bediffer", "Eosnow", "Chiciris",
-  "Hztyyier", "Aeun", "Naola", "Entatial", "Plyisty", "Aramox",
-  "Keenso", "Suchinm", "Acouto", "Xhuangtech", "Oumefar", "Tnfeeon"
+  "Acouto", "Aeun", "Ailun", "AIRAJ", "Airshi", "Alomejor", "Annadue", "Aramox",
+  "AUXITO", "BEAMTECH", "Bediffer", "Blackview", "BORDSTRACT", "BOVKE",
+  "Chiciris", "Cougar Motor", "Cubot", "Dilwe", "Dioche", "Doact", "DODOCOOL",
+  "Doogee", "DOSS", "DOZAWA", "EBTOOLS", "EHEYCIGA", "Ejoyous", "Emoshayoga",
+  "Entatial", "Eosnow", "Fahren", "Fdit", "Fintie", "Fockety", "Gedourain",
+  "GOOACC", "HAOBAIMEI", "Hilitand", "HOLIFE", "HORUSDY", "Hztyyier", "Jectse",
+  "Keenso", "KKmoon", "LASFIT", "LATTOOK", "LETSCOM", "LK", "MAGT", "Mgaxyff",
+  "Mkeke", "MoKo", "MOSFiATA", "Naola", "Naroote", "NOCOEX", "Okuyonic",
+  "OMOTON", "ORIA", "Oukitel", "Oumefar", "Pilipane", "Plyisty", "ProCase",
+  "Pwshymi", "Qiilu", "QWORK", "Salutuy", "SEALIGHT", "Septpenta", "Shanrya",
+  "Sonew", "SPYMINNPOO", "Suchinm", "Syncwire", "SZHLUX", "Tbest", "TEKPREM",
+  "TiMOVO", "Tnfeeon", "Trianium", "Ulefone", "UMIDIGI", "VANKYO", "VGEBY",
+  "Vikye", "Walfront", "WNPETHOME", "Xhuangtech", "YITAMOTOR", "Ymiko", "Yosoo",
+  "Yosooo", "Zerone", "Zyyini"
 ];
