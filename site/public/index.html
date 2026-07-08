@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Knockoff: Amazon, without the knockoffs</title>
+<title>Knockoff — Filter Fake Amazon Brands | Chrome & Firefox</title>
 <meta name="description" content="A free, fair-source browser extension for Chrome and Firefox that filters trademark-squat pseudo-brands out of Amazon. Buy from real, established brands.">
+<link rel="canonical" href="https://knockoff.shopping/">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon128.png">
 <meta property="og:title" content="Knockoff: Amazon, without the knockoffs">
@@ -12,6 +13,25 @@
 <meta property="og:image" content="https://knockoff.shopping/og.png">
 <meta property="og:url" content="https://knockoff.shopping">
 <meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Knockoff",
+  "url": "https://knockoff.shopping",
+  "image": "https://knockoff.shopping/og.png",
+  "description": "A free, fair-source browser extension that filters trademark-squat pseudo-brands out of Amazon search results.",
+  "applicationCategory": "BrowserApplication",
+  "operatingSystem": "Chrome, Firefox",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Josh Pigford", "url": "https://x.com/Shpigford" },
+  "downloadUrl": "https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce",
+  "sameAs": [
+    "https://github.com/Shpigford/knockoff",
+    "https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/"
+  ]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
@@ -206,7 +226,7 @@
   .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
   .foot .mark svg { width: 24px; height: 24px; }
   .foot .mark b { font-size: 15px; }
-  .foot-links { display: flex; gap: 22px; font-size: 13.5px; }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 12px 22px; font-size: 13.5px; }
   .foot-links a { color: var(--ink-3); text-decoration: none; }
   .foot-links a:hover { color: var(--ink); }
   .foot .fine { width: 100%; font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
@@ -398,8 +418,12 @@
       <a href="https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce">Chrome Web Store</a>
       <a href="https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/">Firefox Add-ons</a>
       <a href="https://github.com/Shpigford/knockoff">GitHub</a>
+      <a href="/fakespot-alternative">Fakespot alternatives</a>
+      <a href="/amazon-fake-brands">Fake brands, explained</a>
+      <a href="/hide-amazon-sponsored-products">Hide sponsored ads</a>
       <a href="https://github.com/Shpigford/knockoff/blob/main/LICENSE">License</a>
       <a href="https://github.com/Shpigford/knockoff/issues">Report an issue</a>
+      <a href="/privacy">Privacy</a>
       <a href="https://x.com/Shpigford">@Shpigford</a>
     </div>
     <p class="fine">Not affiliated with Amazon. Brand verdicts are heuristics plus community lists, always
