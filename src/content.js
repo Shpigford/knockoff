@@ -153,14 +153,18 @@
 
   // ── Tile processing ────────────────────────────────────────────────────────
 
+  // Localized "Sponsored ... –" prefix Amazon puts on sponsored-tile aria-labels.
+  var SPONSORED_PREFIX =
+    /^(Sponsored|Gesponsert|Sponsoris|Sponsorizzat|Patrocinad|Gesponsord|Sponsrad|Sponsorowan|Sponsorlu|スポンサー)[^–-]*[–-]\s*/i;
+
   function tileTitle(tile) {
     // textContent, not aria-label: sponsored tiles prefix their aria-label
-    // with "Sponsored Ad – ..." which would be read as the brand.
+    // with a localized "Sponsored Ad – ..." which would be read as the brand.
     var h2 = tile.querySelector("h2");
     var text = h2
       ? h2.textContent || h2.getAttribute("aria-label") || ""
       : (tile.querySelector("a.a-text-normal") || {}).textContent || "";
-    return text.replace(/^Sponsored Ad [–-]\s*/i, "");
+    return text.replace(SPONSORED_PREFIX, "");
   }
 
   // Some layouts render the brand in its own row above the title. When that

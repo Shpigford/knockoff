@@ -21,8 +21,13 @@
    reveal pill, no filtered count. The user asked to never see ads.
    Scoped to the "Sponsored" aria-label *inside* the label so Amazon's own
    "Featured from Amazon brands" tiles — which reuse .puis-sponsored-label-text
-   with a different label — are left untouched. */
-html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-sponsored-label-text [aria-label*="Sponsored"]) {
+   with a different label — are left untouched. Amazon localizes the label, so
+   match each marketplace's word for "Sponsored". */
+html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-sponsored-label-text :is(
+  [aria-label*="Sponsored" i], [aria-label*="Gesponsert" i], [aria-label*="Sponsoris" i],
+  [aria-label*="Sponsorizzat" i], [aria-label*="Patrocinad" i], [aria-label*="Gesponsord" i],
+  [aria-label*="Sponsrad" i], [aria-label*="Sponsorowan" i], [aria-label*="Sponsorlu" i],
+  [aria-label*="スポンサー" i])) {
   display: none !important;
 }
 
