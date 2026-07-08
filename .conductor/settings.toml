@@ -1,0 +1,12 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+# Files copied from the root repo into each new workspace. Setting this
+# replaces Conductor's default (.env*), so the env files are re-listed.
+# Only gitignored, untracked files are eligible — .seo/ and the .env files
+# are ignored precisely so they stay out of the public repo.
+file_include_globs = """
+.env.amo
+.env.asc
+.env.cws
+.seo/**
+"""
