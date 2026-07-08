@@ -153,14 +153,18 @@
 
   // ── Tile processing ────────────────────────────────────────────────────────
 
+  // Localized "Sponsored ... –" prefix Amazon puts on sponsored-tile aria-labels.
+  var SPONSORED_PREFIX =
+    /^(Sponsored|Gesponsert|Sponsoris|Sponsorizzat|Patrocinad|Gesponsord|Sponsrad|Sponsorowan|Sponsorlu|スポンサー)[^–-]*[–-]\s*/i;
+
   function tileTitle(tile) {
     // textContent, not aria-label: sponsored tiles prefix their aria-label
-    // with "Sponsored Ad – ..." which would be read as the brand.
+    // with a localized "Sponsored Ad – ..." which would be read as the brand.
     var h2 = tile.querySelector("h2");
     var text = h2
       ? h2.textContent || h2.getAttribute("aria-label") || ""
       : (tile.querySelector("a.a-text-normal") || {}).textContent || "";
-    return text.replace(/^Sponsored Ad [–-]\s*/i, "");
+    return text.replace(SPONSORED_PREFIX, "");
   }
 
   // Some layouts render the brand in its own row above the title. When that
@@ -288,7 +292,7 @@
       var reportBtn = menuButton("flag",
         filtered ? "Report as a real brand" : "Report as junk",
         function () {
-          sendReport(result, suggestion, tile.getAttribute("data-asin"));
+          sendReport(result, suggestion, tile.getAttribute("data-asin"), tileTitle(tile));
           reportBtn.innerHTML = ICONS.seal;
           var thanks = el("span", "ko-menu-label");
           thanks.textContent = "Reported. Thank you";
@@ -318,7 +322,7 @@
   // Misclassification reports keep the shared lists honest. With a deployed
   // report-worker this is a fire-and-forget POST; without one it opens a
   // prefilled GitHub issue instead.
-  function sendReport(result, suggestion, asin) {
+  function sendReport(result, suggestion, asin, productTitle) {
     if (!REPORT_ENDPOINT) {
       var title = (suggestion === "is_junk" ? "Junk brand: " : "Real brand: ") + result.brand;
       var body = "Brand: " + result.brand +
@@ -338,7 +342,10 @@
         verdict: result.verdict,
         asin: asin || null,
         marketplace: location.hostname,
-        extVersion: chrome.runtime.getManifest().version
+        extVersion: chrome.runtime.getManifest().version,
+        // Review context: what the product was and why it got that verdict.
+        title: (productTitle || "").slice(0, 150) || null,
+        reason: (result.reason || "").slice(0, 200) || null
       })
     }).catch(function () { /* fire-and-forget */ });
   }
