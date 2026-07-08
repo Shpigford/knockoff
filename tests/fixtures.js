@@ -51,6 +51,16 @@ var KO_FIXTURES = [
   // Unknown but normal-looking (passes at standard, filtered at strict)
   ["Geinxurn 82Pieces Impact Screwdriver Bits Set", "unknown"],
   ["Mulwark 86PC Magnetic Nut Driver Set", "unknown"],
+  // Compatibility bait: an unlisted brand name-dropping Apple/Samsung hardware
+  // mid-title is junk courting those shoppers. Listed brands (Anker, UGREEN,
+  // Samsung itself) write identical titles and still pass via the list veto.
+  ["Teeind USB Type C Cable Fast Charging, Tpc001 5 Pack(6Ft 3A) Braided C Charger Cables Compatible with Samsung S10e/note 9/s10/s9/s8 Plus", "suspect"],
+  ["etguuds USB C Cable 3ft, 5-Pack USB to USB C Charger Cable, Fast Charging Cord Type C for iPhone 15 14", "suspect"],
+  ["Essri USB C to USB C Cable 3FT for Apple iPhone 17 16 Charger Cord, 4Pack 60W", "suspect"],
+  ["SMALLElectric USB to USB C Cable 5 Pack 6FT, A to Type C Fast Charger Cord for iPhone 17 16 15, Samsung Galaxy, LG", "suspect"],
+  ["Anker USB C to USB C Cable, Type-C 60W Fast Charging Cable (6 FT, 2Pack) for iPhone 17 Series, iPad mini 6 and More", "known"],
+  ["UGREEN USB C to USB C Cable, 100W 2-Pack USB C Charger Cable for iPhone 17 Pro Max", "known"],
+  ["Samsung Galaxy Official USB-C to C Data Cable, 1.0m, Black", "known"],
   // Sponsored prefix must be stripped by the content script before classify;
   // classify itself should read the brand normally
   ["BOEN 1/4 inch Magnetic Nut Driver Set", "suspect"],

@@ -273,6 +273,30 @@ var Knockoff = (function () {
     return { score: s, reasons: reasons };
   }
 
+  // ── Compatibility bait ─────────────────────────────────────────────────────
+  // Accessory junk courts the big ecosystems by name ("Compatible with
+  // Samsung Galaxy S24, iPhone 16..."). Established accessory brands write
+  // identical titles, but they sit on the known lists, which short-circuit
+  // before the heuristics run — so this only has to be safe for unlisted
+  // brands, and an unlisted brand name-dropping Apple/Samsung hardware is
+  // the pseudo-brand signature.
+  var COMPAT_BAIT = new Set([
+    "apple", "iphone", "ipad", "ipod", "macbook", "airpods",
+    "samsung", "galaxy"
+  ]);
+
+  // First ecosystem word in the title that isn't the brand itself, as written
+  // in the title ("iPhone"), or null. Split on non-alphanumerics so
+  // "iPhone/iPad" and "(Samsung)" still read.
+  function compatBait(title, brandKey) {
+    var words = (title || "").split(/[^A-Za-z0-9]+/);
+    for (var i = 0; i < words.length; i++) {
+      var key = words[i].toLowerCase();
+      if (COMPAT_BAIT.has(key) && key !== brandKey) return words[i];
+    }
+    return null;
+  }
+
   // ── Media categories ───────────────────────────────────────────────────────
   // In creator-titled and digital categories (books, music, movies, apps...)
   // the tile title is the work, not a brand-led product name, so the whole
@@ -351,6 +375,16 @@ var Knockoff = (function () {
     }
 
     var h = scoreBrand(b.name);
+    // An unlisted brand whose title name-drops ecosystem hardware it doesn't
+    // make ("...for iPhone 16, Samsung Galaxy") is selling compatibility
+    // bait. Worth "suspect" on its own, but never "flagged": small legit
+    // makers write these titles too, so hiding at relaxed level still
+    // requires name-shape evidence from scoreBrand().
+    var bait = compatBait(title, b.key);
+    if (bait && h.score < 6) {
+      h.score = Math.min(h.score + 3, 5);
+      h.reasons.push("name-drops " + bait + " for compatibility");
+    }
     r.score = h.score;
     if (h.score >= 6) {
       r.verdict = "flagged"; r.reason = "looks like a pseudo-brand: " + h.reasons.join(", ");
