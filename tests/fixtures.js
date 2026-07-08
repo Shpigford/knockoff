@@ -36,6 +36,18 @@ var KO_FIXTURES = [
   ["Tough Grip 120-Piece Screwdriver Bit Set", "unbranded"],
   ["Magnetic Bit Holder with Quick Release", "unbranded"],
   ["Cobalt Drill Bit Set - 29Pcs M35 High Speed Steel Twist", "unbranded"],
+  // Model/spec codes leading the title are parts, not brands — those listings
+  // read as unbranded, never suspect/flagged; brand-led equivalents still
+  // classify by list.
+  ["CR2032 3V Lithium Coin Battery 10 Pack", "unbranded"],
+  ["LR44 AG13 357 Battery 1.5V Button Cell 20 Pack", "unbranded"],
+  ["XLR Cable 10FT Male to Female Microphone Cable", "unbranded"],
+  ["AAA Batteries 48 Count", "unbranded"],
+  ["MIDI Keyboard Controller 61 Key", "unbranded"],
+  ["Energizer CR2032 Batteries 6 Count", "known"],
+  // RCA is a spec word AND a real listed brand — the list match must win
+  // (adding "rca" to the generic list would demote it via the ambiguity guard)
+  ["RCA Cable 6ft Stereo Audio", "known"],
   // Unknown but normal-looking (passes at standard, filtered at strict)
   ["Geinxurn 82Pieces Impact Screwdriver Bits Set", "unknown"],
   ["Mulwark 86PC Magnetic Nut Driver Set", "unknown"],
