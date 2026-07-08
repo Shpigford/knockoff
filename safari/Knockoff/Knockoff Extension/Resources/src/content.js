@@ -71,25 +71,25 @@
   // authored here; never interpolate page content into these.
   var S = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
   var ICONS = {
-    tag: S + '<path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg>',
+    tag:      S + '<path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg>',
     tagSlash: S + '<path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><path d="M4.2 21.5 21.5 4.2"/></svg>',
-    alert: S + '<path d="M13.73 4.4 21.6 18a2 2 0 0 1-1.73 3H4.13A2 2 0 0 1 2.4 18L10.27 4.4a2 2 0 0 1 3.46 0Z"/><path d="M12 9.4v4.2"/><circle cx="12" cy="17.2" r="1.1" fill="currentColor" stroke="none"/></svg>',
-    dashed: S + '<circle cx="12" cy="12" r="9" stroke-dasharray="3.9 3.9"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>',
-    seal: S + '<circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg>',
-    shield: S + '<path d="M12 2.8 19 5.4v5.2c0 4.6-2.9 7.8-7 9.6-4.1-1.8-7-5-7-9.6V5.4Z"/><path d="m8.8 11.9 2.3 2.3 4.3-4.7"/></svg>',
-    ban: S + '<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></svg>',
-    x: S + '<path d="m6 6 12 12M18 6 6 18"/></svg>',
-    flag: S + '<path d="M5 21V4.5C7.7 3 10.3 3 13 4.5c2 1.1 4 1.3 6 .6V15c-2 .7-4 .5-6-.6-2.7-1.5-5.3-1.5-8 0"/></svg>'
+    alert:    S + '<path d="M13.73 4.4 21.6 18a2 2 0 0 1-1.73 3H4.13A2 2 0 0 1 2.4 18L10.27 4.4a2 2 0 0 1 3.46 0Z"/><path d="M12 9.4v4.2"/><circle cx="12" cy="17.2" r="1.1" fill="currentColor" stroke="none"/></svg>',
+    dashed:   S + '<circle cx="12" cy="12" r="9" stroke-dasharray="3.9 3.9"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>',
+    seal:     S + '<circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg>',
+    shield:   S + '<path d="M12 2.8 19 5.4v5.2c0 4.6-2.9 7.8-7 9.6-4.1-1.8-7-5-7-9.6V5.4Z"/><path d="m8.8 11.9 2.3 2.3 4.3-4.7"/></svg>',
+    ban:      S + '<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></svg>',
+    x:        S + '<path d="m6 6 12 12M18 6 6 18"/></svg>',
+    flag:     S + '<path d="M5 21V4.5C7.7 3 10.3 3 13 4.5c2 1.1 4 1.3 6 .6V15c-2 .7-4 .5-6-.6-2.7-1.5-5.3-1.5-8 0"/></svg>'
   };
 
   var VERDICT_META = {
-    blocked: { icon: "tagSlash", label: "On your blocklist" },
-    flagged: { icon: "tagSlash", label: "Likely pseudo-brand" },
-    suspect: { icon: "alert", label: "Suspect brand" },
-    unbranded: { icon: "alert", label: "Unbranded" },
-    unknown: { icon: "dashed", label: "Unrecognized" },
-    known: { icon: "seal", label: "Established" },
-    allowed: { icon: "seal", label: "Trusted by you" }
+    blocked:   { icon: "tagSlash", label: "On your blocklist" },
+    flagged:   { icon: "tagSlash", label: "Likely pseudo-brand" },
+    suspect:   { icon: "alert",    label: "Suspect brand" },
+    unbranded: { icon: "alert",    label: "Unbranded" },
+    unknown:   { icon: "dashed",   label: "Unrecognized" },
+    known:     { icon: "seal",     label: "Established" },
+    allowed:   { icon: "seal",     label: "Trusted by you" }
   };
 
   // ── Storage ────────────────────────────────────────────────────────────────
@@ -261,17 +261,13 @@
       var blocked = userBlock.has(result.key);
       group.appendChild(menuButton("shield",
         allowed ? "Stop trusting this brand" : "Trust this brand",
-        function () {
-          setListMembership("allow", result.brand, !allowed);
-          if (!allowed) setListMembership("block", result.brand, false);
-        }
+        function () { setListMembership("allow", result.brand, !allowed);
+                      if (!allowed) setListMembership("block", result.brand, false); }
       ));
       group.appendChild(menuButton("ban",
         blocked ? "Unblock this brand" : "Block this brand",
-        function () {
-          setListMembership("block", result.brand, !blocked);
-          if (!blocked) setListMembership("allow", result.brand, false);
-        }
+        function () { setListMembership("block", result.brand, !blocked);
+                      if (!blocked) setListMembership("allow", result.brand, false); }
       ));
     }
     // Clears the flag on this one item for the session: un-dims/un-hides it
@@ -699,12 +695,6 @@
       sendResponse({ ok: true });
     }
   });
-
-  // Close any open badge menu on an outside click.
-  document.addEventListener("mousedown", function (event) {
-    if (event.target.closest && (event.target.closest(".ko-menu") || event.target.closest(".ko-badge"))) return;
-    document.querySelectorAll(".ko-menu").forEach(function (menu) { menu.remove(); });
-  }, true);
 
   loadSettings()
     .then(loadCommunityList)
