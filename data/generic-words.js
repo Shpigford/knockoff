@@ -51,7 +51,7 @@ var KO_GENERIC_WORDS = [
   "plastic", "plate", "plates", "pliers", "plus", "pneumatic", "portable",
   "pot", "pots", "power", "powered", "premium", "pro", "professional",
   "propane", "protector", "purple", "purse", "puzzle", "quality", "quart",
-  "quick", "rack", "ratchet", "razor", "rechargeable", "red", "removable",
+  "queen", "quick", "rack", "ratchet", "razor", "rechargeable", "red", "removable",
   "repair", "replacement", "resistant", "retractable", "retro", "reusable",
   "ring", "rings", "rubber", "rug", "ruler", "running", "rv", "sae", "safety",
   "sandals", "saw", "scarf", "scissors", "screen", "screwdriver", "screws",
