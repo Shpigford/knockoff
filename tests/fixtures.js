@@ -61,6 +61,8 @@ var KO_FIXTURES = [
   ["Anker USB C to USB C Cable, Type-C 60W Fast Charging Cable (6 FT, 2Pack) for iPhone 17 Series, iPad mini 6 and More", "known"],
   ["UGREEN USB C to USB C Cable, 100W 2-Pack USB C Charger Cable for iPhone 17 Pro Max", "known"],
   ["Samsung Galaxy Official USB-C to C Data Cable, 1.0m, Black", "known"],
+  ["Orchard Apple Cider Vinegar Gummies, 60 Count", "unknown"],
+  ["Rossetta Galaxy Projector, Star Projector for Bedroom", "unknown"],
   // Sponsored prefix must be stripped by the content script before classify;
   // classify itself should read the brand normally
   ["BOEN 1/4 inch Magnetic Nut Driver Set", "suspect"],

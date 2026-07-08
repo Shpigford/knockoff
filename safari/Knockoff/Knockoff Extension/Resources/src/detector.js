@@ -285,14 +285,26 @@ var Knockoff = (function () {
     "samsung", "galaxy"
   ]);
 
-  // First ecosystem word in the title that isn't the brand itself, as written
-  // in the title ("iPhone"), or null. Split on non-alphanumerics so
+  var COMPAT_MARKERS = new Set([
+    "compatible", "for", "fits", "fit", "with", "works", "support", "supports"
+  ]);
+
+  function hasCompatMarker(words, index) {
+    var start = Math.max(0, index - 3);
+    for (var i = start; i < index; i++) {
+      if (COMPAT_MARKERS.has(words[i].toLowerCase())) return true;
+    }
+    return false;
+  }
+
+  // First ecosystem word in a compatibility phrase that isn't the brand itself,
+  // as written in the title ("iPhone"), or null. Split on non-alphanumerics so
   // "iPhone/iPad" and "(Samsung)" still read.
   function compatBait(title, brandKey) {
     var words = (title || "").split(/[^A-Za-z0-9]+/);
     for (var i = 0; i < words.length; i++) {
       var key = words[i].toLowerCase();
-      if (COMPAT_BAIT.has(key) && key !== brandKey) return words[i];
+      if (COMPAT_BAIT.has(key) && key !== brandKey && hasCompatMarker(words, i)) return words[i];
     }
     return null;
   }
