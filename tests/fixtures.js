@@ -45,6 +45,12 @@ var KO_FIXTURES = [
   ["XLR Cable 10FT Male to Female Microphone Cable", "unbranded"],
   ["AAA Batteries 48 Count", "unbranded"],
   ["MIDI Keyboard Controller 61 Key", "unbranded"],
+  // Metric fastener sizes (issue #49): "M<size>" alone or fused with pitch,
+  // length, or sibling sizes in one token
+  ["M6-1.0 x 30mm Flanged Hex Head Bolts, 304 Stainless Steel", "unbranded"],
+  ["M6x1.0 Hex Flange Nuts Serrated, 30 Pack", "unbranded"],
+  ["M12x1.75 Grade 8.8 Hex Cap Screws", "unbranded"],
+  ["M6/M8/M10 T-Slot Nuts for Aluminum Extrusion", "unbranded"],
   ["Energizer CR2032 Batteries 6 Count", "known"],
   // RCA is a spec word AND a real listed brand — the list match must win
   // (adding "rca" to the generic list would demote it via the ambiguity guard)
