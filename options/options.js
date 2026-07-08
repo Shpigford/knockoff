@@ -65,6 +65,54 @@ function parseList(id) {
     });
 }
 
+// ── Community brand list ───────────────────────────────────────────────────
+// Mirrors the daily refresh in content.js loadCommunityList (separate scopes,
+// keep in sync). The button exists so a curation fix can be pulled on demand
+// instead of waiting out the 24-hour cycle; content scripts pick the new list
+// up via storage.onChanged.
+
+var BRANDS_URL = "https://api.knockoff.shopping/brands";
+var FLAGGED_URL = "https://api.knockoff.shopping/flagged";
+var refreshBtn = document.getElementById("refreshList");
+var listStatus = document.getElementById("listStatus");
+
+function renderListStatus() {
+  chrome.storage.local.get(["communityBrands", "communityFetchedAt"]).then(function (c) {
+    listStatus.textContent = c.communityFetchedAt
+      ? c.communityBrands.length.toLocaleString() + " brands · updated " +
+        new Date(c.communityFetchedAt).toLocaleString()
+      : "Using the bundled brand list.";
+  });
+}
+renderListStatus();
+
+refreshBtn.addEventListener("click", function () {
+  refreshBtn.disabled = true;
+  listStatus.textContent = "Refreshing…";
+  Promise.all([
+    // "reload" skips the browser's HTTP cache; a force-refresh that serves
+    // yesterday's cached response would defeat the point of the button.
+    fetch(BRANDS_URL, { cache: "reload" }).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); }),
+    fetch(FLAGGED_URL, { cache: "reload" }).then(function (r) { return r.ok ? r.text() : ""; })
+  ])
+    .then(function (texts) {
+      var brands = texts[0].split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      var flagged = texts[1].split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      if (brands.length <= 1000) return Promise.reject("short list"); // sanity check, same as content.js
+      chrome.storage.local.remove(["abfList", "abfFetchedAt"]); // pre-0.3 cache keys
+      return chrome.storage.local.set({
+        communityBrands: brands,
+        remoteFlagged: flagged,
+        communityFetchedAt: Date.now()
+      });
+    })
+    .then(renderListStatus)
+    .catch(function () {
+      listStatus.textContent = "Couldn't reach api.knockoff.shopping — try again in a minute.";
+    })
+    .finally(function () { refreshBtn.disabled = false; });
+});
+
 save.addEventListener("click", function () {
   var patch = {
     allow: parseList("allow"),

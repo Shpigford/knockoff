@@ -308,6 +308,30 @@ button.primary:disabled {
 
 .colophon a:hover { color: var(--ink); }
 
+.listmeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+button.ghost {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-2);
+  font: 500 12px/1.4 var(--sans);
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+button.ghost:hover { color: var(--ink); border-color: var(--ink-3); }
+button.ghost:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
 /* ── Switch ─────────────────────────────────────────────────────────────── */
 
 .switch {

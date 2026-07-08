@@ -689,6 +689,15 @@
   // ── Wiring ─────────────────────────────────────────────────────────────────
 
   chrome.storage.onChanged.addListener(function (changes, area) {
+    // The options page's "Refresh now" (or another tab's daily refresh)
+    // wrote a fresh community list; fold it in without waiting for a reload.
+    if (area === "local" && (changes.communityBrands || changes.remoteFlagged)) {
+      chrome.storage.local.get(["communityBrands", "remoteFlagged"]).then(function (c) {
+        Knockoff.buildIndexes(c.communityBrands || null, c.remoteFlagged || null);
+        rescan();
+      });
+      return;
+    }
     if (area !== "sync") return;
     loadSettings().then(rescan);
   });
