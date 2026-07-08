@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS reports (
   asin TEXT,                      -- product the report came from, if any
   marketplace TEXT,               -- "www.amazon.com" etc.
   ext_version TEXT,               -- extension version, for triage
+  title TEXT,                     -- product title at report time (review context)
+  reason TEXT,                    -- detector's reason string at report time
   ip_hash TEXT NOT NULL,          -- salted SHA-256 of reporter IP (rate limiting only)
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
