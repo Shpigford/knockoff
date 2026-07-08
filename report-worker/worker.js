@@ -11,16 +11,17 @@
 //                                    extension's daily refresh hits this)
 //   GET  /flagged                    curated blocklist additions (text, one
 //                                    per line; extensions fetch daily)
-//   GET  /review?token=...           HTML review dashboard (tallies + stream
-//                                    + one-click Block/Trust curation)
-//   POST /curate?token=...           {brand, list: "flagged"|"known"} to add,
-//                                    {brand, remove: true} to undo
+//   GET  /review?token=...           HTML triage dashboard: queue of uncurated
+//                                    brands + one-click Trust/Block/Dismiss
+//   POST /curate?token=...           {brand, list: "flagged"|"known"|"dismissed"}
+//                                    to decide, {brand, remove: true} to undo
 //   GET  /reports?token=...&days=7   recent reports (JSON, review only)
 //   GET  /tallies?token=...          per-brand vote tallies (JSON, review only)
 //
 // Deploy (from this directory):
 //   wrangler d1 create knockoff-reports          # once; put the id in wrangler.toml
 //   wrangler d1 execute knockoff-reports --file=schema.sql --remote
+//   wrangler d1 execute knockoff-reports --file=migrate-triage.sql --remote  # pre-existing DBs, once
 //   wrangler d1 execute knockoff-reports --file=seed-brands.sql --remote  # once
 //   wrangler secret put REVIEW_TOKEN             # any long random string
 //   wrangler secret put IP_SALT                  # any long random string
@@ -85,9 +86,16 @@ async function handleReport(request, env) {
     return json({ error: "rate limited" }, 429);
   }
 
+  // One row per reporter per brand: reporting the same brand again updates
+  // the earlier vote instead of stacking the tally.
   await env.DB.prepare(
     `INSERT INTO reports (brand, brand_key, suggestion, verdict, asin, marketplace, ext_version, ip_hash)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+     ON CONFLICT (ip_hash, brand_key) DO UPDATE SET
+       brand = excluded.brand, suggestion = excluded.suggestion,
+       verdict = excluded.verdict, asin = excluded.asin,
+       marketplace = excluded.marketplace, ext_version = excluded.ext_version,
+       created_at = datetime('now')`
   ).bind(brand, brandKey, suggestion, verdict, asin, marketplace, extVersion, ipHash).run();
 
   return json({ ok: true });
@@ -160,8 +168,8 @@ async function handleCurate(request, env, url) {
     await env.DB.prepare("DELETE FROM curated WHERE brand_key = ?1").bind(key).run();
     return json({ ok: true });
   }
-  if (body.list !== "flagged" && body.list !== "known") {
-    return json({ error: "list must be flagged or known" }, 400);
+  if (body.list !== "flagged" && body.list !== "known" && body.list !== "dismissed") {
+    return json({ error: "list must be flagged, known or dismissed" }, 400);
   }
   await env.DB.prepare(
     `INSERT INTO curated (brand, brand_key, list) VALUES (?1, ?2, ?3)
@@ -182,8 +190,20 @@ async function handleDashboard(env, url) {
   if (url.searchParams.get("token") !== env.REVIEW_TOKEN) {
     return json({ error: "unauthorized" }, 401);
   }
-  const { results: tallies } = await env.DB.prepare(
-    "SELECT * FROM brand_tallies ORDER BY total DESC, last_report DESC LIMIT 200"
+  // The queue is only brands with no curation decision yet — Trust, Block and
+  // Dismiss all clear a brand from it. brand_tallies already excludes reports
+  // that agree with the verdict shown at report time, so pure noise never
+  // queues. The latest reported ASIN rides along as decision context.
+  const { results: queue } = await env.DB.prepare(
+    `SELECT t.*,
+       (SELECT r.asin FROM reports r WHERE r.brand_key = t.brand_key
+         AND r.asin IS NOT NULL ORDER BY r.id DESC LIMIT 1) AS asin,
+       (SELECT r.marketplace FROM reports r WHERE r.brand_key = t.brand_key
+         AND r.asin IS NOT NULL ORDER BY r.id DESC LIMIT 1) AS marketplace
+     FROM brand_tallies t
+     LEFT JOIN curated c ON c.brand_key = t.brand_key
+     WHERE c.brand_key IS NULL
+     ORDER BY t.total DESC, t.last_report DESC LIMIT 500`
   ).all();
   const { results: recent } = await env.DB.prepare(
     `SELECT brand, suggestion, verdict, asin, marketplace, created_at
@@ -192,24 +212,34 @@ async function handleDashboard(env, url) {
   const { results: curated } = await env.DB.prepare(
     "SELECT brand, brand_key, list, created_at FROM curated ORDER BY created_at DESC"
   ).all();
-  const curatedByKey = Object.fromEntries(curated.map((c) => [c.brand_key, c.list]));
 
-  const tallyRows = tallies.map((t) => {
-    const cur = curatedByKey[t.brand_key];
-    const actions = cur
-      ? `<span class="${cur === "flagged" ? "junk" : "real"}">✓ ${cur}</span>`
-      : `<button data-brand="${esc(t.brand)}" data-list="flagged">Block</button>
-         <button data-brand="${esc(t.brand)}" data-list="known">Trust</button>`;
+  // False positives (real brands being filtered) erode trust the most, so
+  // brands whose reporters lean "real" triage first.
+  const isFp = (t) => t.real_votes > 0 && t.real_votes >= t.junk_votes;
+  const fp = queue.filter(isFp)
+    .sort((a, b) => b.real_votes - a.real_votes || b.total - a.total);
+  const junk = queue.filter((t) => !isFp(t))
+    .sort((a, b) => b.junk_votes - a.junk_votes || b.total - a.total);
+
+  const queueRow = (t) => {
+    const product = t.asin
+      ? `<a href="https://${esc(t.marketplace || "www.amazon.com")}/dp/${esc(t.asin)}" target="_blank" rel="noreferrer">${esc(t.asin)}</a>`
+      : `<a href="https://www.amazon.com/s?k=${esc(encodeURIComponent(t.brand))}" target="_blank" rel="noreferrer">search</a>`;
     return `<tr><td class="b">${esc(t.brand)}</td>` +
-      `<td class="junk">${t.junk_votes || ""}</td>` +
       `<td class="real">${t.real_votes || ""}</td>` +
-      `<td>${t.total}</td><td class="dim">${esc(t.last_report)}</td>` +
-      `<td class="acts">${actions}</td></tr>`;
-  }).join("");
+      `<td class="junk">${t.junk_votes || ""}</td>` +
+      `<td class="dim">${esc(t.last_report)}</td>` +
+      `<td class="dim">${product}</td>` +
+      `<td class="acts"><button data-brand="${esc(t.brand)}" data-list="known">Trust</button>` +
+      `<button data-brand="${esc(t.brand)}" data-list="flagged">Block</button>` +
+      `<button data-brand="${esc(t.brand)}" data-list="dismissed">Dismiss</button></td></tr>`;
+  };
+  const queueHead = `<tr><th>Brand</th><th>Real</th><th>Junk</th><th>Last report</th><th>Product</th><th></th></tr>`;
+  const queueEmpty = `<tr><td colspan="6" class="dim">Queue clear.</td></tr>`;
 
   const curatedRows = curated.map((c) =>
     `<tr><td class="b">${esc(c.brand)}</td>` +
-    `<td class="${c.list === "flagged" ? "junk" : "real"}">${c.list}</td>` +
+    `<td class="${c.list === "flagged" ? "junk" : c.list === "known" ? "real" : "dim"}">${c.list}</td>` +
     `<td class="dim">${esc(c.created_at)}</td>` +
     `<td class="acts"><button data-brand="${esc(c.brand)}" data-remove="1">Remove</button></td></tr>`
   ).join("");
@@ -236,6 +266,7 @@ async function handleDashboard(env, url) {
   td{padding:9px 14px;border-bottom:1px solid #f0f0f1;font-size:13px}
   tr:last-child td{border-bottom:0}
   .b{font-weight:600}.dim{color:#a1a1aa;font-variant-numeric:tabular-nums}
+  .count{color:#71717a;font-weight:500;font-size:12px;background:#e9e9eb;border-radius:9px;padding:1px 8px;vertical-align:1px}
   .junk{color:#dc2626;font-weight:600}.real{color:#047857;font-weight:600}
   a{color:#18181b}
   .acts button{border:1px solid #e4e4e7;background:#fff;border-radius:6px;padding:3px 10px;
@@ -244,12 +275,13 @@ async function handleDashboard(env, url) {
 </style>
 <main>
   <h1>Knockoff report review</h1>
-  <p class="sub">Block/Trust decisions ship to every install within its next daily
-  refresh. No extension release needed.</p>
-  <h2>Brand tallies</h2>
-  <table><tr><th>Brand</th><th>Junk votes</th><th>Real votes</th><th>Total</th><th>Last report</th><th></th></tr>
-  ${tallyRows || empty}</table>
-  <h2>Curated</h2>
+  <p class="sub">Trust/Block ship to every install within its next daily refresh —
+  no extension release. Dismiss just clears the brand from the queue.</p>
+  <h2>Possible false positives <span class="count">${fp.length}</span></h2>
+  <table>${queueHead}${fp.map(queueRow).join("") || queueEmpty}</table>
+  <h2>Reported junk <span class="count">${junk.length}</span></h2>
+  <table>${queueHead}${junk.map(queueRow).join("") || queueEmpty}</table>
+  <h2>Curated <span class="count">${curated.length}</span></h2>
   <table><tr><th>Brand</th><th>List</th><th>Added</th><th></th></tr>
   ${curatedRows || `<tr><td colspan="4" class="dim">Nothing curated yet.</td></tr>`}</table>
   <h2>Recent reports</h2>
@@ -265,12 +297,20 @@ async function handleDashboard(env, url) {
     const body = b.dataset.remove
       ? { brand: b.dataset.brand, remove: true }
       : { brand: b.dataset.brand, list: b.dataset.list };
-    await fetch("/curate?token=" + encodeURIComponent(token), {
+    const res = await fetch("/curate?token=" + encodeURIComponent(token), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
-    location.reload();
+    if (!res.ok) { b.disabled = false; return; }
+    // Un-curating re-queues the brand, which needs fresh data; queue decisions
+    // just clear the row in place — a reload per decision makes triage painful.
+    if (b.dataset.remove) { location.reload(); return; }
+    const tr = b.closest("tr");
+    const table = tr.closest("table");
+    tr.remove();
+    const count = table.previousElementSibling.querySelector(".count");
+    if (count) count.textContent = Math.max(0, (parseInt(count.textContent, 10) || 1) - 1);
   });
 </script>`;
   return new Response(html, {
