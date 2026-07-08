@@ -31,6 +31,20 @@ html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-spon
   display: none !important;
 }
 
+/* Sponsored *modules* — full-width widget rows, not search-result tiles, so
+   the rule above never matches them: "Shop X by type" (SHOPPING_ADVISER),
+   "Picks from Amazon Influencers" (FEATURED_ASINS_LIST), sponsored video rows
+   (VIDEO_SINGLE_PRODUCT). Matched by Amazon's ad-disclosure classes, which
+   unlike the label text are not localized, so no aria-label list here:
+   .s-widget-sponsored-label-text is the widget-level "Sponsored" link, and
+   the video row's only reliable marker is its label wrapper (its "Sponsored"
+   is plain text with no aria-label). Hide the .s-result-item row, not the
+   inner .s-widget-container, or an empty grid row is left behind. */
+html.ko-hide-sponsored .s-result-item.s-widget:has(
+  .s-widget-sponsored-label-text, .sponsored-brand-label-info-desktop) {
+  display: none !important;
+}
+
 /* "Show" was clicked: hidden items come back in the dim treatment. No
    borders or outlines here: Amazon's tile elements extend into the grid
    gutters, so any ring drawn on them clips and merges between cards. The
