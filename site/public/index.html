@@ -60,7 +60,8 @@
 
   /* ── Hero ── */
   header { position: relative; overflow: hidden; }
-  .hero { padding: 72px 0 40px; text-align: center; position: relative; }
+  /* vertical-only: horizontal padding is .wrap's job (these share the element) */
+  .hero { padding-top: 72px; padding-bottom: 40px; text-align: center; position: relative; }
   .hero h1 {
     font: 750 clamp(44px, 7.5vw, 84px)/1.02 var(--display);
     letter-spacing: -0.035em;
@@ -95,7 +96,7 @@
   .hero .note a:hover { color: var(--ink); }
 
   /* ── Demo ── */
-  .demo { padding: 40px 0 30px; }
+  .demo { padding-top: 40px; padding-bottom: 30px; }
   .browser {
     background: var(--card); border: 1px solid var(--line); border-radius: 18px;
     box-shadow: 0 2px 6px rgba(16,16,18,.05), 0 30px 70px -30px rgba(16,16,18,.25);
