@@ -63,6 +63,11 @@ var KO_FIXTURES = [
   ["Samsung Galaxy Official USB-C to C Data Cable, 1.0m, Black", "known"],
   ["Orchard Apple Cider Vinegar Gummies, 60 Count", "unknown"],
   ["Rossetta Galaxy Projector, Star Projector for Bedroom", "unknown"],
+  // CamelCase compounds are pronounceable words joined — the consonant run
+  // across the seam ("SuperStroke" → r|Str) is not gibberish. Listed ones
+  // pass by veto; unlisted ones read as normal unknowns.
+  ["SuperStroke Zenergy Tour Golf Putter Grip with No Taper", "known"],
+  ["SilverStreak Golf Putter Grip Midsize, Non-Slip", "unknown"],
   // Sponsored prefix must be stripped by the content script before classify;
   // classify itself should read the brand normally
   ["BOEN 1/4 inch Magnetic Nut Driver Set", "suspect"],
