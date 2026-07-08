@@ -17,6 +17,8 @@
 //                                    to decide, {brand, remove: true} to undo
 //   GET  /reports?token=...&days=7   recent reports (JSON, review only)
 //   GET  /tallies?token=...          per-brand vote tallies (JSON, review only)
+//   GET  /queue?token=...            triage queue, same rows the dashboard
+//                                    shows (JSON, review only)
 //
 // Deploy (from this directory):
 //   wrangler d1 create knockoff-reports          # once; put the id in wrangler.toml
@@ -75,6 +77,8 @@ async function handleReport(request, env) {
   const verdict = String(body.verdict || "").slice(0, 20) || null;
   const marketplace = String(body.marketplace || "").slice(0, 40) || null;
   const extVersion = String(body.extVersion || "").slice(0, 20) || null;
+  const title = String(body.title || "").slice(0, 150) || null;
+  const reason = String(body.reason || "").slice(0, 200) || null;
 
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
   const ipHash = await sha256(env.IP_SALT + ip);
@@ -87,16 +91,20 @@ async function handleReport(request, env) {
   }
 
   // One row per reporter per brand: reporting the same brand again updates
-  // the earlier vote instead of stacking the tally.
+  // the earlier vote instead of stacking the tally. COALESCE keeps context
+  // fields (ASIN, title...) from an earlier report when the new one lacks them.
   await env.DB.prepare(
-    `INSERT INTO reports (brand, brand_key, suggestion, verdict, asin, marketplace, ext_version, ip_hash)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+    `INSERT INTO reports (brand, brand_key, suggestion, verdict, asin, marketplace, ext_version, ip_hash, title, reason)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
      ON CONFLICT (ip_hash, brand_key) DO UPDATE SET
        brand = excluded.brand, suggestion = excluded.suggestion,
-       verdict = excluded.verdict, asin = excluded.asin,
-       marketplace = excluded.marketplace, ext_version = excluded.ext_version,
+       verdict = excluded.verdict, asin = COALESCE(excluded.asin, asin),
+       marketplace = COALESCE(excluded.marketplace, marketplace),
+       ext_version = excluded.ext_version,
+       title = COALESCE(excluded.title, title),
+       reason = COALESCE(excluded.reason, reason),
        created_at = datetime('now')`
-  ).bind(brand, brandKey, suggestion, verdict, asin, marketplace, extVersion, ipHash).run();
+  ).bind(brand, brandKey, suggestion, verdict, asin, marketplace, extVersion, ipHash, title, reason).run();
 
   return json({ ok: true });
 }
@@ -186,25 +194,32 @@ function esc(s) {
   });
 }
 
+// The queue is only brands with no curation decision yet — Trust, Block and
+// Dismiss all clear a brand from it. brand_tallies already excludes reports
+// that agree with the verdict shown at report time, so pure noise never
+// queues. The latest reported ASIN, product title and detector reason ride
+// along as decision context.
+const QUEUE_SQL = `SELECT t.*,
+  (SELECT r.asin FROM reports r WHERE r.brand_key = t.brand_key
+    AND r.asin IS NOT NULL ORDER BY r.id DESC LIMIT 1) AS asin,
+  (SELECT r.marketplace FROM reports r WHERE r.brand_key = t.brand_key
+    AND r.asin IS NOT NULL ORDER BY r.id DESC LIMIT 1) AS marketplace,
+  (SELECT r.title FROM reports r WHERE r.brand_key = t.brand_key
+    AND r.title IS NOT NULL ORDER BY r.id DESC LIMIT 1) AS title,
+  (SELECT r.reason FROM reports r WHERE r.brand_key = t.brand_key
+    AND r.reason IS NOT NULL ORDER BY r.id DESC LIMIT 1) AS reason,
+  (SELECT GROUP_CONCAT(DISTINCT r.verdict) FROM reports r
+    WHERE r.brand_key = t.brand_key) AS verdicts
+FROM brand_tallies t
+LEFT JOIN curated c ON c.brand_key = t.brand_key
+WHERE c.brand_key IS NULL
+ORDER BY t.total DESC, t.last_report DESC LIMIT 500`;
+
 async function handleDashboard(env, url) {
   if (url.searchParams.get("token") !== env.REVIEW_TOKEN) {
     return json({ error: "unauthorized" }, 401);
   }
-  // The queue is only brands with no curation decision yet — Trust, Block and
-  // Dismiss all clear a brand from it. brand_tallies already excludes reports
-  // that agree with the verdict shown at report time, so pure noise never
-  // queues. The latest reported ASIN rides along as decision context.
-  const { results: queue } = await env.DB.prepare(
-    `SELECT t.*,
-       (SELECT r.asin FROM reports r WHERE r.brand_key = t.brand_key
-         AND r.asin IS NOT NULL ORDER BY r.id DESC LIMIT 1) AS asin,
-       (SELECT r.marketplace FROM reports r WHERE r.brand_key = t.brand_key
-         AND r.asin IS NOT NULL ORDER BY r.id DESC LIMIT 1) AS marketplace
-     FROM brand_tallies t
-     LEFT JOIN curated c ON c.brand_key = t.brand_key
-     WHERE c.brand_key IS NULL
-     ORDER BY t.total DESC, t.last_report DESC LIMIT 500`
-  ).all();
+  const { results: queue } = await env.DB.prepare(QUEUE_SQL).all();
   const { results: recent } = await env.DB.prepare(
     `SELECT brand, suggestion, verdict, asin, marketplace, created_at
      FROM reports ORDER BY id DESC LIMIT 100`
@@ -225,17 +240,25 @@ async function handleDashboard(env, url) {
     const product = t.asin
       ? `<a href="https://${esc(t.marketplace || "www.amazon.com")}/dp/${esc(t.asin)}" target="_blank" rel="noreferrer">${esc(t.asin)}</a>`
       : `<a href="https://www.amazon.com/s?k=${esc(encodeURIComponent(t.brand))}" target="_blank" rel="noreferrer">search</a>`;
-    return `<tr><td class="b">${esc(t.brand)}</td>` +
+    // Second line: the reported product title (the fastest way for a human to
+    // judge a brand), falling back to the detector's reason for old reports.
+    const context = t.title || t.reason
+      ? `<div class="t" title="${esc(t.reason || "")}">${esc(t.title || t.reason)}</div>` : "";
+    return `<tr data-brand="${esc(t.brand)}">` +
+      `<td class="sel"><input type="checkbox" class="pick"></td>` +
+      `<td class="b">${esc(t.brand)}${context}</td>` +
       `<td class="real">${t.real_votes || ""}</td>` +
       `<td class="junk">${t.junk_votes || ""}</td>` +
-      `<td class="dim">${esc(t.last_report)}</td>` +
+      `<td class="dim">${esc((t.verdicts || "").replace(/,/g, ", "))}</td>` +
+      `<td class="dim">${esc((t.last_report || "").slice(0, 10))}</td>` +
       `<td class="dim">${product}</td>` +
-      `<td class="acts"><button data-brand="${esc(t.brand)}" data-list="known">Trust</button>` +
-      `<button data-brand="${esc(t.brand)}" data-list="flagged">Block</button>` +
-      `<button data-brand="${esc(t.brand)}" data-list="dismissed">Dismiss</button></td></tr>`;
+      `<td class="acts"><button data-act data-list="known">Trust</button>` +
+      `<button data-act data-list="flagged">Block</button>` +
+      `<button data-act data-list="dismissed">Dismiss</button></td></tr>`;
   };
-  const queueHead = `<tr><th>Brand</th><th>Real</th><th>Junk</th><th>Last report</th><th>Product</th><th></th></tr>`;
-  const queueEmpty = `<tr><td colspan="6" class="dim">Queue clear.</td></tr>`;
+  const queueHead = `<tr><th class="sel"><input type="checkbox" class="selall" title="Select all"></th>` +
+    `<th>Brand</th><th>Real</th><th>Junk</th><th>Reported as</th><th>Last</th><th>Product</th><th></th></tr>`;
+  const queueEmpty = `<tr><td colspan="8" class="dim">Queue clear.</td></tr>`;
 
   const curatedRows = curated.map((c) =>
     `<tr><td class="b">${esc(c.brand)}</td>` +
@@ -257,60 +280,196 @@ async function handleDashboard(env, url) {
 <meta name="robots" content="noindex"><title>Knockoff report review</title>
 <style>
   body{margin:0;background:#f4f4f5;color:#18181b;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-  main{max-width:860px;margin:0 auto;padding:40px 24px 80px}
+  main{max-width:980px;margin:0 auto;padding:40px 24px 120px}
   h1{font-size:20px;font-weight:600;letter-spacing:-.015em;margin:0 0 4px}
-  .sub{color:#71717a;font-size:12.5px;margin:0 0 28px}
+  .sub{color:#71717a;font-size:12.5px;margin:0 0 6px}
+  .keys{color:#a1a1aa;font-size:12px;margin:0 0 20px}
+  .keys b{font-weight:600;color:#71717a;background:#e9e9eb;border-radius:4px;padding:0 5px}
+  #q{width:100%;box-sizing:border-box;margin:0 0 4px;padding:8px 12px;border:1px solid #e4e4e7;
+    border-radius:8px;font:inherit;background:#fff}
   h2{font-size:13.5px;font-weight:600;margin:28px 0 10px}
   table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}
   th{font-size:11px;font-weight:500;color:#71717a;text-align:left;padding:9px 14px;border-bottom:1px solid #e4e4e7;background:#fafafa}
   td{padding:9px 14px;border-bottom:1px solid #f0f0f1;font-size:13px}
   tr:last-child td{border-bottom:0}
   .b{font-weight:600}.dim{color:#a1a1aa;font-variant-numeric:tabular-nums}
+  .t{color:#71717a;font-weight:400;font-size:12px;max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .count{color:#71717a;font-weight:500;font-size:12px;background:#e9e9eb;border-radius:9px;padding:1px 8px;vertical-align:1px}
   .junk{color:#dc2626;font-weight:600}.real{color:#047857;font-weight:600}
   a{color:#18181b}
+  .sel{width:20px}
+  input[type=checkbox]{accent-color:#18181b}
+  tr.cursor td{background:#f4f7ff}
+  tr.cursor td:first-child{box-shadow:inset 3px 0 0 #2563eb}
+  tr.busy{opacity:.4;pointer-events:none}
+  .acts{white-space:nowrap}
   .acts button{border:1px solid #e4e4e7;background:#fff;border-radius:6px;padding:3px 10px;
     font:500 12px/1.4 inherit;font-family:inherit;color:#18181b;cursor:pointer;margin-right:4px}
   .acts button:hover{border-color:#18181b}
+  details{margin:28px 0 0}
+  summary{font-size:13.5px;font-weight:600;cursor:pointer;margin:0 0 10px}
+  #bulk{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#18181b;color:#fff;
+    border-radius:10px;padding:10px 14px;display:flex;gap:8px;align-items:center;font-size:13px;
+    box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  #bulk button{border:1px solid #3f3f46;background:#27272a;color:#fff;border-radius:6px;padding:4px 12px;
+    font:500 12px/1.4 inherit;font-family:inherit;cursor:pointer}
+  #bulk button:hover{border-color:#fff}
 </style>
 <main>
   <h1>Knockoff report review</h1>
   <p class="sub">Trust/Block ship to every install within its next daily refresh —
   no extension release. Dismiss just clears the brand from the queue.</p>
+  <p class="keys"><b>j</b>/<b>k</b> move · <b>x</b> select (shift-click for a range) ·
+  <b>t</b> trust · <b>b</b> block · <b>d</b> dismiss · <b>o</b> open product · <b>/</b> search</p>
+  <input id="q" type="search" placeholder="Filter brands and titles…">
   <h2>Possible false positives <span class="count">${fp.length}</span></h2>
-  <table>${queueHead}${fp.map(queueRow).join("") || queueEmpty}</table>
+  <table class="queue">${queueHead}${fp.map(queueRow).join("") || queueEmpty}</table>
   <h2>Reported junk <span class="count">${junk.length}</span></h2>
-  <table>${queueHead}${junk.map(queueRow).join("") || queueEmpty}</table>
-  <h2>Curated <span class="count">${curated.length}</span></h2>
+  <table class="queue">${queueHead}${junk.map(queueRow).join("") || queueEmpty}</table>
+  <details><summary>Curated <span class="count">${curated.length}</span></summary>
   <table><tr><th>Brand</th><th>List</th><th>Added</th><th></th></tr>
-  ${curatedRows || `<tr><td colspan="4" class="dim">Nothing curated yet.</td></tr>`}</table>
-  <h2>Recent reports</h2>
+  ${curatedRows || `<tr><td colspan="4" class="dim">Nothing curated yet.</td></tr>`}</table></details>
+  <details><summary>Recent reports</summary>
   <table><tr><th>Brand</th><th>Suggestion</th><th>Verdict at report</th><th>ASIN</th><th>When</th></tr>
-  ${recentRows || empty}</table>
+  ${recentRows || empty}</table></details>
 </main>
+<div id="bulk" hidden><span id="bn"></span>
+  <button data-bulk="known">Trust</button>
+  <button data-bulk="flagged">Block</button>
+  <button data-bulk="dismissed">Dismiss</button>
+  <button data-bulk="clear">Clear</button>
+</div>
 <script>
-  document.addEventListener("click", async (e) => {
-    const b = e.target.closest("button[data-brand]");
-    if (!b) return;
-    b.disabled = true;
-    const token = new URLSearchParams(location.search).get("token");
-    const body = b.dataset.remove
-      ? { brand: b.dataset.brand, remove: true }
-      : { brand: b.dataset.brand, list: b.dataset.list };
+  const token = new URLSearchParams(location.search).get("token");
+  const $ = (s, el) => (el || document).querySelector(s);
+  const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+
+  async function curate(body) {
     const res = await fetch("/curate?token=" + encodeURIComponent(token), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
-    if (!res.ok) { b.disabled = false; return; }
-    // Un-curating re-queues the brand, which needs fresh data; queue decisions
-    // just clear the row in place — a reload per decision makes triage painful.
-    if (b.dataset.remove) { location.reload(); return; }
-    const tr = b.closest("tr");
+    return res.ok;
+  }
+
+  // Visible queue rows, in page order. Everything (cursor, ranges, bulk)
+  // operates on this list so search filtering stays consistent.
+  const rows = () => $$("table.queue tr[data-brand]").filter((r) => !r.hidden);
+  const picked = () => rows().filter((r) => $(".pick", r).checked);
+
+  let cur = -1;
+  function setCur(i) {
+    $$("tr.cursor").forEach((r) => r.classList.remove("cursor"));
+    const rs = rows();
+    if (!rs.length) { cur = -1; return; }
+    cur = Math.max(0, Math.min(i, rs.length - 1));
+    rs[cur].classList.add("cursor");
+    rs[cur].scrollIntoView({ block: "nearest" });
+  }
+
+  function removeRow(tr) {
     const table = tr.closest("table");
     tr.remove();
     const count = table.previousElementSibling.querySelector(".count");
     if (count) count.textContent = Math.max(0, (parseInt(count.textContent, 10) || 1) - 1);
+  }
+
+  function updateBulk() {
+    const n = picked().length;
+    $("#bulk").hidden = !n;
+    $("#bn").textContent = n + " selected";
+  }
+
+  // Decide a set of rows. Rows disappear as each request succeeds; a few
+  // requests run at once so bulk actions on dozens of brands stay quick.
+  async function act(list, trs) {
+    trs.forEach((tr) => tr.classList.add("busy"));
+    const q = trs.slice();
+    await Promise.all(Array.from({ length: 6 }, async () => {
+      while (q.length) {
+        const tr = q.shift();
+        const ok = await curate({ brand: tr.dataset.brand, list });
+        if (ok) removeRow(tr); else tr.classList.remove("busy");
+      }
+    }));
+    setCur(cur);
+    updateBulk();
+  }
+
+  let lastPick = null;
+  document.addEventListener("click", async (e) => {
+    const pick = e.target.closest("input.pick");
+    if (pick) {
+      if (e.shiftKey && lastPick) {
+        const rs = rows();
+        const a = rs.indexOf(pick.closest("tr")), b = rs.indexOf(lastPick.closest("tr"));
+        if (a > -1 && b > -1) rs.slice(Math.min(a, b), Math.max(a, b) + 1)
+          .forEach((r) => { $(".pick", r).checked = pick.checked; });
+      }
+      lastPick = pick;
+      updateBulk();
+      return;
+    }
+    const selall = e.target.closest("input.selall");
+    if (selall) {
+      $$("tr[data-brand]", selall.closest("table")).filter((r) => !r.hidden)
+        .forEach((r) => { $(".pick", r).checked = selall.checked; });
+      updateBulk();
+      return;
+    }
+    const act1 = e.target.closest("button[data-act]");
+    if (act1) { act(act1.dataset.list, [act1.closest("tr")]); return; }
+    const bulk = e.target.closest("button[data-bulk]");
+    if (bulk) {
+      if (bulk.dataset.bulk === "clear") {
+        $$("input.pick:checked").forEach((c) => { c.checked = false; });
+        updateBulk();
+      } else act(bulk.dataset.bulk, picked());
+      return;
+    }
+    // Un-curating re-queues the brand, which needs fresh data — reload is fine
+    // there; queue decisions above clear rows in place instead.
+    const rm = e.target.closest("button[data-remove]");
+    if (rm) {
+      rm.disabled = true;
+      if (await curate({ brand: rm.dataset.brand, remove: true })) location.reload();
+      else rm.disabled = false;
+    }
+  });
+
+  $("#q").addEventListener("input", () => {
+    const q = $("#q").value.trim().toLowerCase();
+    $$("table.queue tr[data-brand]").forEach((tr) => {
+      tr.hidden = !!q && !tr.textContent.toLowerCase().includes(q);
+    });
+    setCur(0);
+    updateBulk();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target.matches("input")) {
+      if (e.key === "Escape") e.target.blur();
+      return;
+    }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if (k === "j" || k === "ArrowDown") { e.preventDefault(); setCur(cur + 1); }
+    else if (k === "k" || k === "ArrowUp") { e.preventDefault(); setCur(cur - 1); }
+    else if (k === "/") { e.preventDefault(); $("#q").focus(); }
+    else if (k === "x") {
+      const r = rows()[cur];
+      if (r) { const c = $(".pick", r); c.checked = !c.checked; lastPick = c; updateBulk(); }
+    } else if (k === "o") {
+      const r = rows()[cur];
+      const a = r && $("td a", r);
+      if (a) window.open(a.href, "_blank");
+    } else if (k === "t" || k === "b" || k === "d") {
+      const list = { t: "known", b: "flagged", d: "dismissed" }[k];
+      const sel = picked();
+      if (sel.length) act(list, sel);
+      else if (rows()[cur]) act(list, [rows()[cur]]);
+    }
   });
 </script>`;
   return new Response(html, {
@@ -326,6 +485,10 @@ async function handleReview(request, env, url) {
     const { results } = await env.DB.prepare(
       "SELECT * FROM brand_tallies ORDER BY total DESC LIMIT 500"
     ).all();
+    return json(results);
+  }
+  if (url.pathname === "/queue") {
+    const { results } = await env.DB.prepare(QUEUE_SQL).all();
     return json(results);
   }
   const days = Math.min(parseInt(url.searchParams.get("days") || "7", 10) || 7, 90);
@@ -358,7 +521,8 @@ export default {
     if (request.method === "POST" && url.pathname === "/curate") {
       return handleCurate(request, env, url);
     }
-    if (request.method === "GET" && (url.pathname === "/reports" || url.pathname === "/tallies")) {
+    if (request.method === "GET" &&
+        (url.pathname === "/reports" || url.pathname === "/tallies" || url.pathname === "/queue")) {
       return handleReview(request, env, url);
     }
     return json({ error: "not found" }, 404);
