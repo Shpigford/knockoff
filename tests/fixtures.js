@@ -36,6 +36,7 @@ var KO_FIXTURES = [
   ["Tough Grip 120-Piece Screwdriver Bit Set", "unbranded"],
   ["Magnetic Bit Holder with Quick Release", "unbranded"],
   ["Cobalt Drill Bit Set - 29Pcs M35 High Speed Steel Twist", "unbranded"],
+  ["Heat Gun, 900W Hot Air Gun with 2 Temp Settings 572 & 1112°F, Overload Protection, 4 Nozzles, 5FT Cord", "unbranded"],
   // Model/spec codes leading the title are parts, not brands — those listings
   // read as unbranded, never suspect/flagged; brand-led equivalents still
   // classify by list.

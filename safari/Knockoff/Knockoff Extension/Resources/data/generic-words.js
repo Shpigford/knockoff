@@ -30,7 +30,7 @@ var KO_GENERIC_WORDS = [
   "gift", "gifts", "girls", "glass", "glasses", "gloves", "glue", "gold",
   "gray", "great", "green", "grey", "grill", "grilling", "grip", "gym", "hair",
   "halloween", "hammer", "hand", "handbag", "handmade", "hanger", "hangers",
-  "hardware", "hat", "hdmi", "headphones", "heater", "heavy", "heavy-duty",
+  "hardware", "hat", "hdmi", "headphones", "heat", "heater", "heavy", "heavy-duty",
   "high", "hiking", "holder", "home", "hoodie", "hook", "hooks", "hub",
   "hunting", "hydraulic", "ice", "imac", "improved", "in", "inch", "inches",
   "indoor", "instant", "ipad", "iphone", "ipod", "jacket", "jewelry", "journal",
