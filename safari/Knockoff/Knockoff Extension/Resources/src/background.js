@@ -2,6 +2,12 @@
 // in-page control panel on Amazon tabs; anywhere else (no content script to
 // answer the message) it opens the settings page instead.
 
+// First install: open the settings page so new users meet the filter controls
+// right away instead of Knockoff staying invisible until they land on Amazon.
+chrome.runtime.onInstalled.addListener(function (details) {
+  if (details.reason === "install") chrome.runtime.openOptionsPage();
+});
+
 chrome.action.onClicked.addListener(function (tab) {
   chrome.tabs.sendMessage(tab.id, { type: "ko-toggle-panel" }, function () {
     if (chrome.runtime.lastError) chrome.runtime.openOptionsPage();

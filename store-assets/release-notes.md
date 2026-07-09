@@ -7,6 +7,20 @@ version heading when you cut a release.
 
 ## Unreleased
 
+## 0.4.0
+
+- New: the control panel now lists every brand it filtered on the current
+  search, each with one-click buttons to allow or block it.
+- New: back up and restore your settings — filter level, allow and block
+  lists, and preferences — as a JSON file from the options page.
+- New: on product pages, Knockoff now warns when the seller's name looks
+  like a trademark-squat pseudo-brand.
+- New: the settings page opens automatically the first time you install
+  Knockoff.
+- Improved: category words you search for are no longer dimmed by the
+  detection heuristics.
+- Fixed: Bibles are no longer flagged on all-departments searches.
+
 ## 0.3.0
 
 - New: media and digital categories (Books, Kindle, Audible, music, movies,
