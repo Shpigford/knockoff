@@ -35,7 +35,9 @@
   var userAllow = new Set();
   var userBlock = new Set();
   var searchAllow = new Set(); // normalized tokens from the current search query
-  var stats = { scanned: 0, filtered: 0, byVerdict: {} };
+  // brands: normalized key → { name, verdict, count } for tiles acted on,
+  // feeding the panel's "Filtered brands" list.
+  var stats = { scanned: 0, filtered: 0, byVerdict: {}, brands: {} };
   var revealed = false; // session-only "show hidden items" toggle
 
   // Lifetime tally shown in the popup. Deduped per ASIN per page load so
@@ -204,6 +206,11 @@
     if (act) {
       stats.filtered++;
       bumpLifetime(tile.getAttribute("data-asin") || result.key || title.slice(0, 40));
+      if (result.brand) {
+        var entry = stats.brands[result.key] ||
+          (stats.brands[result.key] = { name: result.brand, verdict: result.verdict, count: 0 });
+        entry.count++;
+      }
       tile.classList.add("ko-act", "ko-" + settings.action);
       addBadge(tile, result);
     } else if (settings.showKnownBadge || result.verdict === "allowed") {
@@ -576,6 +583,11 @@
     statsRow.appendChild(copy);
     panel.appendChild(statsRow);
 
+    // filtered-brands list (rendered by updatePanelState; hidden when empty)
+    var brandList = el("div", "ko-panel-brands");
+    brandList.id = "ko-panel-brands";
+    panel.appendChild(brandList);
+
     // controls
     var card = el("div", "ko-panel-card");
     var l1 = el("div", "ko-panel-label");
@@ -639,11 +651,68 @@
     updatePanelState();
   }
 
+  // The panel's per-search breakdown: which brands were filtered, how often,
+  // with a one-click way to fix a false positive in place (trust the brand,
+  // or unblock it if the user's own blocklist caught it). Only rebuilt when
+  // its content actually changes — our MutationObserver watches the whole
+  // body, and an unconditional rebuild would re-trigger it forever.
+  function renderPanelBrands(list) {
+    var entries = Object.keys(stats.brands).map(function (k) {
+      return { key: k, name: stats.brands[k].name, verdict: stats.brands[k].verdict,
+               count: stats.brands[k].count };
+    }).sort(function (a, b) { return b.count - a.count || (a.name < b.name ? -1 : 1); });
+
+    var state = entries.map(function (e) { return e.key + ":" + e.count + ":" + e.verdict; }).join("|");
+    if (list.getAttribute("data-ko-state") === state) return;
+    list.setAttribute("data-ko-state", state);
+    list.textContent = "";
+    list.style.display = entries.length ? "" : "none";
+    if (!entries.length) return;
+
+    var heading = el("div", "ko-panel-label");
+    heading.textContent = "Filtered brands";
+    list.appendChild(heading);
+    // Rows scroll; the heading stays pinned above them.
+    var scroll = el("div", "ko-brand-scroll");
+    list.appendChild(scroll);
+    var MAX_ROWS = 8;
+    entries.slice(0, MAX_ROWS).forEach(function (e) {
+      var row = el("div", "ko-brand-row ko-v-" + e.verdict);
+      row.appendChild(el("span", "ko-brand-dot"));
+      var name = el("span", "ko-brand-name");
+      name.textContent = e.name;
+      name.title = e.name;
+      row.appendChild(name);
+      var count = el("span", "ko-brand-count");
+      count.textContent = "×" + e.count;
+      row.appendChild(count);
+      var blocked = userBlock.has(e.key);
+      var fix = document.createElement("button");
+      fix.type = "button";
+      fix.className = "ko-brand-trust";
+      fix.innerHTML = ICONS[blocked ? "ban" : "shield"]; // static markup only
+      fix.title = blocked ? "Unblock " + e.name : "Trust " + e.name;
+      fix.addEventListener("click", function () {
+        if (blocked) setListMembership("block", e.name, false);
+        else setListMembership("allow", e.name, true);
+        // storage.onChanged reloads settings and rescans; the row disappears.
+      });
+      row.appendChild(fix);
+      scroll.appendChild(row);
+    });
+    if (entries.length > MAX_ROWS) {
+      var more = el("div", "ko-brand-more");
+      more.textContent = "+" + (entries.length - MAX_ROWS) + " more";
+      scroll.appendChild(more);
+    }
+  }
+
   // Refresh the panel's numbers and control states from current settings,
   // called after every scan so the count ticks live while scrolling.
   function updatePanelState() {
     var panel = document.getElementById("ko-panel");
     if (!panel) return;
+    renderPanelBrands(document.getElementById("ko-panel-brands"));
     panel.classList.toggle("ko-panel-off", !settings.enabled);
     document.getElementById("ko-panel-enabled").checked = settings.enabled;
     document.getElementById("ko-panel-sponsored").checked = settings.hideSponsored;
@@ -697,7 +766,7 @@
   // scratch, and when an in-page navigation lands on a media category where
   // previously-badged tiles must be released.
   function clearMarks() {
-    stats = { scanned: 0, filtered: 0, byVerdict: {} };
+    stats = { scanned: 0, filtered: 0, byVerdict: {}, brands: {} };
     document.querySelectorAll("[data-ko-verdict]").forEach(function (tile) {
       tile.removeAttribute("data-ko-verdict");
       tile.removeAttribute("data-ko-brand");
