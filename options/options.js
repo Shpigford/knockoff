@@ -93,22 +93,25 @@ refreshBtn.addEventListener("click", function () {
     // "reload" skips the browser's HTTP cache; a force-refresh that serves
     // yesterday's cached response would defeat the point of the button.
     fetch(BRANDS_URL, { cache: "reload" }).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); }),
-    fetch(FLAGGED_URL, { cache: "reload" }).then(function (r) { return r.ok ? r.text() : ""; })
+    // An empty *successful* response is valid; on an error keep the cached
+    // copy (omit the key from the patch) rather than overwrite it with nothing.
+    fetch(FLAGGED_URL, { cache: "reload" }).then(function (r) { return r.ok ? r.text() : null; })
   ])
     .then(function (texts) {
       var brands = texts[0].split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
-      var flagged = texts[1].split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
       if (brands.length <= 1000) return Promise.reject("short list"); // sanity check, same as content.js
       chrome.storage.local.remove(["abfList", "abfFetchedAt"]); // pre-0.3 cache keys
-      return chrome.storage.local.set({
-        communityBrands: brands,
-        remoteFlagged: flagged,
-        communityFetchedAt: Date.now()
-      });
+      var patch = { communityBrands: brands, communityFetchedAt: Date.now() };
+      if (texts[1] !== null) {
+        patch.remoteFlagged = texts[1].split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      }
+      return chrome.storage.local.set(patch);
     })
     .then(renderListStatus)
-    .catch(function () {
-      listStatus.textContent = "Couldn't reach api.knockoff.shopping — try again in a minute.";
+    .catch(function (err) {
+      listStatus.textContent = err === "short list"
+        ? "The server sent back an implausibly short list — kept the current one."
+        : "Couldn't reach api.knockoff.shopping — try again in a minute.";
     })
     .finally(function () { refreshBtn.disabled = false; });
 });
