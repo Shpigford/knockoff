@@ -77,6 +77,11 @@
   .nav-links a:hover { color: var(--ink); background: #f0f0f1; }
   .nav-links a.solid { background: var(--ink); color: #fff; }
   .nav-links a.solid:hover { background: #2d2d31; }
+  /* Phones: drop the secondary links (both live in the footer), keep logo + CTA */
+  @media (max-width: 560px) {
+    .nav-links a:not(.solid) { display: none; }
+    .nav-links a.solid { white-space: nowrap; }
+  }
 
   /* ── Hero ── */
   header { position: relative; overflow: hidden; }
