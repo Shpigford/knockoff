@@ -375,32 +375,11 @@ var Knockoff = (function () {
   // settings: { level, flagChineseMajor }
   // userAllow / userBlock: Sets of normalized keys.
 
-  function classify(title, settings, userAllow, userBlock) {
-    var userKeys = new Set();
-    userAllow.forEach(function (k) { userKeys.add(k); });
-    userBlock.forEach(function (k) { userKeys.add(k); });
-
-    var b = extractBrand(title, userKeys);
-    if (!b) {
-      // Local-script title with no listed pseudo-brand: we can't read it, so
-      // fail open. "foreign" is acted on by no filter level (unlike "unbranded",
-      // which standard would filter — dimming whole pages on .co.jp/.sa/.eg).
-      if (startsWithLocalScript(title)) {
-        return { verdict: "foreign", brand: null, key: null,
-                 reason: "listing isn't in a script Knockoff can read yet" };
-      }
-      return { verdict: "unbranded", brand: null, key: null,
-               reason: "no brand at the front of the listing title" };
-    }
-
-    // A Bible edition (leading version code + a scripture word) is a book, not
-    // a brand-led product — skip it like a media category so the version code
-    // isn't read as a gibberish pseudo-brand. See SCRIPTURE_VERSIONS above.
-    if (isScriptureTitle(title, b.key)) {
-      return { verdict: "media", brand: null, key: null,
-               reason: "Bible edition (a book, not a brand-led product)" };
-    }
-
+  // Given an extracted brand {name, key} plus the surrounding title (only used
+  // for the compatibility-bait signal), run the list checks then the name
+  // heuristics. Shared by classify() (brand read from the title) and
+  // classifyBrand() (brand Amazon handed us in a dedicated element).
+  function verdictFor(b, title, settings, userAllow, userBlock) {
     var r = { brand: b.name, key: b.key };
 
     if (userAllow.has(b.key)) {
@@ -444,6 +423,55 @@ var Knockoff = (function () {
       r.verdict = "unknown"; r.reason = "brand not on any list";
     }
     return r;
+  }
+
+  function classify(title, settings, userAllow, userBlock) {
+    var userKeys = new Set();
+    userAllow.forEach(function (k) { userKeys.add(k); });
+    userBlock.forEach(function (k) { userKeys.add(k); });
+
+    var b = extractBrand(title, userKeys);
+    if (!b) {
+      // Local-script title with no listed pseudo-brand: we can't read it, so
+      // fail open. "foreign" is acted on by no filter level (unlike "unbranded",
+      // which standard would filter — dimming whole pages on .co.jp/.sa/.eg).
+      if (startsWithLocalScript(title)) {
+        return { verdict: "foreign", brand: null, key: null,
+                 reason: "listing isn't in a script Knockoff can read yet" };
+      }
+      return { verdict: "unbranded", brand: null, key: null,
+               reason: "no brand at the front of the listing title" };
+    }
+
+    // A Bible edition (leading version code + a scripture word) is a book, not
+    // a brand-led product — skip it like a media category so the version code
+    // isn't read as a gibberish pseudo-brand. See SCRIPTURE_VERSIONS above.
+    if (isScriptureTitle(title, b.key)) {
+      return { verdict: "media", brand: null, key: null,
+               reason: "Bible edition (a book, not a brand-led product)" };
+    }
+
+    return verdictFor(b, title, settings, userAllow, userBlock);
+  }
+
+  // Classify a brand string Amazon gave us in a dedicated element — a search
+  // tile's brand byline (newer layouts render it in its own row above the
+  // title) or a product-page byline. The whole string IS the brand, so the
+  // title-leading-word guards don't apply and the result is never "unbranded":
+  // a real brand whose name opens with an ordinary word ("Pet Junkie") reads
+  // correctly even after Amazon strips it from the title. Junk names still
+  // score flagged/suspect; an unremarkable unlisted name is "unknown" (passes
+  // at standard, so we err toward not filtering a listing that has a brand).
+  function classifyBrand(brandText, settings, userAllow, userBlock, titleContext) {
+    var name = (brandText || "").trim();
+    var key = normalize(name);
+    // Nothing readable (e.g. a non-Latin byline): fail open like a foreign
+    // title — acted on by no level, and left unbadged on product pages.
+    if (!key) {
+      return { verdict: "foreign", brand: null, key: null,
+               reason: "brand isn't in a script Knockoff can read yet" };
+    }
+    return verdictFor({ name: name, key: key }, titleContext || name, settings, userAllow, userBlock);
   }
 
   // ── Seller names (product pages) ───────────────────────────────────────────
@@ -532,6 +560,7 @@ var Knockoff = (function () {
     extractBrand: extractBrand,
     scoreBrand: scoreBrand,
     classify: classify,
+    classifyBrand: classifyBrand,
     classifySeller: classifySeller,
     shouldAct: shouldAct,
     isMediaAlias: isMediaAlias,
