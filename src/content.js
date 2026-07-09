@@ -34,6 +34,7 @@
   var settings = Object.assign({}, DEFAULTS);
   var userAllow = new Set();
   var userBlock = new Set();
+  var searchAllow = new Set(); // normalized tokens from the current search query
   // brands: normalized key → { name, verdict, count } for tiles acted on,
   // feeding the panel's "Filtered brands" list.
   var stats = { scanned: 0, filtered: 0, byVerdict: {}, brands: {} };
@@ -114,12 +115,14 @@
       if (stale) {
         Promise.all([
           fetch(BRANDS_URL).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); }),
-          // curated blocklist additions; empty response is a valid state
-          fetch(REPORT_ENDPOINT + "/flagged").then(function (r) { return r.ok ? r.text() : ""; })
+          // curated blocklist additions; an empty *successful* response is a
+          // valid state, but on an error keep the cached copy rather than
+          // overwrite it with nothing until the next refresh.
+          fetch(REPORT_ENDPOINT + "/flagged").then(function (r) { return r.ok ? r.text() : null; })
         ])
           .then(function (texts) {
             var brands = parseLines(texts[0]);
-            var flagged = parseLines(texts[1]);
+            var flagged = texts[1] === null ? (c.remoteFlagged || []) : parseLines(texts[1]);
             if (brands.length > 1000) { // sanity check before trusting the fetch
               chrome.storage.local.set({
                 communityBrands: brands,
@@ -186,6 +189,14 @@
 
     var result = Knockoff.classify(title, settings, userAllow, userBlock);
     var act = Knockoff.shouldAct(result.verdict, settings.level);
+
+    // A tile whose extracted brand is exactly a word the shopper searched for
+    // is probably the category noun they asked for. Spare heuristic-only
+    // catches, but keep explicit user/seed blocklists enforced.
+    if (act && result.key && searchAllow.has(result.key) &&
+        (result.verdict === "suspect" || result.verdict === "unknown")) {
+      act = false;
+    }
 
     tile.setAttribute("data-ko-verdict", result.verdict);
     if (result.brand) tile.setAttribute("data-ko-brand", result.brand);
@@ -415,8 +426,13 @@
   // ── Product detail page byline ─────────────────────────────────────────────
 
   function processProductPage() {
+    processPdpByline();
+    processPdpSeller();
+  }
+
+  function processPdpByline() {
     var byline = document.getElementById("bylineInfo");
-    if (!byline || document.querySelector(".ko-pdp-badge")) return;
+    if (!byline || document.querySelector(".ko-pdp-brand")) return;
     var brandName = KnockoffPdp.brandFromByline(byline, location.href);
     if (!brandName) return;
     var result = Knockoff.classify(brandName, settings, userAllow, userBlock);
@@ -427,7 +443,7 @@
 
     var badge = document.createElement("button");
     badge.type = "button";
-    badge.className = "ko-badge ko-pdp-badge ko-v-" + result.verdict;
+    badge.className = "ko-badge ko-pdp-badge ko-pdp-brand ko-v-" + result.verdict;
     badge.innerHTML = ICONS[meta.icon]; // static markup; label added as text node
     var pdpLabel = document.createElement("span");
     pdpLabel.textContent = meta.label;
@@ -440,6 +456,38 @@
     });
     byline.parentElement.style.position = "relative";
     byline.insertAdjacentElement("afterend", badge);
+  }
+
+  // "Sold by" seller check. Warn-only: a chip appears when the seller name
+  // reads like a pseudo-brand (or is listed/blocked); clean or merely
+  // unrecognized sellers get nothing — a warning that fires on every
+  // marketplace seller would just be noise. The chip is informational, not
+  // a menu: user lists are brand-keyed, and quietly feeding seller names
+  // into them from a click would muddy what those lists mean.
+  var SELLER_META = {
+    blocked: { icon: "tagSlash", label: "Seller on your blocklist" },
+    flagged: { icon: "tagSlash", label: "Likely junk seller" }
+  };
+
+  function processPdpSeller() {
+    // #sellerProfileTriggerId is Amazon's marketplace-global id for the
+    // third-party "Sold by" link; absent when Amazon itself is the seller.
+    var el = document.getElementById("sellerProfileTriggerId") ||
+      document.querySelector('#merchant-info a[href*="seller="]');
+    if (!el || document.querySelector(".ko-pdp-seller")) return;
+    var name = (el.textContent || "").trim();
+    if (!name) return;
+    var result = Knockoff.classifySeller(name, userAllow, userBlock);
+    var meta = SELLER_META[result.verdict];
+    if (!meta) return; // known/unknown/allowed: stay quiet
+    var badge = document.createElement("span");
+    badge.className = "ko-badge ko-pdp-badge ko-pdp-seller ko-v-" + result.verdict;
+    badge.innerHTML = ICONS[meta.icon]; // static markup; label added as text node
+    var label = document.createElement("span");
+    label.textContent = meta.label;
+    badge.appendChild(label);
+    badge.title = "Knockoff: " + sentence(result.reason);
+    el.insertAdjacentElement("afterend", badge);
   }
 
   // ── Control panel ──────────────────────────────────────────────────────────
@@ -695,6 +743,22 @@
     return new URLSearchParams(location.search).get("i") || "";
   }
 
+  // The current search query, as a Set of normalized tokens. A title whose
+  // extracted brand IS a word the shopper searched for isn't a pseudo-brand —
+  // it's the category noun ("headboard", "HEADBOARD") they asked for — so
+  // processTile spares it. `k` is the modern query param; `field-keywords` is
+  // the legacy fallback still used on some locales/paths.
+  function pageSearchTokens() {
+    var p = new URLSearchParams(location.search);
+    var q = p.get("k") || p.get("field-keywords") || "";
+    var set = new Set();
+    q.trim().split(/\s+/).forEach(function (w) {
+      var key = Knockoff.normalize(w);
+      if (key) set.add(key);
+    });
+    return set;
+  }
+
   // Wipe all Knockoff marks from the page. Used before re-applying from
   // scratch, and when an in-page navigation lands on a media category where
   // previously-badged tiles must be released.
@@ -728,6 +792,7 @@
         // wipe re-triggers the observer once, then finds nothing and settles.
         if (hasSearchState()) clearMarks();
       } else {
+        searchAllow = pageSearchTokens();
         document.querySelectorAll(TILE_SELECTORS).forEach(processTile);
       }
       // Product pages stay badged regardless: the dropdown can carry a stale

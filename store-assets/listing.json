@@ -14,7 +14,7 @@
     "Keep manifest.json's `description` and the landing page hero in sync with `shared.summary`."
   ],
 
-  "name": "Knockoff — Amazon Brand Filter",
+  "name": "Knockoff - Amazon Brand Filter",
 
   "shared": {
     "summary": "Filters pseudo-brand junk out of Amazon and can hide sponsored listings. Buy from real, established brands.",

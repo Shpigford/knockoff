@@ -348,6 +348,29 @@ var Knockoff = (function () {
     return alias.indexOf("stripbooks") === 0 || MEDIA_ALIASES.has(alias);
   }
 
+  // Bibles are books, but on an all-departments search they slip past the
+  // department media-skip and reach the heuristics — where the translation
+  // code that leads the title (KJV, ESV, NKJV, NIV...) reads as a vowel-starved,
+  // all-caps gibberish brand and gets flagged. A leading version code paired
+  // with a scripture word ("Bible"/"Testament") is usually a book, so we sit
+  // out the same way a media category does. Version-led Bible accessories
+  // ("NIV Bible Tabs", "KJV Bible Cover") still fall through to the heuristics.
+  var SCRIPTURE_VERSIONS = new Set([
+    "kjv", "nkjv", "esv", "niv", "tniv", "nasb", "nlt", "csb", "hcsb",
+    "nrsv", "nrsvue", "rsv", "asv", "amp", "ampc", "msg", "net", "cev",
+    "gnt", "gnb", "ncv", "erv", "web", "ylt", "nabre"
+  ]);
+
+  var SCRIPTURE_MARKER = /\b(bible|testament|scripture|scriptures|gospels?)\b/i;
+  var SCRIPTURE_ACCESSORY_MARKER =
+    /\b(tabs?|covers?|cases?|highlighters?|markers?|pens?|stickers?)\b/i;
+
+  function isScriptureTitle(title, brandKey) {
+    return SCRIPTURE_VERSIONS.has(brandKey) &&
+      SCRIPTURE_MARKER.test(title) &&
+      !SCRIPTURE_ACCESSORY_MARKER.test(title);
+  }
+
   // ── Verdict ────────────────────────────────────────────────────────────────
   // settings: { level, flagChineseMajor }
   // userAllow / userBlock: Sets of normalized keys.
@@ -368,6 +391,14 @@ var Knockoff = (function () {
       }
       return { verdict: "unbranded", brand: null, key: null,
                reason: "no brand at the front of the listing title" };
+    }
+
+    // A Bible edition (leading version code + a scripture word) is a book, not
+    // a brand-led product — skip it like a media category so the version code
+    // isn't read as a gibberish pseudo-brand. See SCRIPTURE_VERSIONS above.
+    if (isScriptureTitle(title, b.key)) {
+      return { verdict: "media", brand: null, key: null,
+               reason: "Bible edition (a book, not a brand-led product)" };
     }
 
     var r = { brand: b.name, key: b.key };
@@ -415,6 +446,71 @@ var Knockoff = (function () {
     return r;
   }
 
+  // ── Seller names (product pages) ───────────────────────────────────────────
+  // The "Sold by" line speaks the same language as pseudo-brand names: junk
+  // sellers are usually "<gibberish> Direct/Official Store/US". Score the
+  // distinctive tokens with the same engine, ignoring commerce boilerplate.
+  // Conservative on purpose (false positives are worse): a known brand
+  // anywhere in the seller name vetoes the heuristics, and only a strong
+  // heuristic hit warns — never nag about clean sellers.
+
+  var SELLER_NOISE = new Set([
+    "co", "ltd", "inc", "llc", "limited", "company", "corp", "gmbh",
+    "store", "shop", "shops", "mall", "outlet", "retail", "market",
+    "direct", "official", "authorized", "flagship", "online", "global",
+    "international", "trading", "trade", "technology", "tech", "group",
+    "industry", "industries", "supply", "supplies", "service", "services",
+    "seller", "sales", "warehouse", "depot", "express", "home", "life",
+    "us", "usa", "uk", "eu", "ca", "de", "fr", "jp", "na", "the", "and"
+  ]);
+
+  function classifySeller(name, userAllow, userBlock) {
+    var key = normalize(name);
+    if (!key) return { verdict: "unknown", name: name, reason: "no readable seller name" };
+    var r = { name: name.trim() };
+    if (userAllow && userAllow.has(key)) {
+      r.verdict = "allowed"; r.reason = "seller is on your allowlist"; return r;
+    }
+    if (userBlock && userBlock.has(key)) {
+      r.verdict = "blocked"; r.reason = "seller is on your blocklist"; return r;
+    }
+    if (idx.flagged.has(key)) {
+      r.verdict = "flagged"; r.reason = "seller name is on the known pseudo-brand list"; return r;
+    }
+    if (idx.known.has(key)) {
+      r.verdict = "known"; r.reason = "storefront of an established brand"; return r;
+    }
+
+    var tokens = name.trim().split(/\s+/);
+    var best = { score: 0, reasons: [] };
+    for (var i = 0; i < tokens.length; i++) {
+      var tkey = normalize(tokens[i]);
+      if (!tkey || SELLER_NOISE.has(tkey) || /^\d+$/.test(tkey)) continue;
+      // Per-token list checks: "SZHLUX Direct" → flagged token; a known-brand
+      // token ("Anker Direct") vetoes, same as the title pipeline.
+      if (idx.flagged.has(tkey) || (userBlock && userBlock.has(tkey))) {
+        r.verdict = "flagged"; r.reason = "seller name contains a listed pseudo-brand"; return r;
+      }
+      if (idx.known.has(tkey) || (userAllow && userAllow.has(tkey))) {
+        r.verdict = "known"; r.reason = "storefront of an established brand"; return r;
+      }
+      var h = scoreBrand(tokens[i]);
+      if (h.score > best.score) best = h;
+    }
+    r.score = best.score;
+    // Flagged-only surface: warn only on a strong hit (several signals at once).
+    // A lone all-caps token scores 3 on its own, but on a seller line that's
+    // usually a normal storefront ("ABC Distributors", "MEGA Deals"), not junk —
+    // so the middling band stays quiet rather than crying wolf on every
+    // marketplace seller. False positives are worse than misses.
+    if (best.score >= 6) {
+      r.verdict = "flagged"; r.reason = "seller name looks like a pseudo-brand: " + best.reasons.join(", ");
+    } else {
+      r.verdict = "unknown"; r.reason = "seller not on any list";
+    }
+    return r;
+  }
+
   // Which verdicts get acted on at each filter level.
   var ACT_ON = {
     relaxed:  { blocked: 1, flagged: 1 },
@@ -436,6 +532,7 @@ var Knockoff = (function () {
     extractBrand: extractBrand,
     scoreBrand: scoreBrand,
     classify: classify,
+    classifySeller: classifySeller,
     shouldAct: shouldAct,
     isMediaAlias: isMediaAlias,
     displayName: displayName,
