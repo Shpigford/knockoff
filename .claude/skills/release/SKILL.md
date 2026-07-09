@@ -1,6 +1,6 @@
 ---
 name: release
-description: Cut a new Knockoff release — bump the version, roll release notes, tag, and ship to the Chrome Web Store, Firefox Add-ons (AMO), and the Mac App Store, reporting per-store status at the end.
+description: Cut a new Knockoff release — bump the version, roll release notes, tag, and ship to the Chrome Web Store, Firefox Add-ons (AMO), and the Mac & iOS App Store, reporting per-store status at the end.
 ---
 
 # Knockoff release
@@ -29,7 +29,10 @@ Run all of these; collect failures instead of stopping at the first one.
    - **Safari:** running on macOS; `.env.asc` exists with `ASC_KEY_ID`,
      `ASC_ISSUER_ID`, and the `.p8` at `ASC_KEY_FILE` (or the default
      `~/.appstoreconnect/AuthKey_<KEY_ID>.p8`); Xcode signed into team
-     `W33JZPPPFN`.
+     `W33JZPPPFN`. Ships macOS **and** iOS/iPadOS: the shared schemes
+     `Knockoff` and `Knockoff iOS` both exist, the ASC app record has the iOS
+     platform enabled, and iOS screenshots (iPhone 6.9" + iPad 13") are
+     uploaded (the preflight can't verify screenshots — eyeball them).
 
 If a store's credentials are missing, do not silently skip it — tell the user
 what's missing and ask whether to release without that store or abort.
@@ -83,13 +86,18 @@ Never skip this step, even for a "trivial" release.
 Start Safari first (it's the ~15-minute leg), then run Chrome and Firefox
 while it archives.
 
-**Safari (macOS, local):**
-1. `./scripts/submit-appstore.rb --preflight` BEFORE archiving — a doomed
-   submission should fail in seconds, not after a 15-minute build.
-2. `./scripts/release-safari.sh` (sync + archive + upload; run in background
-   and monitor). Never auto-retry it on failure — show the output and stop.
-3. `./scripts/submit-appstore.rb --release-type=<MANUAL|AFTER_APPROVAL>` —
-   polls build processing, attaches the build, submits for review. If it fails
+**Safari — macOS + iOS/iPadOS (local):**
+1. Preflight BOTH platforms BEFORE archiving — a doomed submission should fail
+   in seconds, not after a 15-minute build:
+   `./scripts/submit-appstore.rb --platform=MAC_OS --preflight` and
+   `./scripts/submit-appstore.rb --platform=IOS --preflight`.
+2. `./scripts/release-safari.sh` (sync + archive + upload **both** platforms;
+   run in background and monitor). Never auto-retry it on failure — show the
+   output and stop.
+3. Submit each platform (both read the same `.last-build-number`):
+   `./scripts/submit-appstore.rb --platform=MAC_OS --release-type=<MANUAL|AFTER_APPROVAL>`
+   then `./scripts/submit-appstore.rb --platform=IOS --release-type=<…>`. Each
+   polls build processing, attaches the build, submits for review. If one fails
    mid-submission it has already saved the metadata; finish at the App Store
    Connect link it prints.
 
@@ -114,9 +122,10 @@ End with a per-store summary: version, state, and where to check:
   `./scripts/cws-status.sh`
 - Firefox: https://addons.mozilla.org/en-US/developers/addons (auto-publishes
   after validation)
-- Safari: the App Store Connect link printed by `submit-appstore.rb`. With
-  MANUAL release timing, remind the user to click "Release this version"
-  after Apple approves.
+- Safari: the App Store Connect link printed by `submit-appstore.rb` for each
+  platform (macOS and iOS are separate review submissions). With MANUAL release
+  timing, remind the user to click "Release this version" on each after Apple
+  approves.
 
 Note that the stores approve at different speeds — versions briefly diverging
 across stores is normal.

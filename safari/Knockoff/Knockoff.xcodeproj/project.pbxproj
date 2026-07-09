@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A42E8804FF06FE846FCD4F6 /* KnockoffApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E319007C12E67CA73295B9C6 /* KnockoffApp.swift */; };
+		34842FFABF64E4BB13AC7DB0 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EF545245854DFF1B5A995BC2 /* Foundation.framework */; };
+		60B42C181A60389686F1ED2B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411D61CD2B987B0720C459EB /* ContentView.swift */; };
 		6A4716F92FFD45C900AE2564 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4716F82FFD45C900AE2564 /* AppDelegate.swift */; };
 		6A4716FD2FFD45C900AE2564 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 6A4716FB2FFD45C900AE2564 /* Main.html */; };
 		6A4716FF2FFD45C900AE2564 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 6A4716FE2FFD45C900AE2564 /* Icon.png */; };
@@ -22,9 +25,18 @@
 		6A4717292FFD45CA00AE2564 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 6A4717242FFD45CA00AE2564 /* manifest.json */; };
 		6A47172A2FFD45CA00AE2564 /* data in Resources */ = {isa = PBXBuildFile; fileRef = 6A4717252FFD45CA00AE2564 /* data */; };
 		6A47172B2FFD45CA00AE2564 /* src in Resources */ = {isa = PBXBuildFile; fileRef = 6A4717262FFD45CA00AE2564 /* src */; };
+		97E350CDDCAD3D315D87A821 /* Knockoff Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6A4717102FFD45CA00AE2564 /* Knockoff Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CD99E5B28A76E1B30EAEF8BC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6A4717092FFD45CA00AE2564 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		0780290D78FC394B42512109 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6A4716ED2FFD45C900AE2564 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6A47170F2FFD45CA00AE2564;
+			remoteInfo = "Knockoff Extension";
+		};
 		6A4717122FFD45CA00AE2564 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6A4716ED2FFD45C900AE2564 /* Project object */;
@@ -35,6 +47,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		413AC86D27CE39E360EF5C8A /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				97E350CDDCAD3D315D87A821 /* Knockoff Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6A47171D2FFD45CA00AE2564 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -49,6 +72,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		411D61CD2B987B0720C459EB /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		6A4716F52FFD45C900AE2564 /* Knockoff.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Knockoff.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A4716F82FFD45C900AE2564 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		6A4716FC2FFD45C900AE2564 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
@@ -67,9 +91,21 @@
 		6A4717242FFD45CA00AE2564 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
 		6A4717252FFD45CA00AE2564 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; name = data; path = Resources/data; sourceTree = "<group>"; };
 		6A4717262FFD45CA00AE2564 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = Resources/src; sourceTree = "<group>"; };
+		AB4D9B480580D11C458845AA /* Knockoff iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Knockoff iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CAD08178A4A6A3FFA2B9771B /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E319007C12E67CA73295B9C6 /* KnockoffApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KnockoffApp.swift; sourceTree = "<group>"; };
+		EF545245854DFF1B5A995BC2 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		130E2022419052EA784BBD0B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				34842FFABF64E4BB13AC7DB0 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6A4716F22FFD45C900AE2564 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -87,12 +123,30 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0D97DEDF5D6FFED7942A014F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				14D560C6A2827AA0819399BB /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		14D560C6A2827AA0819399BB /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				EF545245854DFF1B5A995BC2 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		6A4716EC2FFD45C900AE2564 = {
 			isa = PBXGroup;
 			children = (
 				6A4716F72FFD45C900AE2564 /* Knockoff */,
 				6A4717142FFD45CA00AE2564 /* Knockoff Extension */,
 				6A4716F62FFD45C900AE2564 /* Products */,
+				0D97DEDF5D6FFED7942A014F /* Frameworks */,
+				7DDDE142873F4C77E4F7FF3D /* Knockoff iOS */,
 			);
 			sourceTree = "<group>";
 		};
@@ -101,6 +155,7 @@
 			children = (
 				6A4716F52FFD45C900AE2564 /* Knockoff.app */,
 				6A4717102FFD45CA00AE2564 /* Knockoff Extension.appex */,
+				AB4D9B480580D11C458845AA /* Knockoff iOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -152,6 +207,17 @@
 			path = "Knockoff Extension";
 			sourceTree = SOURCE_ROOT;
 		};
+		7DDDE142873F4C77E4F7FF3D /* Knockoff iOS */ = {
+			isa = PBXGroup;
+			children = (
+				E319007C12E67CA73295B9C6 /* KnockoffApp.swift */,
+				411D61CD2B987B0720C459EB /* ContentView.swift */,
+				CAD08178A4A6A3FFA2B9771B /* Info.plist */,
+			);
+			name = "Knockoff iOS";
+			path = "Knockoff iOS";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -170,8 +236,6 @@
 				6A4717132FFD45CA00AE2564 /* PBXTargetDependency */,
 			);
 			name = Knockoff;
-			packageProductDependencies = (
-			);
 			productName = Knockoff;
 			productReference = 6A4716F52FFD45C900AE2564 /* Knockoff.app */;
 			productType = "com.apple.product-type.application";
@@ -189,11 +253,28 @@
 			dependencies = (
 			);
 			name = "Knockoff Extension";
-			packageProductDependencies = (
-			);
 			productName = "Knockoff Extension";
 			productReference = 6A4717102FFD45CA00AE2564 /* Knockoff Extension.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		D4F99AA26CD332636B4FF110 /* Knockoff iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CE3739FDEE53814A65FB39EC /* Build configuration list for PBXNativeTarget "Knockoff iOS" */;
+			buildPhases = (
+				8E4B339E50700C978656EE4A /* Sources */,
+				130E2022419052EA784BBD0B /* Frameworks */,
+				03DAF1A48C9E28E819A7598E /* Resources */,
+				413AC86D27CE39E360EF5C8A /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DE7F967D7FF8EF8E68E002FE /* PBXTargetDependency */,
+			);
+			name = "Knockoff iOS";
+			productName = "Knockoff iOS";
+			productReference = AB4D9B480580D11C458845AA /* Knockoff iOS.app */;
+			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
@@ -229,11 +310,20 @@
 			targets = (
 				6A4716F42FFD45C900AE2564 /* Knockoff */,
 				6A47170F2FFD45CA00AE2564 /* Knockoff Extension */,
+				D4F99AA26CD332636B4FF110 /* Knockoff iOS */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		03DAF1A48C9E28E819A7598E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CD99E5B28A76E1B30EAEF8BC /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6A4716F32FFD45C900AE2564 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -279,6 +369,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8E4B339E50700C978656EE4A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A42E8804FF06FE846FCD4F6 /* KnockoffApp.swift in Sources */,
+				60B42C181A60389686F1ED2B /* ContentView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -286,6 +385,12 @@
 			isa = PBXTargetDependency;
 			target = 6A47170F2FFD45CA00AE2564 /* Knockoff Extension */;
 			targetProxy = 6A4717122FFD45CA00AE2564 /* PBXContainerItemProxy */;
+		};
+		DE7F967D7FF8EF8E68E002FE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "Knockoff Extension";
+			target = 6A47170F2FFD45CA00AE2564 /* Knockoff Extension */;
+			targetProxy = 0780290D78FC394B42512109 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -309,6 +414,39 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		53E913FE44811B86FD0715E1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = W33JZPPPFN;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Knockoff iOS/Info.plist";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.4.0;
+				PRODUCT_BUNDLE_IDENTIFIER = shopping.knockoff.Knockoff;
+				PRODUCT_NAME = Knockoff;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		6A4717182FFD45CA00AE2564 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -431,15 +569,16 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = W33JZPPPFN;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				DEVELOPMENT_TEAM = W33JZPPPFN;
+				"ENABLE_APP_SANDBOX[sdk=macosx*]" = YES;
+				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
+				"ENABLE_USER_SELECTED_FILES[sdk=macosx*]" = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Knockoff Extension/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Knockoff Extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -455,10 +594,12 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -466,15 +607,16 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = W33JZPPPFN;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				DEVELOPMENT_TEAM = W33JZPPPFN;
+				"ENABLE_APP_SANDBOX[sdk=macosx*]" = YES;
+				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
+				"ENABLE_USER_SELECTED_FILES[sdk=macosx*]" = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Knockoff Extension/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Knockoff Extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -490,10 +632,12 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -503,9 +647,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = W33JZPPPFN;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = W33JZPPPFN;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
@@ -545,9 +689,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = W33JZPPPFN;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = W33JZPPPFN;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
@@ -581,6 +725,38 @@
 			};
 			name = Release;
 		};
+		D241ADB5E3B57C622C0678E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = W33JZPPPFN;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Knockoff iOS/Info.plist";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.4.0;
+				PRODUCT_BUNDLE_IDENTIFIER = shopping.knockoff.Knockoff;
+				PRODUCT_NAME = Knockoff;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -607,6 +783,15 @@
 			buildConfigurations = (
 				6A47171F2FFD45CA00AE2564 /* Debug */,
 				6A4717202FFD45CA00AE2564 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CE3739FDEE53814A65FB39EC /* Build configuration list for PBXNativeTarget "Knockoff iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53E913FE44811B86FD0715E1 /* Release */,
+				D241ADB5E3B57C622C0678E9 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

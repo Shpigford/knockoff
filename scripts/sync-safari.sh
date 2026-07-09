@@ -12,7 +12,9 @@ RES_DIR="$ROOT_DIR/safari/Knockoff/Knockoff Extension/Resources"
 rsync -a --delete "$ROOT_DIR/src" "$ROOT_DIR/data" "$ROOT_DIR/options" "$ROOT_DIR/icons" "$RES_DIR/"
 cp "$ROOT_DIR/manifest.json" "$RES_DIR/manifest.json"
 
-# Keep the app's marketing version in step with the manifest.
+# Keep the marketing version in step with the manifest. This is a global
+# replace, so it covers every target's MARKETING_VERSION line — the macOS app,
+# the iOS app, and the extension.
 VERSION=$(node -e "console.log(require('$ROOT_DIR/manifest.json').version)")
 sed -i '' "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = $VERSION;/" \
   "$ROOT_DIR/safari/Knockoff/Knockoff.xcodeproj/project.pbxproj"

@@ -151,7 +151,8 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
   top: 34px;
   right: 8px;
   z-index: 60;
-  width: 232px;
+  /* Clamp to the viewport so the popover never overflows a narrow tile. */
+  width: min(232px, calc(100vw - 24px));
   padding: 4px;
   border-radius: 10px;
   background: #fff;
@@ -300,7 +301,8 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
   top: 12px;
   right: 12px;
   z-index: 2147483647;
-  width: 296px;
+  /* Clamp to the viewport so it fits a phone instead of pinning off-edge. */
+  width: min(296px, calc(100vw - 24px));
   padding: 14px;
   border-radius: 14px;
   background: #fff;
@@ -674,4 +676,21 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
 #ko-pill i {
   font-style: normal;
   color: #a1a1aa;
+}
+
+/* ── Touch devices ──────────────────────────────────────────────────────────
+   No :hover, so the dim-reveal (a dimmed listing brightens on hover) never
+   fires. Keep dimmed listings readable enough to judge and tap through,
+   rather than leaving them stuck faded. And lift the count pill clear of
+   Amazon's mobile bottom bar. */
+@media (hover: none) {
+  .ko-act.ko-dim > :not(.ko-badge):not(.ko-menu),
+  .ko-revealed .ko-act.ko-hide > :not(.ko-badge):not(.ko-menu) {
+    opacity: 0.6;
+    filter: grayscale(0.5);
+  }
+
+  #ko-pill {
+    bottom: 72px;
+  }
 }
