@@ -113,6 +113,78 @@ refreshBtn.addEventListener("click", function () {
     .finally(function () { refreshBtn.disabled = false; });
 });
 
+// ── Settings backup ─────────────────────────────────────────────────────────
+// Export/import the sync area as a JSON file. Import validates every field:
+// unknown keys and malformed values are dropped, never written.
+
+var SYNC_DEFAULTS = {
+  enabled: true,
+  action: "dim",
+  level: "standard",
+  hideSponsored: false,
+  flagChineseMajor: false,
+  showKnownBadge: false,
+  allow: [],
+  block: []
+};
+
+function sanitizeSettings(s) {
+  var out = {};
+  if (!s || typeof s !== "object") return out;
+  ["enabled", "hideSponsored", "flagChineseMajor", "showKnownBadge"].forEach(function (k) {
+    if (typeof s[k] === "boolean") out[k] = s[k];
+  });
+  if (["hide", "dim", "label"].indexOf(s.action) >= 0) out.action = s.action;
+  if (["relaxed", "standard", "strict"].indexOf(s.level) >= 0) out.level = s.level;
+  ["allow", "block"].forEach(function (k) {
+    if (Array.isArray(s[k])) {
+      out[k] = s[k].filter(function (b) { return typeof b === "string" && b.trim(); })
+        .map(function (b) { return b.trim(); }).slice(0, 5000);
+    }
+  });
+  return out;
+}
+
+var backupStatus = document.getElementById("backupStatus");
+var importFile = document.getElementById("importFile");
+
+document.getElementById("exportSettings").addEventListener("click", function () {
+  chrome.storage.sync.get(SYNC_DEFAULTS).then(function (s) {
+    var payload = {
+      app: "knockoff",
+      version: chrome.runtime.getManifest().version,
+      exportedAt: new Date().toISOString(),
+      settings: s
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "knockoff-settings.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+});
+
+document.getElementById("importSettings").addEventListener("click", function () {
+  importFile.click();
+});
+
+importFile.addEventListener("change", function () {
+  var file = importFile.files && importFile.files[0];
+  importFile.value = ""; // re-selecting the same file must fire change again
+  if (!file) return;
+  file.text()
+    .then(function (text) {
+      var patch = sanitizeSettings(JSON.parse(text).settings);
+      if (!Object.keys(patch).length) return Promise.reject("empty");
+      return chrome.storage.sync.set(patch);
+    })
+    .then(function () { location.reload(); }) // simplest way to re-fill every control
+    .catch(function () {
+      backupStatus.textContent = "That file doesn't look like a Knockoff settings export.";
+    });
+});
+
 save.addEventListener("click", function () {
   var patch = {
     allow: parseList("allow"),
