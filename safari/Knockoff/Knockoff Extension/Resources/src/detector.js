@@ -348,6 +348,29 @@ var Knockoff = (function () {
     return alias.indexOf("stripbooks") === 0 || MEDIA_ALIASES.has(alias);
   }
 
+  // Bibles are books, but on an all-departments search they slip past the
+  // department media-skip and reach the heuristics — where the translation
+  // code that leads the title (KJV, ESV, NKJV, NIV...) reads as a vowel-starved,
+  // all-caps gibberish brand and gets flagged. A leading version code paired
+  // with a scripture word ("Bible"/"Testament") is usually a book, so we sit
+  // out the same way a media category does. Version-led Bible accessories
+  // ("NIV Bible Tabs", "KJV Bible Cover") still fall through to the heuristics.
+  var SCRIPTURE_VERSIONS = new Set([
+    "kjv", "nkjv", "esv", "niv", "tniv", "nasb", "nlt", "csb", "hcsb",
+    "nrsv", "nrsvue", "rsv", "asv", "amp", "ampc", "msg", "net", "cev",
+    "gnt", "gnb", "ncv", "erv", "web", "ylt", "nabre"
+  ]);
+
+  var SCRIPTURE_MARKER = /\b(bible|testament|scripture|scriptures|gospels?)\b/i;
+  var SCRIPTURE_ACCESSORY_MARKER =
+    /\b(tabs?|covers?|cases?|highlighters?|markers?|pens?|stickers?)\b/i;
+
+  function isScriptureTitle(title, brandKey) {
+    return SCRIPTURE_VERSIONS.has(brandKey) &&
+      SCRIPTURE_MARKER.test(title) &&
+      !SCRIPTURE_ACCESSORY_MARKER.test(title);
+  }
+
   // ── Verdict ────────────────────────────────────────────────────────────────
   // settings: { level, flagChineseMajor }
   // userAllow / userBlock: Sets of normalized keys.
@@ -368,6 +391,14 @@ var Knockoff = (function () {
       }
       return { verdict: "unbranded", brand: null, key: null,
                reason: "no brand at the front of the listing title" };
+    }
+
+    // A Bible edition (leading version code + a scripture word) is a book, not
+    // a brand-led product — skip it like a media category so the version code
+    // isn't read as a gibberish pseudo-brand. See SCRIPTURE_VERSIONS above.
+    if (isScriptureTitle(title, b.key)) {
+      return { verdict: "media", brand: null, key: null,
+               reason: "Bible edition (a book, not a brand-led product)" };
     }
 
     var r = { brand: b.name, key: b.key };
