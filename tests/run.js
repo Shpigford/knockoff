@@ -49,6 +49,37 @@ for (const [title, expected] of fixtures) {
     r.brand ? `brand "${r.brand}", ${r.reason}` : r.reason);
 }
 
+// Authoritative-brand classification: a brand string Amazon hands us in a
+// dedicated element — a search tile's brand byline (rendered above the title on
+// newer layouts) or a product-page byline. The whole string is the brand, so
+// it's never "unbranded" and the title-leading-word guards don't apply: a real
+// brand opening with an ordinary word reads correctly, while junk names still
+// score. This is what saves listings whose brand Amazon has stripped from the
+// title (issue: "Pet Junkie" byline read as "No brand").
+const brandFixtures = [
+  ["Pet Junkie", "unknown"],   // real US brand; "Pet" is generic but this isn't the title
+  ["Klein Tools", "known"],    // multi-word listed brand
+  ["DEWALT", "known"],
+  ["Anker", "known"],          // Chinese-major → known by default
+  ["HORUSDY", "flagged"],      // seed blocklist
+  ["SZHLUX", "flagged"],       // heuristic: consonant run, almost no vowels
+  ["ソニー", "foreign"],        // non-Latin byline: unreadable, fail open
+  ["", "foreign"]              // empty byline: fail open, no badge
+];
+for (const [name, expected] of brandFixtures) {
+  const r = Knockoff.classifyBrand(name, settings, none, none);
+  check(`brand "${name}"`, r.verdict, expected, r.reason);
+}
+
+const bylineCompat = Knockoff.classifyBrand(
+  "Teeind",
+  settings,
+  none,
+  none,
+  "USB Type C Cable Fast Charging, C Charger Cables Compatible with Samsung S10e/note 9/s10/s9/s8 Plus"
+);
+check("brand byline with compatibility-bait title", bylineCompat.verdict, "suspect", bylineCompat.reason);
+
 // Media-category aliases: creator-titled/digital departments the content
 // script skips entirely (book/album/movie titles aren't brand-led).
 const mediaAliases = [

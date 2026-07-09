@@ -165,7 +165,13 @@
   function tileTitle(tile) {
     // textContent, not aria-label: sponsored tiles prefix their aria-label
     // with a localized "Sponsored Ad – ..." which would be read as the brand.
-    var h2 = tile.querySelector("h2");
+    // The title is the line inside the product link (its <h2> carries
+    // a-text-normal), so prefer it: brand-byline layouts add a second, smaller
+    // <h2> for the brand that precedes the title in the DOM, and a plain
+    // "first h2" lookup would return the brand instead of the title.
+    var h2 = tile.querySelector("h2.a-text-normal") ||
+             tile.querySelector("a.a-link-normal h2") ||
+             tile.querySelector("h2");
     var text = h2
       ? h2.textContent || h2.getAttribute("aria-label") || ""
       : (tile.querySelector("a.a-text-normal") || {}).textContent || "";
@@ -173,7 +179,8 @@
   }
 
   // Some layouts render the brand in its own row above the title. When that
-  // row exists it is authoritative, so prepend it so extraction sees it first.
+  // row exists it is authoritative: Amazon has been stripping the brand out of
+  // the title itself, so this is the only place the brand survives.
   function tileBrandRow(tile) {
     var el = tile.querySelector(
       '[data-cy="title-recipe"] .a-size-base-plus.a-color-base:not(a *), h2 + .a-row .a-size-base-plus'
@@ -184,10 +191,17 @@
 
   function processTile(tile) {
     if (tile.hasAttribute("data-ko-verdict")) return;
-    var title = (tileBrandRow(tile) + " " + tileTitle(tile)).trim();
-    if (!title) return;
+    // A dedicated brand byline is authoritative — classify it as the brand
+    // directly, so a real brand whose name opens with an ordinary word
+    // ("Pet Junkie") isn't misread as unbranded once Amazon strips it from the
+    // title. No byline row: read the brand from the front of the title.
+    var brandRow = tileBrandRow(tile);
+    var title = tileTitle(tile);
+    if (!brandRow && !title.trim()) return;
 
-    var result = Knockoff.classify(title, settings, userAllow, userBlock);
+    var result = brandRow
+      ? Knockoff.classifyBrand(brandRow, settings, userAllow, userBlock, title)
+      : Knockoff.classify(title, settings, userAllow, userBlock);
     var act = Knockoff.shouldAct(result.verdict, settings.level);
 
     // A tile whose extracted brand is exactly a word the shopper searched for
@@ -435,7 +449,9 @@
     if (!byline || document.querySelector(".ko-pdp-brand")) return;
     var brandName = KnockoffPdp.brandFromByline(byline, location.href);
     if (!brandName) return;
-    var result = Knockoff.classify(brandName, settings, userAllow, userBlock);
+    // The byline text IS the brand, so classify it authoritatively (never
+    // "unbranded") — same as the search-tile brand row.
+    var result = Knockoff.classifyBrand(brandName, settings, userAllow, userBlock);
     // On the product page, always label, never hide the page out from under
     // the user, and include known/unknown verdicts for context.
     var meta = VERDICT_META[result.verdict];
