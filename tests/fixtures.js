@@ -87,6 +87,19 @@ var KO_FIXTURES = [
   ["3M スコッチ テープ", "known"],
   ["Anker モバイルバッテリー 10000mAh", "known"],
   ["HORUSDY ドライバー セット 45本", "flagged"],
+  // Bibles reach the heuristics on an all-departments search (the book media-
+  // skip is department-scoped), where the leading translation code reads as a
+  // gibberish brand. A version code + a scripture word is a book, so it's
+  // treated like a media category ("media") and never acted on.
+  ["ESV Economy Bible (Paperback): Holy Bible, English Standard Version", "media"],
+  ["KJV Holy Bible: Gift and Award, Black Leather-Look, Red Letter", "media"],
+  ["NKJV, Thinline Bible, Leathersoft, Brown, Red Letter, Comfort Print", "media"],
+  ["NIV Study Bible, Fully Revised Edition, Hardcover", "media"],
+  ["NASB New Testament with Psalms and Proverbs, Paperback", "media"],
+  // Bible accessories stay catchable, including version-led titles.
+  ["MOKINGTOP Bible Cover Case for Women, Large Leather", "suspect"],
+  ["NIV Bible Tabs, Laminated Bible Index Tabs for Women", "suspect"],
+  ["KJV Bible Cover Case for Women, Large Leather", "flagged"],
   // A listed pseudo-brand is still caught behind a CJK promo prefix, and a
   // Cyrillic homoglyph on a Latin word is scored, not skipped.
   ["【最新版】HORUSDY ドライバーセット", "flagged"],
