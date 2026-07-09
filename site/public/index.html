@@ -171,6 +171,25 @@
   .pill svg { width: 12px; height: 12px; color: #a1a1aa; }
   .demo-caption { text-align: center; font-size: 13.5px; color: var(--ink-3); margin-top: 14px; }
 
+  /* ── As featured in ── */
+  .press { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 44px 0; text-align: center; }
+  .press-label {
+    display: block; font: 650 12px/1 var(--display);
+    letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 30px;
+  }
+  .press-logos { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 28px 44px; }
+  .press-logos a { display: inline-flex; align-items: center; }
+  .press-logos img {
+    height: 34px; width: auto; display: block;
+    filter: grayscale(1); opacity: .58;
+    transition: filter .14s ease, opacity .14s ease;
+  }
+  .press-logos a:hover img { filter: none; opacity: 1; }
+  @media (max-width: 860px) {
+    .press-logos { justify-content: center; gap: 22px 32px; }
+    .press-logos img { height: 24px; }
+  }
+
   /* ── Sections ── */
   section { padding: 72px 0; }
   .kicker {
@@ -324,6 +343,19 @@
     <p class="demo-caption">Junk gets flagged, dimmed, or hidden. Your call. Real brands pass untouched.</p>
   </div>
 </header>
+
+<div class="wrap">
+  <div class="press">
+    <span class="press-label">As featured in</span>
+    <div class="press-logos">
+      <a href="https://www.fastcompany.com/91570721/amazon-shopping-slop-viral-new-tool-filters-out-knockoff-brands" aria-label="Fast Company"><img src="/press/fast-company.svg" alt="Fast Company" width="155" height="22"></a>
+      <a href="https://gizmodo.com/new-browser-extension-helps-you-dodge-amazons-sea-of-knock-off-products-2000783054" aria-label="Gizmodo"><img src="/press/gizmodo.svg" alt="Gizmodo" width="114" height="22"></a>
+      <a href="https://www.404media.co/knockoff-browser-extension-hides-sketchy-brands-on-amazon/" aria-label="404 Media"><img src="/press/404-media.svg" alt="404 Media" width="69" height="22"></a>
+      <a href="https://www.pcgamer.com/hardware/this-chrome-extension-hides-knockoff-brands-on-amazon-sorry-to-brands-like-wnpethome-eheyciga-yxy/" aria-label="PC Gamer"><img src="/press/pc-gamer.svg" alt="PC Gamer" width="116" height="22"></a>
+      <a href="https://tech.yahoo.com/apps/articles/chrome-extension-removes-unknown-brands-162002361.html" aria-label="Yahoo"><img src="/press/yahoo.svg" alt="Yahoo" width="79" height="22"></a>
+    </div>
+  </div>
+</div>
 
 <section>
   <div class="wrap">

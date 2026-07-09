@@ -37,6 +37,16 @@ The Xcode project carries its own copy of the extension files; after
 editing the extension, run [`scripts/sync-safari.sh`](scripts/sync-safari.sh)
 to update it before rebuilding.
 
+## Press
+
+Some of the coverage since launch:
+
+- [Fast Company](https://www.fastcompany.com/91570721/amazon-shopping-slop-viral-new-tool-filters-out-knockoff-brands)
+- [Gizmodo](https://gizmodo.com/new-browser-extension-helps-you-dodge-amazons-sea-of-knock-off-products-2000783054)
+- [404 Media](https://www.404media.co/knockoff-browser-extension-hides-sketchy-brands-on-amazon/)
+- [PC Gamer](https://www.pcgamer.com/hardware/this-chrome-extension-hides-knockoff-brands-on-amazon-sorry-to-brands-like-wnpethome-eheyciga-yxy/)
+- [Yahoo](https://tech.yahoo.com/apps/articles/chrome-extension-removes-unknown-brands-162002361.html)
+
 ## How it works
 
 Everything runs locally in a content script. No accounts, no tracking, no
