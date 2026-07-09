@@ -58,7 +58,10 @@ function parseList(id) {
     .map(function (line) { return line.trim(); })
     .filter(function (line) {
       if (!line) return false;
-      var key = line.toLowerCase().replace(/[^a-z0-9]/g, "");
+      // Same normalization as Knockoff.normalize (detector.js): fold
+      // diacritics first so "Müller" and "Muller" dedupe onto one key.
+      var key = line.toLowerCase().normalize("NFD").replace(/\p{Mn}/gu, "")
+        .replace(/[^a-z0-9]/g, "");
       if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
