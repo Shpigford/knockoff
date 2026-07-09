@@ -107,6 +107,17 @@
       <textarea id="block" rows="8" spellcheck="false" placeholder="AmazonBasics"></textarea>
     </section>
 
+    <section>
+      <h2>Backup</h2>
+      <p class="hint">Your settings and lists as a JSON file — import it on another browser or after a reinstall. Importing overwrites the saved settings.</p>
+      <p class="listmeta">
+        <button id="exportSettings" class="ghost">Export settings…</button>
+        <button id="importSettings" class="ghost">Import settings…</button>
+        <input id="importFile" type="file" accept=".json,application/json" hidden>
+        <span id="backupStatus"></span>
+      </p>
+    </section>
+
     <div class="actions">
       <button id="save" class="primary" disabled>Save changes</button>
       <span id="saved" class="saved" hidden>
