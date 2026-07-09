@@ -34,6 +34,7 @@
   var settings = Object.assign({}, DEFAULTS);
   var userAllow = new Set();
   var userBlock = new Set();
+  var searchAllow = new Set(); // normalized tokens from the current search query
   var stats = { scanned: 0, filtered: 0, byVerdict: {} };
   var revealed = false; // session-only "show hidden items" toggle
 
@@ -184,6 +185,14 @@
 
     var result = Knockoff.classify(title, settings, userAllow, userBlock);
     var act = Knockoff.shouldAct(result.verdict, settings.level);
+
+    // A tile whose extracted brand is exactly a word the shopper searched for
+    // is probably the category noun they asked for. Spare heuristic-only
+    // catches, but keep explicit user/seed blocklists enforced.
+    if (act && result.key && searchAllow.has(result.key) &&
+        (result.verdict === "suspect" || result.verdict === "unknown")) {
+      act = false;
+    }
 
     tile.setAttribute("data-ko-verdict", result.verdict);
     if (result.brand) tile.setAttribute("data-ko-brand", result.brand);
@@ -629,6 +638,22 @@
     return new URLSearchParams(location.search).get("i") || "";
   }
 
+  // The current search query, as a Set of normalized tokens. A title whose
+  // extracted brand IS a word the shopper searched for isn't a pseudo-brand —
+  // it's the category noun ("headboard", "HEADBOARD") they asked for — so
+  // processTile spares it. `k` is the modern query param; `field-keywords` is
+  // the legacy fallback still used on some locales/paths.
+  function pageSearchTokens() {
+    var p = new URLSearchParams(location.search);
+    var q = p.get("k") || p.get("field-keywords") || "";
+    var set = new Set();
+    q.trim().split(/\s+/).forEach(function (w) {
+      var key = Knockoff.normalize(w);
+      if (key) set.add(key);
+    });
+    return set;
+  }
+
   // Wipe all Knockoff marks from the page. Used before re-applying from
   // scratch, and when an in-page navigation lands on a media category where
   // previously-badged tiles must be released.
@@ -662,6 +687,7 @@
         // wipe re-triggers the observer once, then finds nothing and settles.
         if (hasSearchState()) clearMarks();
       } else {
+        searchAllow = pageSearchTokens();
         document.querySelectorAll(TILE_SELECTORS).forEach(processTile);
       }
       // Product pages stay badged regardless: the dropdown can carry a stale
