@@ -415,6 +415,68 @@ var Knockoff = (function () {
     return r;
   }
 
+  // ── Seller names (product pages) ───────────────────────────────────────────
+  // The "Sold by" line speaks the same language as pseudo-brand names: junk
+  // sellers are usually "<gibberish> Direct/Official Store/US". Score the
+  // distinctive tokens with the same engine, ignoring commerce boilerplate.
+  // Conservative on purpose (false positives are worse): a known brand
+  // anywhere in the seller name vetoes the heuristics, and callers should
+  // only surface suspect/flagged/blocked — never nag about clean sellers.
+
+  var SELLER_NOISE = new Set([
+    "co", "ltd", "inc", "llc", "limited", "company", "corp", "gmbh",
+    "store", "shop", "shops", "mall", "outlet", "retail", "market",
+    "direct", "official", "authorized", "flagship", "online", "global",
+    "international", "trading", "trade", "technology", "tech", "group",
+    "industry", "industries", "supply", "supplies", "service", "services",
+    "seller", "sales", "warehouse", "depot", "express", "home", "life",
+    "us", "usa", "uk", "eu", "ca", "de", "fr", "jp", "na", "the", "and"
+  ]);
+
+  function classifySeller(name, userAllow, userBlock) {
+    var key = normalize(name);
+    if (!key) return { verdict: "unknown", name: name, reason: "no readable seller name" };
+    var r = { name: name.trim() };
+    if (userAllow && userAllow.has(key)) {
+      r.verdict = "allowed"; r.reason = "seller is on your allowlist"; return r;
+    }
+    if (userBlock && userBlock.has(key)) {
+      r.verdict = "blocked"; r.reason = "seller is on your blocklist"; return r;
+    }
+    if (idx.flagged.has(key)) {
+      r.verdict = "flagged"; r.reason = "seller name is on the known pseudo-brand list"; return r;
+    }
+    if (idx.known.has(key)) {
+      r.verdict = "known"; r.reason = "storefront of an established brand"; return r;
+    }
+
+    var tokens = name.trim().split(/\s+/);
+    var best = { score: 0, reasons: [] };
+    for (var i = 0; i < tokens.length; i++) {
+      var tkey = normalize(tokens[i]);
+      if (!tkey || SELLER_NOISE.has(tkey) || /^\d+$/.test(tkey)) continue;
+      // Per-token list checks: "SZHLUX Direct" → flagged token; a known-brand
+      // token ("Anker Direct") vetoes, same as the title pipeline.
+      if (idx.flagged.has(tkey) || (userBlock && userBlock.has(tkey))) {
+        r.verdict = "flagged"; r.reason = "seller name contains a listed pseudo-brand"; return r;
+      }
+      if (idx.known.has(tkey) || (userAllow && userAllow.has(tkey))) {
+        r.verdict = "known"; r.reason = "storefront of an established brand"; return r;
+      }
+      var h = scoreBrand(tokens[i]);
+      if (h.score > best.score) best = h;
+    }
+    r.score = best.score;
+    if (best.score >= 6) {
+      r.verdict = "flagged"; r.reason = "seller name looks like a pseudo-brand: " + best.reasons.join(", ");
+    } else if (best.score >= 3) {
+      r.verdict = "suspect"; r.reason = "unrecognized seller: " + best.reasons.join(", ");
+    } else {
+      r.verdict = "unknown"; r.reason = "seller not on any list";
+    }
+    return r;
+  }
+
   // Which verdicts get acted on at each filter level.
   var ACT_ON = {
     relaxed:  { blocked: 1, flagged: 1 },
@@ -436,6 +498,7 @@ var Knockoff = (function () {
     extractBrand: extractBrand,
     scoreBrand: scoreBrand,
     classify: classify,
+    classifySeller: classifySeller,
     shouldAct: shouldAct,
     isMediaAlias: isMediaAlias,
     displayName: displayName,

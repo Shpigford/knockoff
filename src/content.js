@@ -408,8 +408,13 @@
   // ── Product detail page byline ─────────────────────────────────────────────
 
   function processProductPage() {
+    processPdpByline();
+    processPdpSeller();
+  }
+
+  function processPdpByline() {
     var byline = document.getElementById("bylineInfo");
-    if (!byline || document.querySelector(".ko-pdp-badge")) return;
+    if (!byline || document.querySelector(".ko-pdp-brand")) return;
     var brandName = KnockoffPdp.brandFromByline(byline, location.href);
     if (!brandName) return;
     var result = Knockoff.classify(brandName, settings, userAllow, userBlock);
@@ -420,7 +425,7 @@
 
     var badge = document.createElement("button");
     badge.type = "button";
-    badge.className = "ko-badge ko-pdp-badge ko-v-" + result.verdict;
+    badge.className = "ko-badge ko-pdp-badge ko-pdp-brand ko-v-" + result.verdict;
     badge.innerHTML = ICONS[meta.icon]; // static markup; label added as text node
     var pdpLabel = document.createElement("span");
     pdpLabel.textContent = meta.label;
@@ -433,6 +438,39 @@
     });
     byline.parentElement.style.position = "relative";
     byline.insertAdjacentElement("afterend", badge);
+  }
+
+  // "Sold by" seller check. Warn-only: a chip appears when the seller name
+  // reads like a pseudo-brand (or is listed/blocked); clean or merely
+  // unrecognized sellers get nothing — a warning that fires on every
+  // marketplace seller would just be noise. The chip is informational, not
+  // a menu: user lists are brand-keyed, and quietly feeding seller names
+  // into them from a click would muddy what those lists mean.
+  var SELLER_META = {
+    blocked: { icon: "tagSlash", label: "Seller on your blocklist" },
+    flagged: { icon: "tagSlash", label: "Likely junk seller" },
+    suspect: { icon: "alert",    label: "Suspect seller" }
+  };
+
+  function processPdpSeller() {
+    // #sellerProfileTriggerId is Amazon's marketplace-global id for the
+    // third-party "Sold by" link; absent when Amazon itself is the seller.
+    var el = document.getElementById("sellerProfileTriggerId") ||
+      document.querySelector('#merchant-info a[href*="seller="]');
+    if (!el || document.querySelector(".ko-pdp-seller")) return;
+    var name = (el.textContent || "").trim();
+    if (!name) return;
+    var result = Knockoff.classifySeller(name, userAllow, userBlock);
+    var meta = SELLER_META[result.verdict];
+    if (!meta) return; // known/unknown/allowed: stay quiet
+    var badge = document.createElement("span");
+    badge.className = "ko-badge ko-pdp-badge ko-pdp-seller ko-v-" + result.verdict;
+    badge.innerHTML = ICONS[meta.icon]; // static markup; label added as text node
+    var label = document.createElement("span");
+    label.textContent = meta.label;
+    badge.appendChild(label);
+    badge.title = "Knockoff: " + sentence(result.reason);
+    el.insertAdjacentElement("afterend", badge);
   }
 
   // ── Control panel ──────────────────────────────────────────────────────────

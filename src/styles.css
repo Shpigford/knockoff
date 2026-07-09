@@ -139,6 +139,11 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
   font-size: 12px;
 }
 
+/* Seller chip is informational only: no menu behind it, so no pointer */
+.ko-pdp-seller {
+  cursor: default;
+}
+
 /* ── Popover menu ───────────────────────────────────────────────────────── */
 
 .ko-menu {
