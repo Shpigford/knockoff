@@ -22,30 +22,37 @@ function updateLevelHint() {
   document.getElementById("levelHint").textContent = LEVEL_HINTS[segValue("level")] || "";
 }
 
-chrome.storage.sync
-  .get({
-    enabled: true,
-    action: "dim",
-    level: "standard",
-    hideSponsored: false,
-    flagChineseMajor: false,
-    showKnownBadge: false,
-    allow: [],
-    block: []
-  })
-  .then(function (s) {
-    FIELDS.forEach(function (f) {
-      document.getElementById(f).checked = s[f];
-    });
-    SEGS.forEach(function (name) {
-      var input = document.querySelector('input[name="' + name + '"][value="' + s[name] + '"]');
-      if (input) input.checked = true;
-    });
-    updateLevelHint();
-    document.getElementById("allow").value = s.allow.join("\n");
-    document.getElementById("block").value = s.block.join("\n");
-    save.disabled = false;
+// Defaults for the sync area, shared by the initial load and the backup export.
+var SYNC_DEFAULTS = {
+  enabled: true,
+  action: "dim",
+  level: "standard",
+  hideSponsored: false,
+  flagChineseMajor: false,
+  showKnownBadge: false,
+  allow: [],
+  block: []
+};
+
+// Reflect a stored settings object into every control. Used on load and after
+// a successful import.
+function fillForm(s) {
+  FIELDS.forEach(function (f) {
+    document.getElementById(f).checked = s[f];
   });
+  SEGS.forEach(function (name) {
+    var input = document.querySelector('input[name="' + name + '"][value="' + s[name] + '"]');
+    if (input) input.checked = true;
+  });
+  updateLevelHint();
+  document.getElementById("allow").value = s.allow.join("\n");
+  document.getElementById("block").value = s.block.join("\n");
+}
+
+chrome.storage.sync.get(SYNC_DEFAULTS).then(function (s) {
+  fillForm(s);
+  save.disabled = false;
+});
 
 document.querySelectorAll('input[name="level"]').forEach(function (input) {
   input.addEventListener("change", updateLevelHint);
@@ -117,17 +124,6 @@ refreshBtn.addEventListener("click", function () {
 // Export/import the sync area as a JSON file. Import validates every field:
 // unknown keys and malformed values are dropped, never written.
 
-var SYNC_DEFAULTS = {
-  enabled: true,
-  action: "dim",
-  level: "standard",
-  hideSponsored: false,
-  flagChineseMajor: false,
-  showKnownBadge: false,
-  allow: [],
-  block: []
-};
-
 function sanitizeSettings(s) {
   var out = {};
   if (!s || typeof s !== "object") return out;
@@ -173,14 +169,25 @@ importFile.addEventListener("change", function () {
   var file = importFile.files && importFile.files[0];
   importFile.value = ""; // re-selecting the same file must fire change again
   if (!file) return;
+  backupStatus.textContent = "";
   file.text()
     .then(function (text) {
       var patch = sanitizeSettings(JSON.parse(text).settings);
       if (!Object.keys(patch).length) return Promise.reject("empty");
-      return chrome.storage.sync.set(patch);
+      // Import replaces the current lists wholesale, so confirm before clobbering
+      // brands the user may have spent real time curating.
+      if (!window.confirm("Replace your current Knockoff settings and lists with this file?")) {
+        return Promise.reject("cancel");
+      }
+      return chrome.storage.sync.set(patch)
+        .then(function () { return chrome.storage.sync.get(SYNC_DEFAULTS); });
     })
-    .then(function () { location.reload(); }) // simplest way to re-fill every control
-    .catch(function () {
+    .then(function (s) {
+      fillForm(s);
+      backupStatus.textContent = "Settings imported.";
+    })
+    .catch(function (err) {
+      if (err === "cancel") return;
       backupStatus.textContent = "That file doesn't look like a Knockoff settings export.";
     });
 });
