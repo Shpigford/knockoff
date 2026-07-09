@@ -112,12 +112,14 @@
       if (stale) {
         Promise.all([
           fetch(BRANDS_URL).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); }),
-          // curated blocklist additions; empty response is a valid state
-          fetch(REPORT_ENDPOINT + "/flagged").then(function (r) { return r.ok ? r.text() : ""; })
+          // curated blocklist additions; an empty *successful* response is a
+          // valid state, but on an error keep the cached copy rather than
+          // overwrite it with nothing until the next refresh.
+          fetch(REPORT_ENDPOINT + "/flagged").then(function (r) { return r.ok ? r.text() : null; })
         ])
           .then(function (texts) {
             var brands = parseLines(texts[0]);
-            var flagged = parseLines(texts[1]);
+            var flagged = texts[1] === null ? (c.remoteFlagged || []) : parseLines(texts[1]);
             if (brands.length > 1000) { // sanity check before trusting the fetch
               chrome.storage.local.set({
                 communityBrands: brands,
