@@ -90,9 +90,9 @@ for (const [name, text, href, expected] of pdpFixtures) {
 }
 
 // Seller-name classification ("Sold by" on product pages). Warn-only surface:
-// the content script only badges suspect/flagged/blocked, so `unknown` here
-// means "stay quiet". Commerce boilerplate (Direct, Official Store, US...)
-// must never count as evidence, and a known brand anywhere vetoes.
+// the content script only badges flagged/blocked, so `unknown` here means
+// "stay quiet". Commerce boilerplate (Direct, Official Store, US...) must
+// never count as evidence, and a known brand anywhere vetoes.
 const sellerFixtures = [
   ["SZHLUX Direct", "flagged"],            // heuristic through the noise word
   ["HORUSDY", "flagged"],                  // seed blocklist
@@ -101,6 +101,7 @@ const sellerFixtures = [
   ["Apple", "known"],
   ["The Home Depot", "unknown"],           // boilerplate-only: quiet
   ["Greenfield Trading Co", "unknown"],    // plain English name: quiet
+  ["ABC Distributors", "unknown"],         // lone all-caps token (score 3): below the warn bar, quiet
   ["Johnson Smith Company", "known"],      // surname is a listed brand (Smith): veto wins, also quiet
 ];
 for (const [name, expected] of sellerFixtures) {

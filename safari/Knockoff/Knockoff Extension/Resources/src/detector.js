@@ -420,8 +420,8 @@ var Knockoff = (function () {
   // sellers are usually "<gibberish> Direct/Official Store/US". Score the
   // distinctive tokens with the same engine, ignoring commerce boilerplate.
   // Conservative on purpose (false positives are worse): a known brand
-  // anywhere in the seller name vetoes the heuristics, and callers should
-  // only surface suspect/flagged/blocked — never nag about clean sellers.
+  // anywhere in the seller name vetoes the heuristics, and only a strong
+  // heuristic hit warns — never nag about clean sellers.
 
   var SELLER_NOISE = new Set([
     "co", "ltd", "inc", "llc", "limited", "company", "corp", "gmbh",
@@ -467,10 +467,13 @@ var Knockoff = (function () {
       if (h.score > best.score) best = h;
     }
     r.score = best.score;
+    // Flagged-only surface: warn only on a strong hit (several signals at once).
+    // A lone all-caps token scores 3 on its own, but on a seller line that's
+    // usually a normal storefront ("ABC Distributors", "MEGA Deals"), not junk —
+    // so the middling band stays quiet rather than crying wolf on every
+    // marketplace seller. False positives are worse than misses.
     if (best.score >= 6) {
       r.verdict = "flagged"; r.reason = "seller name looks like a pseudo-brand: " + best.reasons.join(", ");
-    } else if (best.score >= 3) {
-      r.verdict = "suspect"; r.reason = "unrecognized seller: " + best.reasons.join(", ");
     } else {
       r.verdict = "unknown"; r.reason = "seller not on any list";
     }

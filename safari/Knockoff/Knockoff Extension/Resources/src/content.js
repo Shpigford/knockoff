@@ -448,8 +448,7 @@
   // into them from a click would muddy what those lists mean.
   var SELLER_META = {
     blocked: { icon: "tagSlash", label: "Seller on your blocklist" },
-    flagged: { icon: "tagSlash", label: "Likely junk seller" },
-    suspect: { icon: "alert",    label: "Suspect seller" }
+    flagged: { icon: "tagSlash", label: "Likely junk seller" }
   };
 
   function processPdpSeller() {
