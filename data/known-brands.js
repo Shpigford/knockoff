@@ -232,7 +232,8 @@ var KO_KNOWN_BRANDS = [
   "Paul Mitchell", "Paula's Choice", "Pepcid", "Pepto-Bismol", "Personna",
   "Philips Norelco", "Philips Sonicare", "Prilosec", "Proraso", "Redken",
   "Remington", "Revlon", "Revlon Cosmetics", "Sally Hansen", "Schmidt's",
-  "Secret", "Sensodyne", "Sonicare", "The Ordinary", "Tom's of Maine", "Tums",
+  "Secret", "Sensodyne", "Sonicare", "The Achieve Mint", "The Ordinary",
+  "Tom's of Maine", "Tums",
   "Tylenol", "Vaseline", "Vichy", "Vicks", "Wahl", "Waterpik", "Wet n Wild",
   "Zyrtec",
   // ── Baby & kids ───────────────────────────────────────────────

@@ -13,6 +13,7 @@ var KO_FIXTURES = [
   ["ASICS Men's GT-2000 Running Shoe", "known"],       // all-caps but real; list veto
   ["Instant Vortex 6-Quart Air Fryer", "known"],       // "Instant" generic-vs-brand guard
   ["Shark Navigator Lift-Away Upright Vacuum", "known"],
+  ["The Achieve Mint 1 Year Sober Sobriety Coin Recovery Gift", "known"], // "The"-led name, would read unbranded without the list
   // Established Chinese-owned (pass by default, flaggable by setting)
   ["WORKPRO Drill Bit Set, 120-Pieces Impact Driver Bits", "known"],
   ["Anker Portable Charger, 10000mAh Power Bank", "known"],
