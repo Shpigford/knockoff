@@ -89,5 +89,24 @@ for (const [name, text, href, expected] of pdpFixtures) {
   check(name, actual, expected);
 }
 
+// Seller-name classification ("Sold by" on product pages). Warn-only surface:
+// the content script only badges suspect/flagged/blocked, so `unknown` here
+// means "stay quiet". Commerce boilerplate (Direct, Official Store, US...)
+// must never count as evidence, and a known brand anywhere vetoes.
+const sellerFixtures = [
+  ["SZHLUX Direct", "flagged"],            // heuristic through the noise word
+  ["HORUSDY", "flagged"],                  // seed blocklist
+  ["ZDWTZJX Official Store", "flagged"],   // consonant run + all caps
+  ["Anker Direct", "known"],               // known-brand token vetoes
+  ["Apple", "known"],
+  ["The Home Depot", "unknown"],           // boilerplate-only: quiet
+  ["Greenfield Trading Co", "unknown"],    // plain English name: quiet
+  ["Johnson Smith Company", "known"],      // surname is a listed brand (Smith): veto wins, also quiet
+];
+for (const [name, expected] of sellerFixtures) {
+  const r = ctx.Knockoff.classifySeller(name, none, none);
+  check(`seller "${name}"`, r.verdict, expected, r.reason);
+}
+
 console.log(`\n${pass}/${pass + fail} checks pass`);
 process.exit(fail ? 1 : 0);
