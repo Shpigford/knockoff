@@ -85,6 +85,11 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
 .ko-v-known,
 .ko-v-allowed   { --ko-tint: #047857; --ko-on-tint: #fff;    --ko-text: #047857; }
 .ko-v-lowrated  { --ko-tint: #4f46e5; --ko-on-tint: #fff;    --ko-text: #4f46e5; }
+/* origin filter: neutral zinc - NOT red (it isn't a junk verdict) and NOT
+   blue/green (the item still gets filtered, so it must not read as safe/info).
+   The globe icon + "Origin filter" label carry the meaning, so the badge stays
+   legible without relying on color at all (colorblind-safe). */
+.ko-v-origin    { --ko-tint: #52525b; --ko-on-tint: #fff;    --ko-text: #52525b; }
 
 /* ── Badge chip ─────────────────────────────────────────────────────────────
    Filled with the verdict color: a status chip must be readable at a

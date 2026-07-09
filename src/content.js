@@ -91,7 +91,8 @@
     x:        S + '<path d="m6 6 12 12M18 6 6 18"/></svg>',
     flag:     S + '<path d="M5 21V4.5C7.7 3 10.3 3 13 4.5c2 1.1 4 1.3 6 .6V15c-2 .7-4 .5-6-.6-2.7-1.5-5.3-1.5-8 0"/></svg>',
     star:     S + '<path d="M12 3.2l2.6 5.27 5.82.85-4.21 4.1.99 5.8L12 16.9l-5.2 2.73.99-5.8-4.21-4.1 5.82-.85z"/></svg>',
-    caret:    S + '<path d="m6 9 6 6 6-6"/></svg>'
+    caret:    S + '<path d="m6 9 6 6 6-6"/></svg>',
+    globe:    S + '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg>'
   };
 
   var VERDICT_META = {
@@ -102,7 +103,8 @@
     unknown:   { icon: "dashed",   label: "Unrecognized" },
     known:     { icon: "seal",     label: "Established" },
     allowed:   { icon: "seal",     label: "Trusted by you" },
-    lowrated:  { icon: "star",     label: "Low rating" }
+    lowrated:  { icon: "star",     label: "Low rating" },
+    origin:    { icon: "globe",    label: "Origin filter" }
   };
 
   // ── Storage ────────────────────────────────────────────────────────────────
@@ -141,7 +143,7 @@
               });
               // pre-0.3 versions cached under these keys
               chrome.storage.local.remove(["abfList", "abfFetchedAt"]);
-              Knockoff.buildIndexes(brands, flagged);
+              rebuildIndexes(brands, flagged);
               rescan();
             }
           })
@@ -149,6 +151,45 @@
       }
       return c;
     });
+  }
+
+  // Detector-list subscriptions (the uBlock-style filter lists). The background
+  // worker fetches them from Hugging Face and caches the raw text in
+  // storage.local (koListData:<id>); the subscription list lives in storage.sync
+  // (koSubs). We read the enabled ones and hand their text to the detector.
+  // Fallback metadata matches background.js DEFAULT_SUBS for the pre-first-refresh
+  // window before koSubs is persisted.
+  var DEFAULT_SUB_META = [
+    { id: "tier1", name: "USPTO Trademark Radar Tier 1 - USPTO-adjudicated", kind: "block", level: "soft", enabled: true },
+    { id: "tier2", name: "USPTO Trademark Radar Tier 2 - Screened candidates", kind: "block", level: "soft", enabled: true },
+    { id: "tier3", name: "USPTO Trademark Radar Tier 3 - Large filing operation", kind: "block", level: "soft", enabled: true },
+    { id: "origin_cn", name: "Origin - China", kind: "origin", level: "strict", enabled: false }
+  ];
+  var detectorLists = [];
+  var communityCache = { brands: null, flagged: null };
+
+  function loadDetectorLists() {
+    return chrome.storage.sync.get({ koSubs: null }).then(function (s) {
+      var subs = (Array.isArray(s.koSubs) && s.koSubs.length) ? s.koSubs : DEFAULT_SUB_META;
+      var enabled = subs.filter(function (x) { return x.enabled; });
+      var keys = enabled.map(function (x) { return "koListData:" + x.id; });
+      return chrome.storage.local.get(keys).then(function (data) {
+        detectorLists = enabled.map(function (x) {
+          return { id: x.id, name: x.name, kind: x.kind || "block", level: x.level,
+                   text: data["koListData:" + x.id] || "" };
+        });
+        return detectorLists;
+      });
+    });
+  }
+
+  // Rebuild the detector indexes from the cached community list + subscribed
+  // detector lists. Caches the community args so a list-only refresh can rebuild
+  // without re-reading them.
+  function rebuildIndexes(brands, flagged) {
+    if (brands !== undefined) communityCache.brands = brands;
+    if (flagged !== undefined) communityCache.flagged = flagged;
+    Knockoff.buildIndexes(communityCache.brands, communityCache.flagged, detectorLists);
   }
 
   function saveUserLists() {
@@ -1070,9 +1111,19 @@
     // wrote a fresh community list; fold it in without waiting for a reload.
     if (area === "local" && (changes.communityBrands || changes.remoteFlagged)) {
       chrome.storage.local.get(["communityBrands", "remoteFlagged"]).then(function (c) {
-        Knockoff.buildIndexes(c.communityBrands || null, c.remoteFlagged || null);
+        rebuildIndexes(c.communityBrands || null, c.remoteFlagged || null);
         rescan();
       });
+      return;
+    }
+    // A detector list's cached text changed (background refresh), or the
+    // subscription set changed (options page): reload the lists and rescan.
+    if (area === "local" && Object.keys(changes).some(function (k) { return k.indexOf("koListData:") === 0; })) {
+      loadDetectorLists().then(function () { rebuildIndexes(); rescan(); });
+      return;
+    }
+    if (area === "sync" && changes.koSubs) {
+      loadDetectorLists().then(function () { rebuildIndexes(); rescan(); });
       return;
     }
     if (area !== "sync") return;
@@ -1087,6 +1138,11 @@
       togglePanel();
       sendResponse({ ok: true });
     }
+    // Background finished a monthly (or manual) list refresh: fold in the new
+    // lists without a page reload.
+    if (msg && msg.type === "ko-lists-updated") {
+      loadDetectorLists().then(function () { rebuildIndexes(); rescan(); });
+    }
   });
 
   // Close any open badge menu on an outside click.
@@ -1100,9 +1156,10 @@
   });
 
   loadSettings()
-    .then(loadCommunityList)
-    .then(function (cached) {
-      Knockoff.buildIndexes(cached.communityBrands || null, cached.remoteFlagged || null);
+    .then(function () { return Promise.all([loadCommunityList(), loadDetectorLists()]); })
+    .then(function (r) {
+      var cached = r[0];
+      rebuildIndexes(cached.communityBrands || null, cached.remoteFlagged || null);
       scan();
       new MutationObserver(scheduleScan).observe(document.body, {
         childList: true,

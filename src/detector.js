@@ -92,6 +92,22 @@ var Knockoff = (function () {
     return failures;
   }
 
+  // Build a lookup Set from a detector list's raw text (one mark key per line).
+  // The published keys are already [A-Z0-9], uppercased (see the dataset's
+  // key_rule), so a whole-string lowercase matches our normalize() keyspace
+  // without a per-line regex — this runs over ~900k rows for tier 3.
+  function buildKeySet(text) {
+    var set = new Set();
+    if (!text) return set;
+    var lines = text.toLowerCase().split("\n");
+    for (var i = 0; i < lines.length; i++) {
+      var k = lines[i].charCodeAt(lines[i].length - 1) === 13
+        ? lines[i].slice(0, -1) : lines[i];   // strip a trailing CR
+      if (k) set.add(k);
+    }
+    return set;
+  }
+
   // ── Script detection ─────────────────────────────────────────────────────
   // The name heuristics assume a Latin-script brand at the front of the title.
   // A title that *leads* with non-Latin script (Japanese, Arabic, Cyrillic — or
@@ -154,6 +170,10 @@ var Knockoff = (function () {
     chineseMajor: new Set(), // established Chinese-owned brands
     flagged: new Set(),      // seed blocklist
     generic: new Set(),      // common title words (unbranded detection)
+    // Detector-list subscriptions (the uBlock-style filter lists), in priority
+    // order: [{ id, name, set }]. The base flagging layer — checked after the
+    // allowlists so a trusted/known brand still vetoes a list hit.
+    detectorLists: [],
     // key → display name, so badges can show "DeWalt" not "dewalt"
     display: new Map()
   };
@@ -171,12 +191,24 @@ var Knockoff = (function () {
 
   // extraKnown / extraFlagged: remotely refreshed lists (arrays of names)
   // from storage: the community allowlist and our curated blocklist.
-  function buildIndexes(extraKnown, extraFlagged) {
+  // detectorLists: array of { id, name, text } — the subscribed filter lists'
+  // raw contents, in priority order. Each becomes a membership Set.
+  function buildIndexes(extraKnown, extraFlagged, detectorLists) {
     idx.known.clear();
     idx.chineseMajor.clear();
     idx.flagged.clear();
     idx.generic.clear();
     idx.display.clear();
+    idx.detectorLists = (detectorLists || []).map(function (l) {
+      // kind:  "block" (junk tiers) or "origin" (opt-in country-of-origin
+      //        filter; a match is an origin fact, never a junk verdict).
+      // level: "soft" applies below the known-brand veto (established brands
+      //        exempt); "strict" applies above it (catches established brands).
+      var kind = l.kind || "block";
+      return { id: l.id, name: l.name, kind: kind,
+               level: l.level || (kind === "origin" ? "strict" : "soft"),
+               set: buildKeySet(l.text) };
+    });
     idx.knownMaxWords = 1;
 
     addBrands(idx.known, KO_KNOWN_BRANDS);
@@ -492,6 +524,32 @@ var Knockoff = (function () {
   // settings: { level, flagChineseMajor }
   // userAllow / userBlock: Sets of normalized keys.
 
+  // Fill a result from a detector-list hit. The list's KIND sets the framing
+  // (block -> a junk flag; origin -> a neutral origin fact); its LEVEL (checked
+  // by the caller) decided whether we got here before or after the known-brand
+  // veto.
+  function applyListHit(r, list) {
+    if (list.kind === "origin") {
+      r.verdict = "origin";
+      r.reason = list.name + " - registered owner country of record";
+    } else {
+      r.verdict = "flagged";
+      r.reason = "a filing under this mark was flagged - " + list.name;
+    }
+    r.list = list.id;
+    return r;
+  }
+
+  function matchLists(r, key, wantStrict) {
+    for (var i = 0; i < idx.detectorLists.length; i++) {
+      var list = idx.detectorLists[i];
+      if ((list.level === "strict") === wantStrict && list.set.has(key)) {
+        return applyListHit(r, list);
+      }
+    }
+    return null;
+  }
+
   // Given an extracted brand {name, key} plus the surrounding title (only used
   // for the compatibility-bait signal), run the list checks then the name
   // heuristics. Shared by classify() (brand read from the title) and
@@ -505,6 +563,13 @@ var Knockoff = (function () {
     if (userBlock.has(b.key)) {
       r.verdict = "blocked"; r.reason = "on your blocklist"; return r;
     }
+
+    // Strict-level lists apply ABOVE the known-brand veto: they catch even
+    // established brands, so only the user's own allowlist (checked above)
+    // exempts. Origin lists default to strict (filter by origin regardless of
+    // how established the brand is); the junk tiers default to soft (below).
+    var strictHit = matchLists(r, b.key, true);
+    if (strictHit) return strictHit;
     if (idx.flagged.has(b.key)) {
       r.verdict = "flagged"; r.reason = "on the known pseudo-brand list"; return r;
     }
@@ -519,6 +584,12 @@ var Knockoff = (function () {
     if (idx.known.has(b.key)) {
       r.verdict = "known"; r.reason = "established brand"; return r;
     }
+
+    // Soft-level lists apply BELOW the veto, so an established/known brand is
+    // never caught by them (the default for the junk tiers). First match wins
+    // (tier 1 before tier 2/3), so the strongest reason is shown.
+    var softHit = matchLists(r, b.key, false);
+    if (softHit) return softHit;
 
     var h = scoreBrand(b.name);
     // An unlisted brand whose title name-drops ecosystem hardware it doesn't
@@ -681,10 +752,12 @@ var Knockoff = (function () {
   }
 
   // Which verdicts get acted on at each filter level.
+  // "origin" acts at every level: enabling an origin list is itself the opt-in,
+  // so it filters regardless of the junk filter level (like the user blocklist).
   var ACT_ON = {
-    relaxed:  { blocked: 1, flagged: 1 },
-    standard: { blocked: 1, flagged: 1, suspect: 1, unbranded: 1 },
-    strict:   { blocked: 1, flagged: 1, suspect: 1, unbranded: 1, unknown: 1 }
+    relaxed:  { blocked: 1, flagged: 1, origin: 1 },
+    standard: { blocked: 1, flagged: 1, suspect: 1, unbranded: 1, origin: 1 },
+    strict:   { blocked: 1, flagged: 1, suspect: 1, unbranded: 1, unknown: 1, origin: 1 }
   };
 
   function shouldAct(verdict, level) {

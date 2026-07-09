@@ -352,6 +352,152 @@ button.ghost:disabled {
   opacity: 0.45;
 }
 
+/* ── Detector lists (subscription rows) ─────────────────────────────────── */
+
+.dl-list {
+  margin-bottom: 4px;
+}
+
+.dl-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+}
+
+.dl-row + .dl-row {
+  border-top: 1px solid var(--line);
+}
+
+.dl-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dl-name {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.dl-sub {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dl-meta {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* three-way Off/Soft/Strict rocker - same segmented look as the controls above,
+   compact for the row. Folds enable + level into one control. */
+.dl-mode {
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--track);
+}
+
+.dl-mode input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.dl-mode span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.dl-mode span:hover { color: var(--ink); }
+
+.dl-mode input:checked + span {
+  background: var(--card);
+  border-color: var(--line);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: var(--shadow-s);
+}
+
+.dl-mode input:focus-visible + span {
+  outline: 2px solid var(--ink-3);
+  outline-offset: -1px;
+}
+
+.dl-legend {
+  margin: 12px 0 0;
+}
+
+.dl-legend b { color: var(--ink-2); font-weight: 600; }
+
+.dl-remove {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dl-remove:hover { color: var(--red); border-color: var(--red); }
+
+.dl-add {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.dl-add input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 12.5px/1.4 var(--mono);
+}
+
+.dl-add input:focus {
+  outline: none;
+  border-color: var(--ink-3);
+  box-shadow: 0 0 0 3px rgba(113, 113, 122, 0.12);
+}
+
+.dl-msg {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+  min-height: 1em;
+}
+
 /* ── Switch ─────────────────────────────────────────────────────────────── */
 
 .switch {

@@ -261,5 +261,52 @@ for (const e of ctx.KO_FLAGGED_BRANDS) {
 }
 check("flagged-brands: no real-brand contradiction", conflict, "none");
 
+// Detector-list subscriptions (the uBlock-style filter lists). A mark on an
+// enabled list is flagged as the base layer — but only after the allowlists
+// (user + known brands) have vetoed. List keys are published uppercase;
+// buildIndexes lowercases them into the normalize() keyspace.
+Knockoff.buildIndexes(null, null, [
+  { id: "tier1", name: "Tier 1 - USPTO-adjudicated",
+    text: "ZORPLEX\nDEWALT\n" },            // DEWALT is also a known brand
+  { id: "tier3", name: "Tier 3 - Large filing operation",
+    text: "MUJKO\r\n" }                      // trailing CR must be stripped
+]);
+const dl = (name, allow, block) => Knockoff.classifyBrand(name, settings, allow || none, block || none);
+
+check("detector list: tier1 mark is flagged", dl("Zorplex").verdict, "flagged", dl("Zorplex").reason);
+check("detector list: names the matching list", /Tier 1/.test(dl("Zorplex").reason), true, dl("Zorplex").reason);
+check("detector list: tier3 mark flagged (CRLF tolerated)", dl("Mujko").verdict, "flagged", dl("Mujko").reason);
+check("detector list: user allowlist vetoes a list hit", dl("Zorplex", new Set(["zorplex"])).verdict, "allowed");
+
+// Origin filter (kind:"origin"): a match is a distinct "origin" verdict, never
+// "flagged" - an opt-in country-of-origin fact, not a junk verdict - and it sits
+// ABOVE the established-brand veto so it catches established brands of that
+// origin too. ANKER is on the extension's established-Chinese-brands list.
+Knockoff.buildIndexes(null, null, [
+  { id: "tier1", name: "Tier 1", kind: "block", text: "ZORPLEX\n" },
+  { id: "origin_cn", name: "Origin - China", kind: "origin", text: "ANKER\n" }
+]);
+check("origin: established brand of that origin is still caught", dl("Anker").verdict, "origin", dl("Anker").reason);
+check("origin: reason is origin-framed, not junk", /registered owner country/.test(dl("Anker").reason), true, dl("Anker").reason);
+check("origin: your own allowlist still exempts", dl("Anker", new Set(["anker"])).verdict, "allowed");
+check("block list still flags a non-origin junk mark", dl("Zorplex").verdict, "flagged");
+check("origin verdict is acted on at every level", Knockoff.shouldAct("origin", "relaxed"), true);
+
+// Per-list level: "strict" applies above the established-brand veto (catches
+// even a known brand), "soft" applies below it (established brands exempt).
+Knockoff.buildIndexes(null, null, [
+  { id: "sb", name: "Strict block", kind: "block", level: "strict", text: "DEWALT\n" }
+]);
+check("level strict: a block list flags even an established brand", dl("DEWALT").verdict, "flagged");
+Knockoff.buildIndexes(null, null, [
+  { id: "fb", name: "Soft block", kind: "block", level: "soft", text: "DEWALT\n" }
+]);
+check("level soft: the established-brand veto wins over the list", dl("DEWALT").verdict, "known");
+check("detector list: known brand vetoes a list hit", dl("DEWALT").verdict, "known", dl("DEWALT").reason);
+check("detector list: an unlisted mark is untouched by lists", dl("Klein Tools").verdict, "known");
+
+// Restore the default indexes in case future blocks are appended below.
+Knockoff.buildIndexes();
+
 console.log(`\n${pass}/${pass + fail} checks pass`);
 process.exit(fail ? 1 : 0);
