@@ -39,6 +39,11 @@
   .nav-links a[aria-current] { color: var(--ink); }
   .nav-links a.solid { background: var(--ink); color: #fff; }
   .nav-links a.solid:hover { background: #2d2d31; }
+  /* Phones: drop the secondary links (both live in the footer), keep logo + CTA */
+  @media (max-width: 560px) {
+    .nav-links a:not(.solid) { display: none; }
+    .nav-links a.solid { white-space: nowrap; }
+  }
 
   .head { padding: 40px 0 8px; }
   .head h1 { font: 750 clamp(38px, 6vw, 60px)/1.02 var(--display); letter-spacing: -0.035em; }

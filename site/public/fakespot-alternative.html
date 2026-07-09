@@ -84,6 +84,11 @@
   .nav-links a:hover { color: var(--ink); background: #f0f0f1; }
   .nav-links a.solid { background: var(--ink); color: #fff; }
   .nav-links a.solid:hover { background: #2d2d31; }
+  /* Phones: drop the secondary links (both live in the footer), keep logo + CTA */
+  @media (max-width: 560px) {
+    .nav-links a:not(.solid) { display: none; }
+    .nav-links a.solid { white-space: nowrap; }
+  }
 
   article { max-width: 720px; margin: 0 auto; padding: 48px 24px 8px; }
   article h1 { font: 750 clamp(34px, 5.5vw, 54px)/1.05 var(--display); letter-spacing: -0.03em; margin-bottom: 16px; }
