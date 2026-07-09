@@ -402,12 +402,18 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
   border-radius: 10px;
   padding: 8px 11px;
   margin-bottom: 10px;
-  max-height: 176px;
-  overflow-y: auto;
 }
 
 .ko-panel-brands .ko-panel-label {
-  margin-bottom: 2px;
+  margin-bottom: 5px;
+}
+
+/* Heading stays pinned; only the rows scroll. 6 rows tall, then scrolls.
+   padding-right keeps the overlay scrollbar off the shield buttons. */
+.ko-brand-scroll {
+  max-height: 156px;
+  overflow-y: auto;
+  padding-right: 8px;
 }
 
 .ko-brand-row {

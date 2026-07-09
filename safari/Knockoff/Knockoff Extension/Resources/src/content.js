@@ -672,6 +672,9 @@
     var heading = el("div", "ko-panel-label");
     heading.textContent = "Filtered brands";
     list.appendChild(heading);
+    // Rows scroll; the heading stays pinned above them.
+    var scroll = el("div", "ko-brand-scroll");
+    list.appendChild(scroll);
     var MAX_ROWS = 8;
     entries.slice(0, MAX_ROWS).forEach(function (e) {
       var row = el("div", "ko-brand-row ko-v-" + e.verdict);
@@ -695,12 +698,12 @@
         // storage.onChanged reloads settings and rescans; the row disappears.
       });
       row.appendChild(fix);
-      list.appendChild(row);
+      scroll.appendChild(row);
     });
     if (entries.length > MAX_ROWS) {
       var more = el("div", "ko-brand-more");
       more.textContent = "+" + (entries.length - MAX_ROWS) + " more";
-      list.appendChild(more);
+      scroll.appendChild(more);
     }
   }
 
