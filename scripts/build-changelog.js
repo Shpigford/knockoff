@@ -126,8 +126,12 @@ function page(entries) {
 '<title>Changelog — Knockoff</title>\n' +
 '<meta name="description" content="What\'s new in Knockoff — every release of the browser extension that filters trademark-squat pseudo-brands out of Amazon. Newest first.">\n' +
 '<link rel="canonical" href="https://knockoff.shopping/changelog">\n' +
-'<link rel="icon" href="/icon.svg" type="image/svg+xml">\n' +
-'<link rel="apple-touch-icon" href="/icon128.png">\n' +
+'<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">\n' +
+'<link rel="icon" type="image/svg+xml" href="/favicon.svg">\n' +
+'<link rel="shortcut icon" href="/favicon.ico">\n' +
+'<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">\n' +
+'<meta name="apple-mobile-web-app-title" content="Knockoff">\n' +
+'<link rel="manifest" href="/site.webmanifest">\n' +
 '<meta property="og:title" content="Changelog — Knockoff">\n' +
 '<meta property="og:description" content="Every release of Knockoff, newest first.">\n' +
 '<meta property="og:image" content="https://knockoff.shopping/og.png">\n' +

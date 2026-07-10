@@ -6,8 +6,12 @@
 <title>Knockoff — Filter Fake Amazon Brands | Chrome & Firefox</title>
 <meta name="description" content="A free, fair-source browser extension for Chrome and Firefox that filters trademark-squat pseudo-brands out of Amazon. Buy from real, established brands.">
 <link rel="canonical" href="https://knockoff.shopping/">
-<link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icon128.png">
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Knockoff">
+<link rel="manifest" href="/site.webmanifest">
 <meta property="og:title" content="Knockoff: Amazon, without the knockoffs">
 <meta property="og:description" content="A free, fair-source browser extension that filters pseudo-brand junk out of Amazon search results. For Chrome and Firefox.">
 <meta property="og:image" content="https://knockoff.shopping/og.png">
@@ -37,19 +41,39 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #fafafa;
+    /* brand — three colors do the heavy lifting: near-white paper, signal
+       red, and a slate near-black ink. Red is a signal, not a decoration. */
+    --paper: #f7f7f7;
     --card: #ffffff;
-    --ink: #101012;
-    --ink-2: #52525b;
-    --ink-3: #71717a;
+    --ink: #232a33;        /* primary text + dark bands */
+    --ink-black: #101012;  /* true near-black — logo mark ground only */
+    --ink-2: #52525b;      /* body + supporting copy */
+    --ink-3: #71717a;      /* captions, hints, metadata */
+    --ink-4: #a1a1aa;      /* timestamps, faint detail */
     --line: #e4e4e7;
-    --red: #dc2626;
-    --red-deep: #b91c1c;
+    --line-strong: #d4d4d8;
+    --sunk: #f4f4f5;
+    --red: #e01024;        /* signal red — the strike-through, the accent */
+    --red-deep: #b3081b;
     --amber: #f59e0b;
     --amber-ink: #221503;
     --green: #047857;
+    --zinc-50: #fafafa;
+    --zinc-100: #f4f4f5;
+    --zinc-200: #e4e4e7;
+    --zinc-300: #d4d4d8;
+    --zinc-400: #a1a1aa;
+    --zinc-700: #3f3f46;
     --display: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --ease-out: cubic-bezier(0.2, 0.9, 0.3, 1);
+    /* product / feature tiles: a close contact shadow + a soft far shadow */
+    --shadow-tile: 0 1px 2px rgba(16,16,18,.04), 0 4px 12px -4px rgba(16,16,18,.08);
+    --shadow-tile-hover: 0 2px 4px rgba(16,16,18,.05), 0 18px 36px -14px rgba(16,16,18,.22);
+    --shadow-card: 0 1px 2px rgba(16,16,18,.04), 0 2px 6px rgba(16,16,18,.05), 0 30px 70px -30px rgba(16,16,18,.22);
+    --shadow-cta-red: 0 8px 24px -8px rgba(224,16,36,.5);
+    --shadow-chip: 0 1px 2px rgba(0,0,0,.18), inset 0 0 0 1px rgba(0,0,0,.08);
+    --shadow-pill: 0 4px 12px rgba(0,0,0,.25);
   }
   * { box-sizing: border-box; margin: 0; }
   html { scroll-behavior: smooth; }
@@ -66,9 +90,8 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 20px 0;
   }
-  .mark { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
-  .mark svg { width: 30px; height: 30px; border-radius: 8px; }
-  .mark b { font: 700 18px/1 var(--display); letter-spacing: -0.02em; }
+  .mark { display: inline-flex; align-items: center; text-decoration: none; }
+  .mark img { height: 26px; width: auto; display: block; }
   .nav-links { display: flex; gap: 8px; align-items: center; }
   .nav-links a {
     color: var(--ink-2); text-decoration: none; font-weight: 550; font-size: 14px;
@@ -76,7 +99,7 @@
   }
   .nav-links a:hover { color: var(--ink); background: #f0f0f1; }
   .nav-links a.solid { background: var(--ink); color: #fff; }
-  .nav-links a.solid:hover { background: #2d2d31; }
+  .nav-links a.solid:hover { background: #2d343e; }
   /* Phones: drop the secondary links (both live in the footer), keep logo + CTA */
   @media (max-width: 560px) {
     .nav-links a:not(.solid) { display: none; }
@@ -85,8 +108,21 @@
 
   /* ── Hero ── */
   header { position: relative; overflow: hidden; }
+  /* faint tiled price-tag motif — the brand mark, used as ambient texture */
+  .hero-tex {
+    position: absolute; inset: 0; z-index: 0; opacity: .04; pointer-events: none;
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='92' height='92' viewBox='0 0 92 92'><g transform='translate(34 30)' fill='none' stroke='%23232a33' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z'/><circle cx='7.5' cy='7.5' r='1.3'/></g></svg>");
+    background-size: 92px 92px;
+    -webkit-mask-image: radial-gradient(125% 78% at 50% 4%, #000 36%, transparent 82%);
+            mask-image: radial-gradient(125% 78% at 50% 4%, #000 36%, transparent 82%);
+  }
+  .hero-glow {
+    position: absolute; left: 50%; top: 330px; width: 960px; height: 460px; z-index: 0;
+    transform: translateX(-50%); pointer-events: none;
+    background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(224,16,36,.10), transparent 72%);
+  }
   /* vertical-only: horizontal padding is .wrap's job (these share the element) */
-  .hero { padding-top: 72px; padding-bottom: 40px; text-align: center; position: relative; }
+  .hero { padding-top: 72px; padding-bottom: 40px; text-align: center; position: relative; z-index: 1; }
   .hero h1 {
     font: 750 clamp(44px, 7.5vw, 84px)/1.02 var(--display);
     letter-spacing: -0.035em;
@@ -108,12 +144,13 @@
     display: inline-flex; align-items: center; gap: 9px;
     padding: 14px 26px; border-radius: 14px; text-decoration: none;
     font: 650 16px/1 var(--display); letter-spacing: -0.01em;
-    transition: transform .12s ease, box-shadow .12s ease;
+    border: 1px solid transparent;
+    transition: transform .12s var(--ease-out), box-shadow .12s ease, background .12s ease, border-color .12s ease;
   }
   .btn:active { transform: scale(.98); }
-  .btn.primary { background: var(--red); color: #fff; box-shadow: 0 8px 24px -8px rgba(220,38,38,.5); }
+  .btn.primary { background: var(--red); color: #fff; box-shadow: var(--shadow-cta-red); }
   .btn.primary:hover { background: var(--red-deep); transform: translateY(-1px); }
-  .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .btn.ghost { background: #fff; color: var(--ink); border-color: var(--line); }
   .btn.ghost:hover { border-color: var(--ink-3); }
   .btn svg { width: 18px; height: 18px; }
   .hero .note { margin-top: 16px; font-size: 13px; color: var(--ink-3); }
@@ -121,10 +158,10 @@
   .hero .note a:hover { color: var(--ink); }
 
   /* ── Demo ── */
-  .demo { padding-top: 40px; padding-bottom: 30px; }
+  .demo { padding-top: 40px; padding-bottom: 30px; position: relative; z-index: 1; }
   .browser {
     background: var(--card); border: 1px solid var(--line); border-radius: 18px;
-    box-shadow: 0 2px 6px rgba(16,16,18,.05), 0 30px 70px -30px rgba(16,16,18,.25);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
   }
   .browser-bar {
@@ -134,46 +171,69 @@
   .dot { width: 11px; height: 11px; border-radius: 50%; background: #e4e4e7; }
   .urlbar {
     flex: 1; max-width: 380px; margin: 0 auto;
-    background: #f4f4f5; border-radius: 8px; padding: 6px 14px;
-    font-size: 12.5px; color: var(--ink-3); text-align: center;
+    background: var(--sunk); border-radius: 8px; padding: 6px 14px;
+    font-size: 12.5px; color: var(--ink-3);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   }
+  .urlbar svg { width: 11px; height: 11px; }
   .results { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 22px; }
-  .product { position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; }
+  .product {
+    position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff;
+    box-shadow: var(--shadow-tile);
+    transition: box-shadow .18s var(--ease-out), transform .18s var(--ease-out);
+  }
+  .product:hover { transform: translateY(-3px); box-shadow: var(--shadow-tile-hover); }
   .product .img {
-    display: block; width: 100%; height: 120px; border-radius: 8px; margin-bottom: 10px;
+    display: block; width: 100%; height: 120px; border-radius: 10px; margin-bottom: 10px;
     object-fit: contain; background: #fff;
   }
-  .product .t { font-size: 12.5px; font-weight: 600; line-height: 1.4; }
-  .product .t small { display: block; font-weight: 400; color: var(--ink-3); }
-  .product .price { margin-top: 8px; font: 700 15px/1 var(--sans); }
-  .product.junk .img, .product.junk .t, .product.junk .price { opacity: .35; filter: grayscale(.9); }
+  .product .t { font-size: 12.5px; font-weight: 600; line-height: 1.4; height: 35px; overflow: hidden; }
+  .rating { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
   .stars { color: var(--amber); font-size: 11px; letter-spacing: 1px; }
-  .product.junk .stars { opacity: .35; filter: grayscale(.9); }
+  .rnum { font-size: 11px; color: var(--ink-3); }
+  .rcount { font-size: 11px; color: var(--ink-4); }
+  .price { margin-top: 7px; display: flex; align-items: baseline; gap: 7px; }
+  .price b { font: 700 16px/1 var(--sans); }
+  .price s { font-size: 11.5px; color: var(--ink-4); text-decoration: line-through; }
+  .deliv { margin-top: 6px; display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--ink-3); }
+  .prime { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 700; color: #2a7ae2; }
+  .prime svg { width: 11px; height: 11px; }
+  /* the junk body dims; the verdict chip stays full-strength on top */
+  .product.junk .pbody { opacity: .4; filter: grayscale(.85); }
 
   /* the real chip, punched hole and all */
   .chip {
-    position: absolute; top: 8px; right: 8px; z-index: 2;
+    position: absolute; top: 8px; right: 8px; z-index: 2; max-width: 82%;
     display: inline-flex; align-items: center; gap: 5px;
     padding: 3px 9px 3px 16px; border-radius: 6px;
     font: 600 11px/1.5 var(--sans); letter-spacing: .01em;
-    box-shadow: 0 1px 2px rgba(0,0,0,.18), inset 0 0 0 1px rgba(0,0,0,.08);
+    box-shadow: var(--shadow-chip);
     -webkit-mask: radial-gradient(circle 2.5px at 8.5px 50%, transparent 96%, #000 100%);
             mask: radial-gradient(circle 2.5px at 8.5px 50%, transparent 96%, #000 100%);
   }
-  .chip svg { width: 12px; height: 12px; }
+  .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip svg { width: 12px; height: 12px; flex-shrink: 0; }
   .chip.red { background: var(--red); color: #fff; }
-  .chip.amber { background: var(--amber); color: var(--amber-ink); }
   .chip.green { background: var(--green); color: #fff; }
+  /* Amazon merchandising ribbon — top-left, over the photo */
+  .ribbon {
+    position: absolute; top: 8px; left: 8px; z-index: 2;
+    padding: 2px 7px; border-radius: 5px; color: #fff;
+    font: 700 9.5px/1.4 var(--sans); letter-spacing: .03em; text-transform: uppercase;
+    box-shadow: var(--shadow-chip);
+  }
+  .ribbon.orange { background: #c7511f; }
+  .ribbon.teal { background: #0f766e; }
   .pill {
     position: absolute; right: 18px; bottom: 16px;
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 14px 8px 11px; border-radius: 999px;
-    background: #18181b; color: #fafafa; font: 500 12px/1.4 var(--sans);
-    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    background: var(--ink); color: #fafafa; font: 500 12px/1.4 var(--sans);
+    box-shadow: var(--shadow-pill);
   }
-  .pill b { font-weight: 600; }
-  .pill i { font-style: normal; color: #a1a1aa; }
-  .pill svg { width: 12px; height: 12px; color: #a1a1aa; }
+  .pill b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pill i { font-style: normal; color: var(--ink-4); }
+  .pill svg { width: 12px; height: 12px; color: var(--ink-4); }
   .demo-caption { text-align: center; font-size: 13.5px; color: var(--ink-3); margin-top: 14px; }
 
   /* ── As featured in ── */
@@ -207,7 +267,7 @@
 
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 40px; }
   .step {
-    background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 26px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 26px;
   }
   .step .n {
     display: inline-flex; align-items: center; justify-content: center;
@@ -215,43 +275,60 @@
     font: 700 14px/1 var(--display); margin-bottom: 16px;
   }
   .step h3 { font: 650 18px/1.3 var(--display); letter-spacing: -0.01em; margin-bottom: 8px; }
-  .step p { font-size: 14px; color: var(--ink-2); }
+  .step p { font-size: 14px; line-height: 1.55; color: var(--ink-2); }
 
   .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 40px; }
   .feature {
-    background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px;
+    box-shadow: var(--shadow-tile);
+    transition: box-shadow .18s var(--ease-out), transform .18s var(--ease-out), border-color .18s ease;
   }
+  .feature:hover { transform: translateY(-3px); box-shadow: var(--shadow-tile-hover); border-color: var(--line-strong); }
   .feature .ic {
-    display: inline-flex; width: 38px; height: 38px; border-radius: 11px;
+    display: inline-flex; width: 40px; height: 40px; border-radius: 12px;
     align-items: center; justify-content: center; margin-bottom: 14px;
-    background: #f4f4f5; color: var(--ink);
+    background: linear-gradient(160deg, var(--zinc-100), var(--zinc-50));
+    box-shadow: inset 0 0 0 1px var(--line), 0 1px 2px rgba(16,16,18,.04);
+    color: var(--ink); transition: color .18s ease;
   }
+  .feature:hover .ic { color: var(--red); }
   .feature .ic svg { width: 18px; height: 18px; }
-  .feature h3 { font: 650 16px/1.3 var(--display); margin-bottom: 6px; }
-  .feature p { font-size: 13.5px; color: var(--ink-2); }
-  /* With 7 feature cards the last one would orphan-left; center it. Only fires
-     when the final card is alone on its row, and is inert below 861px (1-col). */
-  @media (min-width: 861px) {
-    .grid > .feature:last-child:nth-child(3n - 2) { grid-column: 2; }
-  }
+  .feature h3 { font: 650 16px/1.3 var(--display); letter-spacing: -0.01em; margin-bottom: 6px; }
+  .feature p { font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
 
-  /* ── Open source band ── */
-  .band { background: var(--ink); color: #fafafa; border-radius: 24px; padding: 56px; margin: 20px 0 40px; position: relative; overflow: hidden; }
-  .band::before {
-    content: ""; position: absolute; right: -60px; top: -60px; width: 280px; height: 280px;
-    background: var(--red); transform: rotate(45deg); opacity: .9; border-radius: 48px;
+  /* ── Fair-source band ── */
+  .band {
+    background: linear-gradient(180deg, #2b333e, var(--ink));
+    color: #fafafa; border-radius: 24px; padding: 56px; margin: 20px 0 40px;
+    position: relative; overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), var(--shadow-card);
   }
-  .band h2 { color: #fff; position: relative; }
-  .band p { color: #a1a1aa; max-width: 560px; font-size: 16px; position: relative; margin-bottom: 28px; }
-  .band .btn.ghost { background: transparent; color: #fff; border-color: #3f3f46; position: relative; }
-  .band .btn.ghost:hover { border-color: #71717a; }
-  .band .btn.white { background: #fff; color: var(--ink); position: relative; }
+  .band-tex {
+    position: absolute; inset: 0; opacity: .05; pointer-events: none;
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='92' height='92' viewBox='0 0 92 92'><g transform='translate(34 30)' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z'/><circle cx='7.5' cy='7.5' r='1.3'/></g></svg>");
+    background-size: 92px 92px;
+  }
+  .band-sq-back {
+    position: absolute; right: -88px; top: -34px; width: 232px; height: 232px;
+    background: #8f0a17; transform: rotate(45deg); opacity: .7; border-radius: 42px;
+  }
+  .band-sq-front {
+    position: absolute; right: -60px; top: -60px; width: 280px; height: 280px;
+    background: var(--red); transform: rotate(45deg); opacity: .92; border-radius: 48px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+  }
+  .band-inner { position: relative; }
+  .band .kicker { color: #f87171; }
+  .band h2 { color: #fff; }
+  .band p { color: var(--ink-4); max-width: 560px; font-size: 16px; margin-bottom: 28px; }
+  .btn.white { background: #fff; color: var(--ink); }
+  .btn.outline-dark { background: transparent; color: #fff; border-color: var(--zinc-700); }
+  .btn.outline-dark:hover { border-color: #71717a; }
 
   footer { padding: 44px 0 56px; border-top: 1px solid var(--line); }
   .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 36px 48px; }
   .foot-brand { max-width: 300px; }
-  .foot .mark svg { width: 24px; height: 24px; }
-  .foot .mark b { font-size: 15px; }
+  .foot .mark img { height: 22px; }
   .foot .fine { font-size: 12.5px; color: var(--ink-3); margin-top: 14px; }
   .foot-cols { display: flex; flex-wrap: wrap; gap: 28px 56px; }
   .foot-col h4 { font: 650 11.5px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px; }
@@ -262,7 +339,6 @@
     .results { grid-template-columns: repeat(2, 1fr); }
     .steps, .grid { grid-template-columns: 1fr; }
     .band { padding: 36px 28px; }
-    .product:nth-child(n+5) { display: none; }
   }
 </style>
 </head>
@@ -270,9 +346,8 @@
 
 <div class="wrap">
   <nav>
-    <a class="mark" href="/">
-      <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="30" fill="#101012"/><g transform="translate(64 66) scale(4.35) translate(-12 -12)"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z" fill="#fff"/><circle cx="6.9" cy="6.9" r="1.55" fill="#101012"/><path d="M4.6 21 21 4.6" stroke="#dc2626" stroke-width="2.4" stroke-linecap="round" fill="none"/></g></svg>
-      <b>Knockoff</b>
+    <a class="mark" href="/" aria-label="Knockoff home">
+      <img src="/logo.svg" alt="Knockoff" width="125" height="26">
     </a>
     <div class="nav-links">
       <a href="/changelog">Changelog</a>
@@ -284,6 +359,9 @@
 </div>
 
 <header>
+  <div class="hero-tex" aria-hidden="true"></div>
+  <div class="hero-glow" aria-hidden="true"></div>
+
   <div class="wrap hero">
     <h1>Amazon, without the <span class="slashed">knockoffs</span>.</h1>
     <p class="sub">Knockoff filters the trademark-squat pseudo-brands (the SZHLUXes and
@@ -310,36 +388,50 @@
     <div class="browser">
       <div class="browser-bar">
         <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        <div class="urlbar">amazon.com/s?k=dog+bed</div>
+        <div class="urlbar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10.5" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>amazon.com/s?k=dog+bed</div>
       </div>
       <div class="results">
         <div class="product junk">
-          <span class="chip red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><path d="M4.2 21.5 21.5 4.2"/></svg>WNPETHOME</span>
-          <img class="img" src="/demo/wnpethome.jpg" alt="WNPETHOME dog bed listing" loading="lazy">
-          <div class="t">WNPETHOME XL Extra Large Dog Bed, Washable Dog Couch<small>On the pseudo-brand list</small></div>
-          <div class="stars">★★★★☆</div>
-          <div class="price">$35.99</div>
+          <span class="chip red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><path d="M4.2 21.5 21.5 4.2"/></svg><span>WNPETHOME</span></span>
+          <div class="pbody">
+            <img class="img" src="/demo/wnpethome.jpg" alt="WNPETHOME dog bed listing" loading="lazy">
+            <div class="t">WNPETHOME XL Extra Large Dog Bed, Washable Dog Couch</div>
+            <div class="rating"><span class="stars">★★★★☆</span><span class="rnum">4.1</span><span class="rcount">(2,317)</span></div>
+            <div class="price"><b>$35.99</b><s>$59.99</s></div>
+            <div class="deliv"><span class="prime"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>prime</span>FREE delivery Thu</div>
+          </div>
         </div>
         <div class="product">
-          <span class="chip green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg>Casper</span>
-          <img class="img" src="/demo/casper.jpg" alt="Casper dog bed listing" loading="lazy">
-          <div class="t">Casper Dog Bed, Plush Memory Foam, Large, Sand<small>Established brand</small></div>
-          <div class="stars">★★★★☆</div>
-          <div class="price">$224.10</div>
+          <span class="chip green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg><span>Casper</span></span>
+          <span class="ribbon teal">Overall Pick</span>
+          <div class="pbody">
+            <img class="img" src="/demo/casper.jpg" alt="Casper dog bed listing" loading="lazy">
+            <div class="t">Casper Dog Bed, Plush Memory Foam, Large, Sand</div>
+            <div class="rating"><span class="stars">★★★★★</span><span class="rnum">4.6</span><span class="rcount">(8,904)</span></div>
+            <div class="price"><b>$224.10</b></div>
+            <div class="deliv"><span class="prime"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>prime</span>FREE delivery Tue</div>
+          </div>
         </div>
         <div class="product junk">
-          <span class="chip red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><path d="M4.2 21.5 21.5 4.2"/></svg>EHEYCIGA</span>
-          <img class="img" src="/demo/eheyciga.jpg" alt="EHEYCIGA dog bed listing" loading="lazy">
-          <div class="t">EHEYCIGA Orthopedic Dog Beds for Extra Large Dogs<small>On the pseudo-brand list</small></div>
-          <div class="stars">★★★★☆</div>
-          <div class="price">$39.99</div>
+          <span class="chip red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><path d="M4.2 21.5 21.5 4.2"/></svg><span>EHEYCIGA</span></span>
+          <div class="pbody">
+            <img class="img" src="/demo/eheyciga.jpg" alt="EHEYCIGA dog bed listing" loading="lazy">
+            <div class="t">EHEYCIGA Orthopedic Dog Beds for Extra Large Dogs</div>
+            <div class="rating"><span class="stars">★★★★☆</span><span class="rnum">4.0</span><span class="rcount">(1,204)</span></div>
+            <div class="price"><b>$39.99</b><s>$69.99</s></div>
+            <div class="deliv"><span class="prime"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>prime</span>FREE delivery Fri</div>
+          </div>
         </div>
         <div class="product">
-          <span class="chip green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg>Carhartt</span>
-          <img class="img" src="/demo/carhartt.jpg" alt="Carhartt pet bed listing" loading="lazy">
-          <div class="t">Carhartt Durable Canvas Pet Bed, Water Resistant Duck<small>Established brand</small></div>
-          <div class="stars">★★★★☆</div>
-          <div class="price">$139.99</div>
+          <span class="chip green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.4 12.4 2.5 2.5 4.9-5.4"/></svg><span>Carhartt</span></span>
+          <span class="ribbon orange">Best Seller</span>
+          <div class="pbody">
+            <img class="img" src="/demo/carhartt.jpg" alt="Carhartt pet bed listing" loading="lazy">
+            <div class="t">Carhartt Durable Canvas Pet Bed, Water Resistant Duck</div>
+            <div class="rating"><span class="stars">★★★★★</span><span class="rnum">4.7</span><span class="rcount">(3,450)</span></div>
+            <div class="price"><b>$139.99</b></div>
+            <div class="deliv"><span class="prime"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>prime</span>FREE delivery Wed</div>
+          </div>
         </div>
       </div>
       <div style="position:relative;height:52px">
@@ -435,13 +527,18 @@
 
 <div class="wrap">
   <div class="band">
-    <span class="kicker" style="color:#f87171">Fair source</span>
-    <h2>Help draw the line.</h2>
-    <p>The junk-brand arms race is only winnable together. Add brands, tune the heuristics,
-    or just report misclassifications from inside the extension. Every fix ships to everyone.</p>
-    <div class="ctas" style="justify-content:flex-start">
-      <a class="btn white" href="https://github.com/Shpigford/knockoff">View the source</a>
-      <a class="btn ghost" href="https://github.com/Shpigford/knockoff/blob/main/CONTRIBUTING.md">Contributing guide</a>
+    <div class="band-tex" aria-hidden="true"></div>
+    <div class="band-sq-back" aria-hidden="true"></div>
+    <div class="band-sq-front" aria-hidden="true"></div>
+    <div class="band-inner">
+      <span class="kicker">Fair source</span>
+      <h2>Help draw the line.</h2>
+      <p>The junk-brand arms race is only winnable together. Add brands, tune the heuristics,
+      or just report misclassifications from inside the extension. Every fix ships to everyone.</p>
+      <div class="ctas" style="justify-content:flex-start">
+        <a class="btn white" href="https://github.com/Shpigford/knockoff">View the source</a>
+        <a class="btn outline-dark" href="https://github.com/Shpigford/knockoff/blob/main/CONTRIBUTING.md">Contributing guide</a>
+      </div>
     </div>
   </div>
 </div>
@@ -449,9 +546,8 @@
 <footer>
   <div class="wrap foot">
     <div class="foot-brand">
-      <a class="mark" href="/">
-        <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="30" fill="#101012"/><g transform="translate(64 66) scale(4.35) translate(-12 -12)"><path d="M12.9 2.6 21.4 11.1a2 2 0 0 1 0 2.83l-7.47 7.47a2 2 0 0 1-2.83 0L2.6 12.9A2 2 0 0 1 2 11.49V4a2 2 0 0 1 2-2h7.49a2 2 0 0 1 1.41.6Z" fill="#fff"/><circle cx="6.9" cy="6.9" r="1.55" fill="#101012"/><path d="M4.6 21 21 4.6" stroke="#dc2626" stroke-width="2.4" stroke-linecap="round" fill="none"/></g></svg>
-        <b>Knockoff</b>
+      <a class="mark" href="/" aria-label="Knockoff home">
+        <img src="/logo.svg" alt="Knockoff" width="106" height="22">
       </a>
       <p class="fine">Not affiliated with Amazon. Brand verdicts are heuristics plus community lists, always
       one click from being corrected.</p>

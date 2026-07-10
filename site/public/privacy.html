@@ -6,14 +6,19 @@
 <title>Privacy Policy — Knockoff</title>
 <meta name="description" content="Privacy policy for the Knockoff browser extension. Everything runs locally; no accounts, no tracking, no PII.">
 <link rel="canonical" href="https://knockoff.shopping/privacy">
-<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Knockoff">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #fafafa;
-    --ink: #101012;
+    --paper: #f7f7f7;
+    --ink: #232a33;
     --ink-2: #52525b;
     --line: #e4e4e7;
     --display: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -28,9 +33,8 @@
   }
   .wrap { max-width: 720px; margin: 0 auto; padding: 0 24px 80px; }
   nav { display: flex; align-items: center; padding: 20px 0; }
-  .mark { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
-  .mark img { width: 30px; height: 30px; border-radius: 8px; }
-  .mark b { font: 700 18px/1 var(--display); letter-spacing: -0.02em; }
+  .mark { display: inline-flex; align-items: center; text-decoration: none; }
+  .mark img { height: 26px; width: auto; display: block; }
   h1 { font: 700 34px/1.15 var(--display); letter-spacing: -0.02em; margin: 40px 0 8px; }
   .updated { color: var(--ink-2); font-size: 14px; margin-bottom: 32px; }
   h2 { font: 650 21px/1.3 var(--display); letter-spacing: -0.01em; margin: 36px 0 10px; }
@@ -46,7 +50,7 @@
 <body>
 <div class="wrap">
   <nav>
-    <a class="mark" href="/"><img src="/icon128.png" alt=""><b>Knockoff</b></a>
+    <a class="mark" href="/" aria-label="Knockoff home"><img src="/logo.svg" alt="Knockoff" width="125" height="26"></a>
   </nav>
 
   <h1>Privacy Policy</h1>
@@ -100,7 +104,7 @@
   so every claim here can be verified in code.</p>
 
   <h2>Contact</h2>
-  <p>Questions: <a href="mailto:josh@joshpigford.com">josh@joshpigford.com</a>
+  <p>Questions: <a href="mailto:hello@ordinarysystems.com">hello@ordinarysystems.com</a>
   or open an issue on
   <a href="https://github.com/Shpigford/knockoff/issues">GitHub</a>.</p>
 </div>
