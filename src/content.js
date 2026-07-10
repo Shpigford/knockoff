@@ -189,8 +189,28 @@
     return text && text.length <= 30 && !/\d{3,}/.test(text) ? text : "";
   }
 
+  // A book / music / movie tile carries Amazon's format-swatch links
+  // (Paperback, Kindle Edition, Audiobook, Blu-ray, Prime Video, Audio CD...).
+  // The label text is localized-ish, but the element's class pair is stable
+  // across marketplaces, so we key off the element, not the word — physical
+  // goods tiles never render it (verified 0/60 on a "screwdriver set" search).
+  // This catches media works on an all-departments (search-alias=aps) search,
+  // where the page-level department skip in scan() can't fire because there's
+  // no book/music/movie alias to match. Skipping is the safe direction: a tile
+  // we sit out is simply left unfiltered, never mislabeled.
+  function tileIsMediaWork(tile) {
+    return !!tile.querySelector("a.s-link-style.a-text-bold");
+  }
+
   function processTile(tile) {
     if (tile.hasAttribute("data-ko-verdict")) return;
+    // Books/music/movies on an all-departments search: the title is the work,
+    // not a brand-led product name, so classification misfires ("The Canterbury
+    // Tales" → unbranded). Mark it media and sit out, same as a media category.
+    if (tileIsMediaWork(tile)) {
+      tile.setAttribute("data-ko-verdict", "media");
+      return;
+    }
     // A dedicated brand byline is authoritative — classify it as the brand
     // directly, so a real brand whose name opens with an ordinary word
     // ("Pet Junkie") isn't misread as unbranded once Amazon strips it from the
