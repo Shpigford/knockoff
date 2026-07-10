@@ -67,6 +67,16 @@ var KO_FIXTURES = [
   ["Essri USB C to USB C Cable 3FT for Apple iPhone 17 16 Charger Cord, 4Pack 60W", "suspect"],
   ["SMALLElectric USB to USB C Cable 5 Pack 6FT, A to Type C Fast Charger Cord for iPhone 17 16 15, Samsung Galaxy, LG", "suspect"],
   ["Anker USB C to USB C Cable, Type-C 60W Fast Charging Cable (6 FT, 2Pack) for iPhone 17 Series, iPad mini 6 and More", "known"],
+  // A leading "[Apple MFi Certified]" bracket is a certification pitch, not the
+  // brand — without stripping it, "Apple" reads as the brand and greenlights the
+  // junk listing. Stripped, these have no brand up front → unbranded. A real
+  // brand after the bracket ("[MFi Certified] Anker...") would still be read.
+  ["[Apple MFi Certified] 6Pack 3/3/6/6/6/10 FT iPhone Charger Nylon Braided Fast Charging Lightning Cable Compatible iPhone 14 Pro/13 mini/13/12/11 Pro MAX/XR/XS/8/7/Plus/6S/SE/iPad", "unbranded"],
+  ["[Apple MFi Certified] iPhone Charger Fast Charging 3-Pack 3FT Lightning Cable Nylon Braided iPhone Charger Cord Compatible with iPhone 14 13 12 11 Pro Max XR XS X 8 7 6 Plus SE iPad and More 3FT", "unbranded"],
+  ["[MFi Certified] Anker USB C to Lightning Cable, 6ft Nylon Braided Fast Charging Cord", "known"],
+  ["[Apple] AirPods Pro Wireless Earbuds", "known"],
+  ["[Samsung] Galaxy Official USB-C to C Data Cable", "known"],
+  ["【MFi認証】エレコム USB Type-C ケーブル 2m 充電 データ転送", "foreign"],
   ["UGREEN USB C to USB C Cable, 100W 2-Pack USB C Charger Cable for iPhone 17 Pro Max", "known"],
   ["Samsung Galaxy Official USB-C to C Data Cable, 1.0m, Black", "known"],
   ["Orchard Apple Cider Vinegar Gummies, 60 Count", "unknown"],
