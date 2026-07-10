@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- Knockoff mark: signal-red price tag with a punched hole, struck through by a
-       white X. Matches the brand favicon in the knockoff-marketing site. Source of truth
+       white X. Matches the brand favicon in the marketing site. Source of truth
        for the rasterized extension icons — the mark fills the square edge-to-edge
        (its native 56.29x63.3 aspect scaled to full height, centered), no padding.
        Regenerate the PNGs with scripts/render-icons.sh after editing. -->

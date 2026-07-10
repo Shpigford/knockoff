@@ -1,4 +1,4 @@
-![Knockoff: Amazon, without the knockoffs](store-assets/promo-marquee.png)
+![Knockoff: Amazon, without the knockoffs](store-assets/promo-og.png)
 
 # Knockoff
 

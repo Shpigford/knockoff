@@ -84,7 +84,7 @@ Never skip this step, even for a "trivial" release.
    `store-assets/release-notes.md`:
    `gh release create v<version> --title "v<version>" --notes "<version section>"`.
    The public changelog (knockoff.shopping/changelog, served from the separate
-   `knockoff-marketing` repo) is generated from these GitHub releases by its
+   private marketing repo) is generated from these GitHub releases by its
    `/changelog` skill — skip this and the changelog won't pick up the release.
 
 ## Step 4 — Ship all three stores
