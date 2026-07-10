@@ -67,7 +67,10 @@
   var TILE_SELECTORS = [
     'div[data-component-type="s-search-result"]', // search results
     'div.octopus-pc-item[data-asin]',             // category "octopus" pages
-    'li[class*="ProductGridItem"][data-asin]'     // some browse grids
+    'li[class*="ProductGridItem"][data-asin]',    // some browse grids
+    // p13n "faceout" recommendation grids: "Keep shopping for" mission pages
+    // (/hz/mobile/mission/), homepage rows, "Related to items you've viewed".
+    'div.p13n-intuition-product-faceout__top-container[data-asin]'
   ].join(",");
 
   // Engraved-line SVG glyphs (24 viewBox, 2px round stroke). Static strings
@@ -174,7 +177,13 @@
              tile.querySelector("h2");
     var text = h2
       ? h2.textContent || h2.getAttribute("aria-label") || ""
-      : (tile.querySelector("a.a-text-normal") || {}).textContent || "";
+      // p13n "faceout" tiles carry no h2: the title is a non-bold
+      // .a-size-base-plus span (its bold siblings are the brand row and an
+      // "In cart" status). The brand is embedded at the front of this title,
+      // so classify() reads it from there like any other layout.
+      : (tile.querySelector("a.a-text-normal") ||
+         tile.querySelector(".a-size-base-plus:not(.a-text-bold)") ||
+         {}).textContent || "";
     return text.replace(SPONSORED_PREFIX, "");
   }
 
