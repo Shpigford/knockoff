@@ -8,7 +8,7 @@
 
    Filter actions:
      .ko-hide : remove from view (floating pill offers reveal)
-     .ko-dim  : fade + desaturate, restore on hover
+     .ko-dim  : fade + desaturate (stable — no hover reveal)
      .ko-label: badge only
    ──────────────────────────────────────────────────────────────────────────── */
 
@@ -54,15 +54,19 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
 }
 
 /* Dim Amazon's content but never our own chrome: opacity on the tile
-   itself would wash out the badge and menu with it. */
+   itself would wash out the badge and menu with it. The dim is stable — it
+   stays put on hover so the grid reads consistently instead of flickering
+   back to full color under the pointer. Resting opacity is high enough to
+   still judge and click the listing without needing to reveal it. */
 .ko-act.ko-dim > :not(.ko-badge):not(.ko-menu),
 .ko-revealed .ko-act.ko-hide > :not(.ko-badge):not(.ko-menu) {
-  opacity: 0.32;
-  filter: grayscale(0.85);
+  opacity: 0.5;
+  filter: grayscale(0.6);
   transition: opacity 0.18s ease, filter 0.18s ease;
 }
 
-.ko-act.ko-dim:hover > :not(.ko-badge):not(.ko-menu),
+/* Only items the user explicitly un-hid (clicked "Show") brighten on hover —
+   there the reveal is opt-in. A plain dimmed tile never restores on hover. */
 .ko-revealed .ko-act.ko-hide:hover > :not(.ko-badge):not(.ko-menu) {
   opacity: 1;
   filter: none;
@@ -680,17 +684,10 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
 }
 
 /* ── Touch devices ──────────────────────────────────────────────────────────
-   No :hover, so the dim-reveal (a dimmed listing brightens on hover) never
-   fires. Keep dimmed listings readable enough to judge and tap through,
-   rather than leaving them stuck faded. And lift the count pill clear of
-   Amazon's mobile bottom bar. */
+   Lift the count pill clear of Amazon's mobile bottom bar. Dimmed listings
+   already sit at a stable, readable opacity on every device (see above), so
+   there's no longer a touch-specific dim override to make. */
 @media (hover: none) {
-  .ko-act.ko-dim > :not(.ko-badge):not(.ko-menu),
-  .ko-revealed .ko-act.ko-hide > :not(.ko-badge):not(.ko-menu) {
-    opacity: 0.6;
-    filter: grayscale(0.5);
-  }
-
   #ko-pill {
     bottom: 72px;
   }
