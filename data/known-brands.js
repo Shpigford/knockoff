@@ -160,7 +160,7 @@ var KO_KNOWN_BRANDS = [
   "Otis", "OtterBox Venture", "Outdoor Research", "Park Tool", "Patagonia",
   "Pelican Coolers", "Pelican Kayak", "Peloton", "Perception", "Petzl",
   "Pinarello", "Pirelli", "Plano", "POC", "PowerBlock", "Primus",
-  "Princeton Tec", "ProForm", "Pure Encapsulations", "PXG", "Quiksilver",
+  "Princeton Tec", "ProForm", "PUGG", "Pure Encapsulations", "PXG", "Quiksilver",
   "Rawlings",
   "Rayovac", "Real Avid", "Red Wing", "Rehband", "REI", "REI Co-op",
   "Rep Fitness", "Riddell", "Rip Curl", "Rocky", "RockyMounts", "Rogue",
