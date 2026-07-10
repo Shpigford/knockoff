@@ -19,6 +19,9 @@
 //   strict   → blocked, flagged, suspect, unbranded, unknown
 //              (strict = allowlist-only: anything not recognized is filtered)
 //
+// Separately, rating and review criteria (applied by content.js) can filter a
+// product regardless of verdict unless the brand is in the user allowlist.
+//
 // The curated allowlist always vetoes the heuristics. Plenty of legitimate
 // brands look "gibberish" (ASICS, HOKA, RYOBI), so they must live in a list.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,6 +38,58 @@ var Knockoff = (function () {
     return (s || "").toLowerCase()
       .normalize("NFD").replace(/\p{Mn}/gu, "")          // fold diacritics: é→e, ü→u
       .replace(/[^a-z0-9]/g, "");
+  }
+
+  // ── Rating helpers ───────────────────────────────────────────────────────
+  // Parsers for the product rating and review count from the content script
+  // Kept here so they're unit-testable.
+
+  // Parse a star alt-text ("4.3 out of 5 stars", "4,3 von 5 Sternen") to a
+  // number. Accept "." or "," as decimal mark. Extracting rating from number
+  // with a decimal part works if rating is first or second (e.g. "5つ星のうち4.3")
+  // Returns null when there's no rating or an invalid value.
+  function parseRating(text) {
+    text = text || "";
+    var m = text.match(/(\d[.,]\d+)/) || text.match(/(\d+)/);
+    if (!m) return null;
+    var n = parseFloat(m[1].replace(",", "."));
+    if (isNaN(n) || n < 0 || n > 5) return null;
+    return n;
+  }
+
+  // Parse review count ("1,234", "(89)", "1.2K") to an integer. Null if none.
+  // Abbreviated counts are expanded numerically ("1.2K" → 1200, "3K+" → 3000);
+  function parseReviewCount(text) {
+    text = text || "";
+    var abbr = text.match(/(\d+(?:[.,]\d+)?)\s*([kKmM])\b/);
+    if (abbr) {
+      var n = parseFloat(abbr[1].replace(",", "."));
+      return Math.round(n * (abbr[2].toLowerCase() === "k" ? 1e3 : 1e6));
+    }
+    // Take the LAST number run, so a combined label such as
+    // "4.5 out of 5 stars, 1,234 ratings" yields 1234 — not every digit
+    // concatenated. The count trails the rating in every locale we've seen.
+    var groups = text.match(/\d[\d.,]*/g);
+    if (!groups) return null;
+    var digits = groups[groups.length - 1].replace(/[^\d]/g, "");
+    if (!digits) return null;
+    return parseInt(digits, 10);
+  }
+
+  // Filter a product whose rating is below minRating or whose review count
+  // is below minReviews (each check applies only when that minimum is set).
+  // Products with no rating are filtered only when filterUnrated is set.
+  // Products with unreadable review counts are not filtered.
+  // Returns [] or list of reasons the product is filtered
+  function ratingFailures(rating, reviews, settings) {
+    if (rating === null || rating === undefined) {
+      return settings.filterUnrated ? ["unrated"] : [];
+    }
+    var failures = [];
+    if (settings.minRating > 0 && rating < settings.minRating) failures.push("rating");
+    if (settings.minReviews > 0 && reviews !== null && reviews !== undefined &&
+        reviews < settings.minReviews) failures.push("reviews");
+    return failures;
   }
 
   // ── Script detection ─────────────────────────────────────────────────────
@@ -583,6 +638,9 @@ var Knockoff = (function () {
 
   return {
     normalize: normalize,
+    parseRating: parseRating,
+    parseReviewCount: parseReviewCount,
+    ratingFailures: ratingFailures,
     buildIndexes: buildIndexes,
     extractBrand: extractBrand,
     scoreBrand: scoreBrand,

@@ -84,6 +84,7 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
 .ko-v-unknown   { --ko-tint: #52525b; --ko-on-tint: #fff;    --ko-text: #52525b; }
 .ko-v-known,
 .ko-v-allowed   { --ko-tint: #047857; --ko-on-tint: #fff;    --ko-text: #047857; }
+.ko-v-lowrated  { --ko-tint: #4f46e5; --ko-on-tint: #fff;    --ko-text: #4f46e5; }
 
 /* ── Badge chip ─────────────────────────────────────────────────────────────
    Filled with the verdict color: a status chip must be readable at a
@@ -412,6 +413,48 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
 
 .ko-panel-brands .ko-panel-label {
   margin-bottom: 5px;
+}
+
+/* The heading doubles as a collapse toggle; folding the box shut frees space
+   on short screens. The button owns the gap to the rows, so zero it on the
+   label; collapsing hides the rows and points the caret right. */
+.ko-brand-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.ko-brand-head .ko-panel-label {
+  margin-bottom: 0;
+}
+
+.ko-brand-caret {
+  display: flex;
+  color: #a1a1aa;
+  transition: transform 0.15s ease;
+}
+
+.ko-brand-caret svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ko-brands-collapsed .ko-brand-head {
+  margin-bottom: 0;
+}
+
+.ko-brands-collapsed .ko-brand-caret {
+  transform: rotate(-90deg);
+}
+
+.ko-brands-collapsed .ko-brand-scroll {
+  display: none;
 }
 
 /* Heading stays pinned; only the rows scroll. 6 rows tall, then scrolls.

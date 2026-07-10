@@ -28,7 +28,10 @@
     showKnownBadge: false,    // show a ✓ badge on recognized brands too
     hideSponsored: false,     // hide Amazon "Sponsored" search tiles (opt-in)
     allow: [],                // user allowlist (display names)
-    block: []                 // user blocklist (display names)
+    block: [],                // user blocklist (display names)
+    minRating: 0,             // rating filter: 0 = off, else 3.0–5.0
+    minReviews: 0,            // review filter: 0 = off, else min review count
+    filterUnrated: false      // also filter listings with no rating at all
   };
 
   var settings = Object.assign({}, DEFAULTS);
@@ -39,6 +42,7 @@
   // feeding the panel's "Filtered brands" list.
   var stats = { scanned: 0, filtered: 0, byVerdict: {}, brands: {} };
   var revealed = false; // session-only "show hidden items" toggle
+  var brandsCollapsed = false; // persisted: panel "Filtered brands" box folded shut
 
   // Lifetime tally shown in the popup. Deduped per ASIN per page load so
   // rescans (settings changes) don't double-count; drift across concurrent
@@ -85,7 +89,9 @@
     shield:   S + '<path d="M12 2.8 19 5.4v5.2c0 4.6-2.9 7.8-7 9.6-4.1-1.8-7-5-7-9.6V5.4Z"/><path d="m8.8 11.9 2.3 2.3 4.3-4.7"/></svg>',
     ban:      S + '<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></svg>',
     x:        S + '<path d="m6 6 12 12M18 6 6 18"/></svg>',
-    flag:     S + '<path d="M5 21V4.5C7.7 3 10.3 3 13 4.5c2 1.1 4 1.3 6 .6V15c-2 .7-4 .5-6-.6-2.7-1.5-5.3-1.5-8 0"/></svg>'
+    flag:     S + '<path d="M5 21V4.5C7.7 3 10.3 3 13 4.5c2 1.1 4 1.3 6 .6V15c-2 .7-4 .5-6-.6-2.7-1.5-5.3-1.5-8 0"/></svg>',
+    star:     S + '<path d="M12 3.2l2.6 5.27 5.82.85-4.21 4.1.99 5.8L12 16.9l-5.2 2.73.99-5.8-4.21-4.1 5.82-.85z"/></svg>',
+    caret:    S + '<path d="m6 9 6 6 6-6"/></svg>'
   };
 
   var VERDICT_META = {
@@ -95,7 +101,8 @@
     unbranded: { icon: "alert",    label: "Unbranded" },
     unknown:   { icon: "dashed",   label: "Unrecognized" },
     known:     { icon: "seal",     label: "Established" },
-    allowed:   { icon: "seal",     label: "Trusted by you" }
+    allowed:   { icon: "seal",     label: "Trusted by you" },
+    lowrated:  { icon: "star",     label: "Low rating" }
   };
 
   // ── Storage ────────────────────────────────────────────────────────────────
@@ -211,6 +218,48 @@
     return !!tile.querySelector("a.s-link-style.a-text-bold");
   }
 
+  // Get product rating. Prefer alt text as star icons increment by half stars
+  function tileRating(tile) {
+    var alt = tile.querySelector(".a-icon-alt");
+    var fromAlt = alt ? Knockoff.parseRating(alt.textContent) : null;
+    if (fromAlt !== null) return fromAlt;
+    var star = tile.querySelector('i[class*="a-star-"]');
+    var m = star && star.className.match(/a-star-(?:[a-z]+-)?(\d)(?:-(\d))?/);
+    return m ? parseFloat(m[1] + (m[2] ? "." + m[2] : "")) : null;
+  }
+
+  // Get review count. Prefer the count link's aria-label / text (it carries the
+  // exact number even when the visible text is abbreviated). querySelector on a
+  // comma list returns the first match in DOM order, not the first selector, so
+  // try the trustworthy link selectors first and only then the generic span —
+  // and gate that span on count-shaped text so a stray number (price, rank,
+  // "20% off") can't be misread as a review count.
+  function tileReviews(tile) {
+    var link = tile.querySelector(
+      'a[href*="customerReviews"], a[aria-label$="ratings"], a[aria-label$="rating"]'
+    );
+    if (link) {
+      var n = Knockoff.parseReviewCount(link.getAttribute("aria-label") || link.textContent || "");
+      if (n !== null) return n;
+    }
+    var span = tile.querySelector("span.a-size-base.s-underline-text");
+    var text = span ? span.textContent.trim() : "";
+    if (/^\(?\s*[\d.,]+\s*[kKmM]?\+?\s*\)?$/.test(text)) return Knockoff.parseReviewCount(text);
+    return null;
+  }
+
+  // Rating verdict for products that pass the brand pipeline.
+  // Carries the brand so the badge menu's Trust/Block still act on it.
+  function ratingResult(rating, reviews, failures, brandResult) {
+    var bits = failures.map(function (f) {
+      if (f === "unrated") return "no ratings yet";
+      if (f === "rating") return "rated " + rating + ", below your " + settings.minRating + " minimum";
+      return "only " + reviews + " review" + (reviews === 1 ? "" : "s") +
+        ", below your " + settings.minReviews + " minimum";
+    });
+    return { verdict: "lowrated", brand: brandResult.brand, key: brandResult.key, reason: bits.join("; ") };
+  }
+
   function processTile(tile) {
     if (tile.hasAttribute("data-ko-verdict")) return;
     // Books/music/movies on an all-departments search: the title is the work,
@@ -231,20 +280,32 @@
     var result = brandRow
       ? Knockoff.classifyBrand(brandRow, settings, userAllow, userBlock, title)
       : Knockoff.classify(title, settings, userAllow, userBlock);
-    var act = Knockoff.shouldAct(result.verdict, settings.level);
+    var brandAct = Knockoff.shouldAct(result.verdict, settings.level);
 
     // A tile whose extracted brand is exactly a word the shopper searched for
     // is probably the category noun they asked for. Spare heuristic-only
     // catches, but keep explicit user/seed blocklists enforced.
-    if (act && result.key && searchAllow.has(result.key) &&
+    if (brandAct && result.key && searchAllow.has(result.key) &&
         (result.verdict === "suspect" || result.verdict === "unknown")) {
-      act = false;
+      brandAct = false;
     }
 
-    tile.setAttribute("data-ko-verdict", result.verdict);
+    // The rating gate is independent of the brand verdict (spared tiles
+    // included); only a user-allowlisted brand bypasses it.
+    var rating = tileRating(tile);
+    var reviews = tileReviews(tile);
+    var ratingFails = result.verdict !== "allowed"
+      ? Knockoff.ratingFailures(rating, reviews, settings)
+      : [];
+    var act = brandAct || ratingFails.length > 0;
+
+    // Filtered for rating alone: badge as low-rated; otherwise keep the brand verdict.
+    var displayResult = (act && !brandAct) ? ratingResult(rating, reviews, ratingFails, result) : result;
+
+    tile.setAttribute("data-ko-verdict", displayResult.verdict);
     if (result.brand) tile.setAttribute("data-ko-brand", result.brand);
     stats.scanned++;
-    stats.byVerdict[result.verdict] = (stats.byVerdict[result.verdict] || 0) + 1;
+    stats.byVerdict[displayResult.verdict] = (stats.byVerdict[displayResult.verdict] || 0) + 1;
 
     if (act) {
       stats.filtered++;
@@ -255,7 +316,7 @@
         entry.count++;
       }
       tile.classList.add("ko-act", "ko-" + settings.action);
-      addBadge(tile, result);
+      addBadge(tile, displayResult);
     } else if (settings.showKnownBadge || result.verdict === "allowed") {
       if (result.verdict === "known" || result.verdict === "allowed") {
         addBadge(tile, result);
@@ -345,7 +406,9 @@
     }));
     menu.appendChild(group);
 
-    if (result.brand) {
+    // Add brand report button if brand was found and product was not filtered
+    // due to a low rating.
+    if (result.brand && result.verdict !== "lowrated") {
       var filtered = Knockoff.shouldAct(result.verdict, settings.level);
       var suggestion = filtered ? "not_junk" : "is_junk";
       menu.appendChild(el("div", "ko-menu-sep"));
@@ -673,6 +736,45 @@
     spRow.appendChild(spText);
     spRow.appendChild(spSwitch);
     card.appendChild(spRow);
+
+    // Rating & review cutoffs: coarse presets for honing results while
+    // shopping. Exact thresholds live on the options page. Values are numeric
+    // (0 = off) so they round-trip with the detector and the options controls.
+    card.appendChild(el("div", "ko-panel-rule"));
+    var l3 = el("div", "ko-panel-label");
+    l3.textContent = "Minimum rating";
+    card.appendChild(l3);
+    card.appendChild(segControl("minRating", [
+      { value: 0, label: "Off" },
+      { value: 4, label: "4★" },
+      { value: 4.5, label: "4.5★" }
+    ]));
+    card.appendChild(el("div", "ko-panel-rule"));
+    var l4 = el("div", "ko-panel-label");
+    l4.textContent = "Minimum reviews";
+    card.appendChild(l4);
+    card.appendChild(segControl("minReviews", [
+      { value: 0, label: "Off" },
+      { value: 100, label: "100+" },
+      { value: 1000, label: "1K+" }
+    ]));
+    card.appendChild(el("div", "ko-panel-rule"));
+    var unRow = el("label", "ko-panel-toggle");
+    var unText = el("span", "ko-panel-toggle-label");
+    unText.textContent = "Filter unrated listings";
+    var unSwitch = el("span", "ko-switch");
+    var unInput = document.createElement("input");
+    unInput.type = "checkbox";
+    unInput.id = "ko-panel-unrated";
+    unInput.addEventListener("change", function () {
+      chrome.storage.sync.set({ filterUnrated: unInput.checked });
+    });
+    unSwitch.appendChild(unInput);
+    unSwitch.appendChild(el("span", "ko-switch-slider"));
+    unRow.appendChild(unText);
+    unRow.appendChild(unSwitch);
+    card.appendChild(unRow);
+
     panel.appendChild(card);
 
     // footer
@@ -714,9 +816,24 @@
     list.style.display = entries.length ? "" : "none";
     if (!entries.length) return;
 
-    var heading = el("div", "ko-panel-label");
+    // The heading is a disclosure toggle. Folding the box shut frees the
+    // vertical space it takes (it's the tallest, most variable section), so the
+    // controls below stay reachable on short screens. State persists.
+    var header = document.createElement("button");
+    header.type = "button";
+    header.className = "ko-brand-head";
+    var heading = el("span", "ko-panel-label");
     heading.textContent = "Filtered brands";
-    list.appendChild(heading);
+    header.appendChild(heading);
+    var caret = el("span", "ko-brand-caret");
+    caret.innerHTML = ICONS.caret; // static markup only
+    header.appendChild(caret);
+    header.addEventListener("click", function () {
+      brandsCollapsed = !brandsCollapsed;
+      chrome.storage.local.set({ brandsCollapsed: brandsCollapsed });
+      applyBrandsCollapsed(list);
+    });
+    list.appendChild(header);
     // Rows scroll; the heading stays pinned above them.
     var scroll = el("div", "ko-brand-scroll");
     list.appendChild(scroll);
@@ -750,6 +867,14 @@
       more.textContent = "+" + (entries.length - MAX_ROWS) + " more";
       scroll.appendChild(more);
     }
+    applyBrandsCollapsed(list);
+  }
+
+  // Reflect the persisted fold state onto the brands box (CSS hides the rows).
+  function applyBrandsCollapsed(list) {
+    list.classList.toggle("ko-brands-collapsed", brandsCollapsed);
+    var head = list.querySelector(".ko-brand-head");
+    if (head) head.setAttribute("aria-expanded", String(!brandsCollapsed));
   }
 
   // Refresh the panel's numbers and control states from current settings,
@@ -761,12 +886,16 @@
     panel.classList.toggle("ko-panel-off", !settings.enabled);
     document.getElementById("ko-panel-enabled").checked = settings.enabled;
     document.getElementById("ko-panel-sponsored").checked = settings.hideSponsored;
+    document.getElementById("ko-panel-unrated").checked = settings.filterUnrated;
     document.getElementById("ko-panel-num").textContent = stats.filtered;
     document.getElementById("ko-panel-hint").textContent = LEVEL_HINTS[settings.level];
     panel.querySelectorAll("[data-ko-seg]").forEach(function (track) {
       var key = track.getAttribute("data-ko-seg");
       track.querySelectorAll("button").forEach(function (b) {
-        b.classList.toggle("ko-seg-active", b.getAttribute("data-v") === settings[key]);
+        // data-v is a string; minRating/minReviews are numbers, so compare as
+        // strings. A custom options-set value (e.g. 250) matches no preset and
+        // simply leaves the segment unhighlighted.
+        b.classList.toggle("ko-seg-active", b.getAttribute("data-v") === String(settings[key]));
       });
     });
     chrome.storage.local.get({ lifetimeFiltered: 0 }).then(function (s) {
@@ -896,6 +1025,10 @@
     if (event.target.closest && (event.target.closest(".ko-menu") || event.target.closest(".ko-badge"))) return;
     document.querySelectorAll(".ko-menu").forEach(function (menu) { menu.remove(); });
   }, true);
+
+  chrome.storage.local.get({ brandsCollapsed: false }).then(function (s) {
+    brandsCollapsed = s.brandsCollapsed;
+  });
 
   loadSettings()
     .then(loadCommunityList)

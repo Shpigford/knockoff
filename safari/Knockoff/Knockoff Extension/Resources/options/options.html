@@ -57,6 +57,36 @@
     </section>
 
     <section>
+      <h2>Ratings &amp; reviews</h2>
+      <p class="hint">Filter by rating and review count. This does not affect brands on your allowlist.</p>
+      <label class="row">
+        <span class="row-copy">
+          <span class="row-title">Minimum rating</span>
+          <span class="row-sub">Filter listings rated below this. Off turns this filter off.</span>
+        </span>
+        <select id="minRating" class="select">
+          <option value="0">Off</option>
+          <option value="4">4.0★ &amp; up</option>
+          <option value="4.5">4.5★ &amp; up</option>
+        </select>
+      </label>
+      <label class="row">
+        <span class="row-copy">
+          <span class="row-title">Minimum reviews</span>
+          <span class="row-sub">Filter listings with fewer reviews than this. 0 turns this filter off.</span>
+        </span>
+        <input type="text" id="minReviews" class="num" inputmode="numeric" pattern="[0-9]*" maxlength="9">
+      </label>
+      <label class="row">
+        <span class="row-copy">
+          <span class="row-title">Filter unrated listings</span>
+          <span class="row-sub">Filter listings with no rating.</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="filterUnrated"><span class="slider"></span></span>
+      </label>
+    </section>
+
+    <section>
       <h2>Rules</h2>
       <label class="row">
         <span class="row-copy">
