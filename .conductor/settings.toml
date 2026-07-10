@@ -8,9 +8,3 @@ file_include_globs = """
 .env.asc
 .env.cws
 """
-
-[scripts]
-# .seo/ (brand voice, editorial rules, content ledger) is SHARED, not copied:
-# a symlink to the root checkout means ledger updates made in any workspace
-# land in the one canonical copy instead of dying with the worktree.
-setup = '[ ! -d "$CONDUCTOR_ROOT_PATH/.seo" ] || { [ -L .seo ] || rm -rf .seo; ln -sfn "$CONDUCTOR_ROOT_PATH/.seo" .seo; }'

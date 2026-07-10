@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://knockoff.shopping/sitemap.xml

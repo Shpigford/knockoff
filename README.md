@@ -125,7 +125,6 @@ src/background.js         toolbar button → panel toggle (or options page)
 options/                  settings page (rules, allow/blocklist)
 report-worker/            Cloudflare Worker: reports, curation, brand-list API
 safari/                   Xcode wrapper app for Safari (macOS)
-site/                     knockoff.shopping landing page (static, Cloudflare)
 store-assets/             Chrome Web Store images + the HTML frames that render them
 scripts/                  maintenance scripts
 ```

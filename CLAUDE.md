@@ -16,7 +16,7 @@ Knockoff is a cross-browser MV3 extension (Chrome/Firefox/Safari) that filters t
 - **Firefox / AMO release:** `scripts/release-firefox.sh` — lints and submits a listed version via `web-ext`, pulling version notes from `store-assets/release-notes.md`; needs `.env.amo` (see `.env.amo.example`).
 - **Safari App Store release:** `scripts/release-safari.sh` (archive + upload), then `scripts/submit-appstore.rb`.
 - **Refresh bundled community list:** `scripts/update-bundled-brands.sh` regenerates `data/community-brands.js` from the live `/brands` endpoint (generated file — never hand-edit). `/release` runs it at release time.
-- **Deploy workers:** `wrangler deploy` inside `report-worker/` or `site/`. First-time D1/secret setup is documented in the header of `report-worker/worker.js`.
+- **Deploy the worker:** `wrangler deploy` inside `report-worker/`. First-time D1/secret setup is documented in the header of `report-worker/worker.js`.
 
 ## Architecture
 
@@ -40,7 +40,7 @@ Media/digital categories (Books, Kindle, Audible, music, movies, apps…) are sk
 ### Server side (all optional to the shopping path)
 
 - **`report-worker/`** — Cloudflare Worker + D1 at `api.knockoff.shopping`: accepts one-click misclassification reports, serves the community allowlist (`/brands`, D1-backed and edge-cached; the base list was seeded once from `seed-brands.sql`, and `data/community-brands.js` is its bundled snapshot, regenerated at release time) and curated blocklist additions (`/flagged`), and hosts a token-gated `/review` curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. Endpoints documented in `worker.js` header.
-- **`site/`** — static landing page + SEO guide pages (Cloudflare Worker assets, plus `site/worker.js` for canonical-host 301s) at knockoff.shopping. For any SEO/content work, read `.seo/brand.md` first (voice, forbidden words, editorial rules) and log shipped pieces in `.seo/content-ledger.md`; new pages go in `site/public/sitemap.xml` and every page's footer.
+The **marketing site** (knockoff.shopping) and its SEO/content strategy no longer live here — they moved to a separate repo (`knockoff-marketing`, Next.js on Vercel). This repo is the extension plus the report worker.
 
 Everything else runs locally in the content script; the extension's only first-party network dependency is `api.knockoff.shopping`.
 

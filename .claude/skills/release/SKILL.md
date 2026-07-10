@@ -77,14 +77,15 @@ Never skip this step, even for a "trivial" release.
 3. Run `./scripts/sync-safari.sh` — this is what carries the version into the
    Xcode project (`MARKETING_VERSION`) and syncs the extension resources.
    Never edit `MARKETING_VERSION` by hand.
-4. Run `node scripts/build-changelog.js` — regenerates
-   `site/public/changelog.html` from `store-assets/release-notes.md` (rolled in
-   Step 2), dating each version from its `v<version>` tag. The version being
-   released has no tag yet, so it's dated today — correct on release day.
-5. Re-run `node scripts/render-listing.js --check` and `node tests/run.js`.
-6. Commit everything as `Release v<version>` (including the regenerated
-   `site/public/changelog.html`), tag `v<version>`, and
+4. Re-run `node scripts/render-listing.js --check` and `node tests/run.js`.
+5. Commit everything as `Release v<version>`, tag `v<version>`, and
    `git push origin main --follow-tags`.
+6. Create a GitHub release for the tag, body = this version's section from
+   `store-assets/release-notes.md`:
+   `gh release create v<version> --title "v<version>" --notes "<version section>"`.
+   The public changelog (knockoff.shopping/changelog, served from the separate
+   `knockoff-marketing` repo) is generated from these GitHub releases by its
+   `/changelog` skill — skip this and the changelog won't pick up the release.
 
 ## Step 4 — Ship all three stores
 
