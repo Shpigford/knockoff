@@ -2,9 +2,17 @@
 // arrays of display names in chrome.storage.sync (normalization happens in
 // the detector at lookup time).
 
-var FIELDS = ["enabled", "hideSponsored", "flagChineseMajor", "showKnownBadge"];
+var FIELDS = ["enabled", "hideSponsored", "flagChineseMajor", "showKnownBadge", "filterUnrated"];
 var SEGS = ["action", "level"];
 var save = document.getElementById("save");
+var minRatingSelect = document.getElementById("minRating");
+
+// Review count is a non-negative integer, strip other characters
+var minReviewsInput = document.getElementById("minReviews");
+minReviewsInput.addEventListener("input", function () {
+  var cleaned = minReviewsInput.value.replace(/\D/g, "");
+  if (cleaned !== minReviewsInput.value) minReviewsInput.value = cleaned;
+});
 
 // Same copy as LEVEL_HINTS in content.js (separate scopes, keep in sync).
 var LEVEL_HINTS = {
@@ -31,7 +39,10 @@ var SYNC_DEFAULTS = {
   flagChineseMajor: false,
   showKnownBadge: false,
   allow: [],
-  block: []
+  block: [],
+  minRating: 0,
+  minReviews: 0,
+  filterUnrated: false
 };
 
 // Reflect a stored settings object into every control. Used on load and after
@@ -47,6 +58,8 @@ function fillForm(s) {
   updateLevelHint();
   document.getElementById("allow").value = s.allow.join("\n");
   document.getElementById("block").value = s.block.join("\n");
+  minRatingSelect.value = String(s.minRating);
+  minReviewsInput.value = s.minReviews;
 }
 
 chrome.storage.sync.get(SYNC_DEFAULTS).then(function (s) {
@@ -133,7 +146,7 @@ refreshBtn.addEventListener("click", function () {
 function sanitizeSettings(s) {
   var out = {};
   if (!s || typeof s !== "object") return out;
-  ["enabled", "hideSponsored", "flagChineseMajor", "showKnownBadge"].forEach(function (k) {
+  ["enabled", "hideSponsored", "flagChineseMajor", "showKnownBadge", "filterUnrated"].forEach(function (k) {
     if (typeof s[k] === "boolean") out[k] = s[k];
   });
   if (["hide", "dim", "label"].indexOf(s.action) >= 0) out.action = s.action;
@@ -144,6 +157,14 @@ function sanitizeSettings(s) {
         .map(function (b) { return b.trim(); }).slice(0, 5000);
     }
   });
+  // Rating filter numerics: the UI produces 0 (off) or 3–5 for minRating and a
+  // non-negative integer for minReviews; anything else is malformed, drop it.
+  if (typeof s.minRating === "number" && (s.minRating === 0 || (s.minRating >= 3 && s.minRating <= 5))) {
+    out.minRating = s.minRating;
+  }
+  if (typeof s.minReviews === "number" && Number.isInteger(s.minReviews) && s.minReviews >= 0) {
+    out.minReviews = s.minReviews;
+  }
   return out;
 }
 
@@ -210,6 +231,8 @@ save.addEventListener("click", function () {
     var v = segValue(name);
     if (v) patch[name] = v;
   });
+  patch.minRating = parseFloat(minRatingSelect.value) || 0;
+  patch.minReviews = parseInt(minReviewsInput.value, 10) || 0;
   chrome.storage.sync.set(patch).then(function () {
     var saved = document.getElementById("saved");
     saved.hidden = false;

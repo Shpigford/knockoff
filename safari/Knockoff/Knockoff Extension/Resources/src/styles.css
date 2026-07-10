@@ -80,6 +80,7 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
 .ko-v-unknown   { --ko-tint: #52525b; --ko-on-tint: #fff;    --ko-text: #52525b; }
 .ko-v-known,
 .ko-v-allowed   { --ko-tint: #047857; --ko-on-tint: #fff;    --ko-text: #047857; }
+.ko-v-lowrated  { --ko-tint: #4f46e5; --ko-on-tint: #fff;    --ko-text: #4f46e5; }
 
 /* ── Badge chip ─────────────────────────────────────────────────────────────
    Filled with the verdict color: a status chip must be readable at a

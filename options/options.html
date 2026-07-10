@@ -76,6 +76,55 @@
     </section>
 
     <section>
+      <h2>Ratings &amp; reviews</h2>
+      <p class="hint">Filter by rating and review count. This does not affect brands on your allowlist.</p>
+      <label class="row">
+        <span class="row-copy">
+          <span class="row-title">Minimum rating</span>
+          <span class="row-sub">Filter listings rated below this. Off turns this filter off.</span>
+        </span>
+        <select id="minRating" class="select">
+          <option value="0">Off</option>
+          <option value="3">3.0</option>
+          <option value="3.1">3.1</option>
+          <option value="3.2">3.2</option>
+          <option value="3.3">3.3</option>
+          <option value="3.4">3.4</option>
+          <option value="3.5">3.5</option>
+          <option value="3.6">3.6</option>
+          <option value="3.7">3.7</option>
+          <option value="3.8">3.8</option>
+          <option value="3.9">3.9</option>
+          <option value="4">4.0</option>
+          <option value="4.1">4.1</option>
+          <option value="4.2">4.2</option>
+          <option value="4.3">4.3</option>
+          <option value="4.4">4.4</option>
+          <option value="4.5">4.5</option>
+          <option value="4.6">4.6</option>
+          <option value="4.7">4.7</option>
+          <option value="4.8">4.8</option>
+          <option value="4.9">4.9</option>
+          <option value="5">5.0</option>
+        </select>
+      </label>
+      <label class="row">
+        <span class="row-copy">
+          <span class="row-title">Minimum reviews</span>
+          <span class="row-sub">Filter listings with fewer reviews than this. 0 turns this filter off.</span>
+        </span>
+        <input type="text" id="minReviews" class="num" inputmode="numeric" pattern="[0-9]*" maxlength="9">
+      </label>
+      <label class="row">
+        <span class="row-copy">
+          <span class="row-title">Filter unrated listings</span>
+          <span class="row-sub">Filter listings with no rating.</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="filterUnrated"><span class="slider"></span></span>
+      </label>
+    </section>
+
+    <section>
       <h2>Rules</h2>
       <label class="row">
         <span class="row-copy">

@@ -28,7 +28,10 @@
     showKnownBadge: false,    // show a ✓ badge on recognized brands too
     hideSponsored: false,     // hide Amazon "Sponsored" search tiles (opt-in)
     allow: [],                // user allowlist (display names)
-    block: []                 // user blocklist (display names)
+    block: [],                // user blocklist (display names)
+    minRating: 0,             // rating filter: 0 = off, else 3.0–5.0
+    minReviews: 0,            // review filter: 0 = off, else min review count
+    filterUnrated: false      // also filter listings with no rating at all
   };
 
   var settings = Object.assign({}, DEFAULTS);
@@ -82,7 +85,8 @@
     shield:   S + '<path d="M12 2.8 19 5.4v5.2c0 4.6-2.9 7.8-7 9.6-4.1-1.8-7-5-7-9.6V5.4Z"/><path d="m8.8 11.9 2.3 2.3 4.3-4.7"/></svg>',
     ban:      S + '<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></svg>',
     x:        S + '<path d="m6 6 12 12M18 6 6 18"/></svg>',
-    flag:     S + '<path d="M5 21V4.5C7.7 3 10.3 3 13 4.5c2 1.1 4 1.3 6 .6V15c-2 .7-4 .5-6-.6-2.7-1.5-5.3-1.5-8 0"/></svg>'
+    flag:     S + '<path d="M5 21V4.5C7.7 3 10.3 3 13 4.5c2 1.1 4 1.3 6 .6V15c-2 .7-4 .5-6-.6-2.7-1.5-5.3-1.5-8 0"/></svg>',
+    star:     S + '<path d="M12 3.2l2.6 5.27 5.82.85-4.21 4.1.99 5.8L12 16.9l-5.2 2.73.99-5.8-4.21-4.1 5.82-.85z"/></svg>'
   };
 
   var VERDICT_META = {
@@ -92,7 +96,8 @@
     unbranded: { icon: "alert",    label: "Unbranded" },
     unknown:   { icon: "dashed",   label: "Unrecognized" },
     known:     { icon: "seal",     label: "Established" },
-    allowed:   { icon: "seal",     label: "Trusted by you" }
+    allowed:   { icon: "seal",     label: "Trusted by you" },
+    lowrated:  { icon: "star",     label: "Low rating" }
   };
 
   // ── Storage ────────────────────────────────────────────────────────────────
@@ -189,6 +194,37 @@
     return text && text.length <= 30 && !/\d{3,}/.test(text) ? text : "";
   }
 
+  // Get product rating. Prefer alt text as star icons increment by half stars
+  function tileRating(tile) {
+    var alt = tile.querySelector(".a-icon-alt");
+    var fromAlt = alt ? Knockoff.parseRating(alt.textContent) : null;
+    if (fromAlt !== null) return fromAlt;
+    var star = tile.querySelector('i[class*="a-star-"]');
+    var m = star && star.className.match(/a-star-(?:[a-z]+-)?(\d)(?:-(\d))?/);
+    return m ? parseFloat(m[1] + (m[2] ? "." + m[2] : "")) : null;
+  }
+
+  // Get review count from #customerReviews. Prefer aria-label with exact count
+  function tileReviews(tile) {
+    var el = tile.querySelector(
+      'a[href*="customerReviews"], a[aria-label$="ratings"], a[aria-label$="rating"], span.a-size-base.s-underline-text'
+    );
+    if (!el) return null;
+    return Knockoff.parseReviewCount(el.getAttribute("aria-label") || el.textContent || "");
+  }
+
+  // Rating verdict for products that pass the brand pipeline.
+  // Carries the brand so the badge menu's Trust/Block still act on it.
+  function ratingResult(rating, reviews, failures, brandResult) {
+    var bits = failures.map(function (f) {
+      if (f === "unrated") return "no ratings yet";
+      if (f === "rating") return "rated " + rating + ", below your " + settings.minRating + " minimum";
+      return "only " + reviews + " review" + (reviews === 1 ? "" : "s") +
+        ", below your " + settings.minReviews + " minimum";
+    });
+    return { verdict: "lowrated", brand: brandResult.brand, key: brandResult.key, reason: bits.join("; ") };
+  }
+
   function processTile(tile) {
     if (tile.hasAttribute("data-ko-verdict")) return;
     // A dedicated brand byline is authoritative — classify it as the brand
@@ -202,20 +238,32 @@
     var result = brandRow
       ? Knockoff.classifyBrand(brandRow, settings, userAllow, userBlock, title)
       : Knockoff.classify(title, settings, userAllow, userBlock);
-    var act = Knockoff.shouldAct(result.verdict, settings.level);
+    var brandAct = Knockoff.shouldAct(result.verdict, settings.level);
 
     // A tile whose extracted brand is exactly a word the shopper searched for
     // is probably the category noun they asked for. Spare heuristic-only
     // catches, but keep explicit user/seed blocklists enforced.
-    if (act && result.key && searchAllow.has(result.key) &&
+    if (brandAct && result.key && searchAllow.has(result.key) &&
         (result.verdict === "suspect" || result.verdict === "unknown")) {
-      act = false;
+      brandAct = false;
     }
 
-    tile.setAttribute("data-ko-verdict", result.verdict);
+    // The rating gate is independent of the brand verdict (spared tiles
+    // included); only a user-allowlisted brand bypasses it.
+    var rating = tileRating(tile);
+    var reviews = tileReviews(tile);
+    var ratingFails = result.verdict !== "allowed"
+      ? Knockoff.ratingFailures(rating, reviews, settings)
+      : [];
+    var act = brandAct || ratingFails.length > 0;
+
+    // Filtered for rating alone: badge as low-rated; otherwise keep the brand verdict.
+    var displayResult = (act && !brandAct) ? ratingResult(rating, reviews, ratingFails, result) : result;
+
+    tile.setAttribute("data-ko-verdict", displayResult.verdict);
     if (result.brand) tile.setAttribute("data-ko-brand", result.brand);
     stats.scanned++;
-    stats.byVerdict[result.verdict] = (stats.byVerdict[result.verdict] || 0) + 1;
+    stats.byVerdict[displayResult.verdict] = (stats.byVerdict[displayResult.verdict] || 0) + 1;
 
     if (act) {
       stats.filtered++;
@@ -226,7 +274,7 @@
         entry.count++;
       }
       tile.classList.add("ko-act", "ko-" + settings.action);
-      addBadge(tile, result);
+      addBadge(tile, displayResult);
     } else if (settings.showKnownBadge || result.verdict === "allowed") {
       if (result.verdict === "known" || result.verdict === "allowed") {
         addBadge(tile, result);
@@ -316,7 +364,9 @@
     }));
     menu.appendChild(group);
 
-    if (result.brand) {
+    // Add brand report button if brand was found and product was not filtered
+    // due to a low rating.
+    if (result.brand && result.verdict !== "lowrated") {
       var filtered = Knockoff.shouldAct(result.verdict, settings.level);
       var suggestion = filtered ? "not_junk" : "is_junk";
       menu.appendChild(el("div", "ko-menu-sep"));

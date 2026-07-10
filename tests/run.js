@@ -140,5 +140,49 @@ for (const [name, expected] of sellerFixtures) {
   check(`seller "${name}"`, r.verdict, expected, r.reason);
 }
 
+// ── Rating filter helpers ────────────────────────────────────────────────────
+check("parseRating en", Knockoff.parseRating("4.3 out of 5 stars"), 4.3);
+check("parseRating comma locale", Knockoff.parseRating("4,3 von 5 Sternen"), 4.3);
+check("parseRating whole", Knockoff.parseRating("5 out of 5 stars"), 5);
+check("parseRating none", Knockoff.parseRating("No ratings"), null);
+check("parseRating empty", Knockoff.parseRating(""), null);
+check("parseRating over-5 rejected", Knockoff.parseRating("1234 ratings"), null);
+// ja alt text leads with the scale; the score is the decimal-bearing number.
+check("parseRating scale-first", Knockoff.parseRating("5つ星のうち4.3"), 4.3);
+check("parseReviewCount comma", Knockoff.parseReviewCount("1,234"), 1234);
+check("parseReviewCount dot", Knockoff.parseReviewCount("1.234"), 1234);
+check("parseReviewCount parens", Knockoff.parseReviewCount("(89)"), 89);
+check("parseReviewCount plain", Knockoff.parseReviewCount("12"), 12);
+check("parseReviewCount none", Knockoff.parseReviewCount("ratings"), null);
+// Abbreviated counts expand numerically; digit-stripping "1.2K" would read 12.
+check("parseReviewCount K", Knockoff.parseReviewCount("1.2K"), 1200);
+check("parseReviewCount K comma decimal", Knockoff.parseReviewCount("1,2K"), 1200);
+check("parseReviewCount K plus", Knockoff.parseReviewCount("3K+"), 3000);
+check("parseReviewCount M", Knockoff.parseReviewCount("1.1M"), 1100000);
+check("parseReviewCount word after digit", Knockoff.parseReviewCount("1 Kundenrezension"), 1);
+
+var rOff = { minRating: 0, minReviews: 0, filterUnrated: false };
+var r4 = { minRating: 4, minReviews: 0, filterUnrated: false };
+var rRev100 = { minRating: 0, minReviews: 100, filterUnrated: false };
+var rBoth = { minRating: 4, minReviews: 100, filterUnrated: false };
+var r4unrated = { minRating: 4, minReviews: 0, filterUnrated: true };
+
+// Joined to a string so check()'s === comparison works on the arrays.
+function failures(rating, reviews, s) {
+  return Knockoff.ratingFailures(rating, reviews, s).join(",");
+}
+
+check("ratingFailures off", failures(2, 100, rOff), "");
+check("ratingFailures below rating", failures(3.5, 1000, r4), "rating");
+check("ratingFailures at rating threshold", failures(4, 1000, r4), "");
+check("ratingFailures above rating", failures(4.5, 1000, r4), "");
+check("ratingFailures unrated off", failures(null, null, r4), "");
+check("ratingFailures unrated on", failures(null, null, r4unrated), "unrated");
+// Review-count minimum: few reviews fails even with a great rating.
+check("ratingFailures too few reviews", failures(4.8, 5, rRev100), "reviews");
+check("ratingFailures enough reviews", failures(4.8, 100, rRev100), "");
+check("ratingFailures reviews unknown", failures(4.8, null, rRev100), "");
+check("ratingFailures both axes", failures(2, 5, rBoth), "rating,reviews");
+
 console.log(`\n${pass}/${pass + fail} checks pass`);
 process.exit(fail ? 1 : 0);
