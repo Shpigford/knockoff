@@ -291,7 +291,11 @@ var Knockoff = (function () {
   function scoreBrand(name) {
     var s = 0;
     var reasons = [];
-    var letters = name.replace(/[^a-zA-Z]/g, "");
+    // Fold diacritics before dropping non-letters, the same way normalize()
+    // does. Stripping ä/ö/ü outright would delete the vowel and glue the
+    // surrounding consonants into a fake run ("Kaltwasserzähler" → "…zhler",
+    // a bogus "rzhl"), flagging ordinary German/Nordic compound words.
+    var letters = name.normalize("NFD").replace(/\p{Mn}/gu, "").replace(/[^a-zA-Z]/g, "");
     if (!letters) return { score: 0, reasons: reasons };
 
     // A non-Latin-script letter inside an otherwise-Latin name (CJK, or a

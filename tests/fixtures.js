@@ -93,6 +93,10 @@ var KO_FIXTURES = [
   // ("Wüsthof" → "wusthof", "Kärcher" → "karcher").
   ["Wüsthof Classic 8-Inch Chef's Knife", "known"],
   ["Kärcher K5 Premium Full Control Pressure Washer", "known"],
+  // Unlisted diacritic-bearing compound words reach the heuristics; scoreBrand
+  // must fold ä/ö/ü (not strip them) so it doesn't invent a consonant run and
+  // flag an ordinary German product name ("…zähler" → bogus "rzhl"). See #91.
+  ["Funk-Kaltwasserzähler QN 1,5 mit Funkmodul", "unknown"],
   // A Latin brand at the front still reads even when a local-language
   // description follows it (we key off the leading token, not a char ratio).
   ["3M スコッチ テープ", "known"],
