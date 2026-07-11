@@ -188,5 +188,47 @@ check("ratingFailures enough reviews", failures(4.8, 100, rRev100), "");
 check("ratingFailures reviews unknown", failures(4.8, null, rRev100), "");
 check("ratingFailures both axes", failures(2, 5, rBoth), "rating,reviews");
 
+// ── Data-file integrity ─────────────────────────────────────────────────────
+// Catches the bulk-edit mistakes classify() can't see: a normalized-key
+// collision (an exact dup, or a punctuation/case variant of an entry already
+// present — "Black+Decker" ≡ "Black & Decker"), a blank/whitespace-dirty entry,
+// or a name listed as both junk (flagged) and a real brand. The generated
+// community snapshot is exempt from the dup scan (its collisions come from
+// upstream and dedupe at runtime) but still counts as a real-brand list below.
+function keyOf(s) { return String(s).toLowerCase().replace(/[^a-z0-9]/g, ""); }
+
+const handLists = {
+  "known-brands": ctx.KO_KNOWN_BRANDS,
+  "chinese-major": ctx.KO_CHINESE_MAJOR,
+  "flagged-brands": ctx.KO_FLAGGED_BRANDS,
+  "generic-words": ctx.KO_GENERIC_WORDS
+};
+for (const name of Object.keys(handLists)) {
+  const seen = Object.create(null);
+  let dup = "none", dirty = "none";
+  for (const e of handLists[name]) {
+    if (typeof e !== "string" || e === "" || e !== e.trim()) {
+      if (dirty === "none") dirty = JSON.stringify(e);
+      continue;
+    }
+    const k = keyOf(e);
+    if (seen[k]) { if (dup === "none") dup = `${JSON.stringify(e)} ≡ ${JSON.stringify(seen[k])}`; }
+    else seen[k] = e;
+  }
+  check(`${name}: unique keys`, dup, "none");
+  check(`${name}: clean entries`, dirty, "none");
+}
+
+// A name can't be both a real brand and flagged junk.
+const realKey = Object.create(null);
+for (const [src, arr] of [["known", ctx.KO_KNOWN_BRANDS], ["chinese", ctx.KO_CHINESE_MAJOR], ["community", ctx.KO_COMMUNITY_BRANDS]]) {
+  for (const e of arr || []) { const k = keyOf(e); if (!realKey[k]) realKey[k] = src; }
+}
+let conflict = "none";
+for (const e of ctx.KO_FLAGGED_BRANDS) {
+  if (realKey[keyOf(e)] && conflict === "none") conflict = `${JSON.stringify(e)} (flagged + ${realKey[keyOf(e)]})`;
+}
+check("flagged-brands: no real-brand contradiction", conflict, "none");
+
 console.log(`\n${pass}/${pass + fail} checks pass`);
 process.exit(fail ? 1 : 0);
