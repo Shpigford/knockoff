@@ -71,6 +71,37 @@ for (const [name, expected] of brandFixtures) {
   check(`brand "${name}"`, r.verdict, expected, r.reason);
 }
 
+// Allowlist survives a category-first title. Amazon's browse/category listings
+// lead with a category noun ("Besteckkorb OLLEIRA …") and expose no dedicated
+// brand element on the card, so brand extraction would read the category noun
+// and dim the tile — even for a brand the shopper allowlisted. A user-allowed
+// brand anywhere in the title is honored regardless of position, while a shopper
+// with no allowlist sees extraction unchanged (issue: allowlisted brands stayed
+// dimmed on category/browse pages though product pages and search worked).
+const allowOlleira = new Set([Knockoff.normalize("OLLEIRA")]);
+check("allowlisted brand mid category-first title",
+  Knockoff.classify("Besteckkorb OLLEIRA Geschirrspüler Ersatz", settings, allowOlleira, none).verdict, "allowed");
+check("allowlisted brand late in title",
+  Knockoff.classify("Besteckkorb für Geschirrspüler Universal OLLEIRA Ersatz", settings, allowOlleira, none).verdict, "allowed");
+check("no allowlist leaves category-first extraction unchanged",
+  Knockoff.classify("Besteckkorb OLLEIRA Geschirrspüler Ersatz", settings, none, none).brand, "Besteckkorb");
+// A trusted brand mid-title is only honored when the leading brand isn't itself
+// junk or blocked: junk that name-drops a trusted brand for compatibility
+// ("SZHLUX … für Bosch", shopper trusts Bosch) keeps its verdict, and an
+// explicit blocklist on the leading brand still wins. Otherwise allowlisting a
+// popular brand would un-hide every knockoff that lists it as compatible.
+const allowBosch = new Set([Knockoff.normalize("Bosch")]);
+check("allowlisted compat mention doesn't rescue flagged junk",
+  Knockoff.classify("SZHLUX Besteckkorb für Bosch Siemens Geschirrspüler", settings, allowBosch, none).verdict, "flagged");
+check("allowlist doesn't override a blocked leading brand",
+  Knockoff.classify("SZHLUX Besteckkorb für Bosch Siemens Geschirrspüler", settings, allowBosch, new Set([Knockoff.normalize("SZHLUX")])).verdict, "blocked");
+check("allowlisted ecosystem name doesn't rescue compat-bait",
+  Knockoff.classify("TEKPREM Case Compatible with Samsung Galaxy S24", settings, new Set([Knockoff.normalize("Samsung")]), none).verdict, "flagged");
+// The legit counterpart still works: an innocuous leading category noun means a
+// real trusted brand mid-title is plausibly the product's own → spare it.
+check("trusted brand mid-title with innocuous lead is spared",
+  Knockoff.classify("Dishwasher Cutlery Basket for Bosch Constructa Replacement", settings, allowBosch, none).verdict, "allowed");
+
 const bylineCompat = Knockoff.classifyBrand(
   "Teeind",
   settings,
