@@ -219,6 +219,168 @@ importFile.addEventListener("change", function () {
     });
 });
 
+// ── Block list subscriptions (the uBlock-style filter lists) ────────────────
+// The background worker owns fetching/caching; this pane just reads status and
+// posts subscription changes. Each row is a list you can toggle or remove;
+// custom lists can be added by URL (which requests host permission to fetch).
+
+var dlList = document.getElementById("detectorLists");
+var dlStatus = document.getElementById("dlStatus");
+var dlMsg = document.getElementById("dlMsg");
+var dlRefresh = document.getElementById("dlRefresh");
+var dlAdd = document.getElementById("dlAdd");
+var dlUrl = document.getElementById("dlUrl");
+var currentSubs = [];
+
+function dlCount(n) { return (n || 0).toLocaleString(); }
+function dlDate(t) {
+  return t ? new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+}
+function stripMeta(s) { var o = Object.assign({}, s); delete o.meta; return o; }
+
+function renderLists(status) {
+  if (!status) return;
+  currentSubs = status.subs || [];
+  dlList.textContent = "";
+  currentSubs.forEach(function (sub) {
+    var row = document.createElement("div");
+    row.className = "dl-row";
+
+    var copy = document.createElement("div");
+    copy.className = "dl-copy";
+    var name = document.createElement("span");
+    name.className = "dl-name";
+    name.textContent = sub.name;
+    var desc = document.createElement("span");
+    desc.className = "dl-sub";
+    desc.textContent = sub.desc || sub.url || "";
+    var meta = document.createElement("span");
+    meta.className = "dl-meta";
+    if (sub.meta && sub.meta.ok) {
+      meta.textContent = dlCount(sub.meta.n) + " marks" +
+        (sub.meta.fetchedAt ? " · updated " + dlDate(sub.meta.fetchedAt) : "");
+    } else if (sub.meta && sub.meta.error) {
+      meta.textContent = "Not loaded — " + sub.meta.error;
+    } else {
+      meta.textContent = sub.enabled ? "Downloading…" : "Not applied";
+    }
+    copy.appendChild(name);
+    copy.appendChild(desc);
+    copy.appendChild(meta);
+
+    // One three-way rocker folds enable + level into a single control (see the
+    // legend under the list): Off = not applied; Soft = applied but established
+    // brands are exempt; Strict = applied even to established brands.
+    var current = sub.enabled ? (sub.level || "soft") : "off";
+    var seg = document.createElement("div");
+    seg.className = "dl-mode";
+    [["off", "Off"], ["soft", "Soft"], ["strict", "Strict"]].forEach(function (m) {
+      var label = document.createElement("label");
+      var input = document.createElement("input");
+      input.type = "radio";
+      input.name = "mode-" + sub.id;
+      input.value = m[0];
+      if (current === m[0]) input.checked = true;
+      input.addEventListener("change", function () { setMode(sub.id, m[0]); });
+      var span = document.createElement("span");
+      span.textContent = m[1];
+      label.appendChild(input);
+      label.appendChild(span);
+      seg.appendChild(label);
+    });
+
+    row.appendChild(copy);
+    row.appendChild(seg);
+    if (!sub.builtin) {
+      var rm = document.createElement("button");
+      rm.className = "dl-remove";
+      rm.title = "Remove list";
+      rm.textContent = "×";
+      rm.addEventListener("click", function () { removeSub(sub.id); });
+      row.appendChild(rm);
+    }
+    dlList.appendChild(row);
+  });
+
+  var st = status.state || {};
+  dlStatus.textContent = st.checkedAt
+    ? "Checked " + new Date(st.checkedAt).toLocaleString()
+    : "Not checked yet";
+}
+
+function loadLists() {
+  chrome.runtime.sendMessage({ type: "ko-lists-status" }, renderLists);
+}
+loadLists();
+
+// Post a new subscription set to the background (which persists, drops removed
+// lists' cached data, and refreshes) and re-render from its reply.
+function pushSubs(subs, working) {
+  dlMsg.textContent = working || "Saving…";
+  chrome.runtime.sendMessage({ type: "ko-set-subs", subs: subs }, function (status) {
+    if (status && status.error) { dlMsg.textContent = "Error: " + status.error; loadLists(); }
+    else { dlMsg.textContent = ""; renderLists(status); }
+  });
+}
+
+// One rocker sets both enabled and level: "off" disables; "soft"/"strict"
+// enable and set the level (keeping the last level when toggled back off/on).
+function setMode(id, mode) {
+  var subs = currentSubs.map(function (s) {
+    var o = stripMeta(s);
+    if (s.id !== id) return o;
+    if (mode === "off") { o.enabled = false; }
+    else { o.enabled = true; o.level = mode; }
+    return o;
+  });
+  pushSubs(subs, mode === "off" ? "Disabling…" : "Saving…");
+}
+
+function removeSub(id) {
+  var subs = currentSubs.filter(function (s) { return s.id !== id; }).map(stripMeta);
+  pushSubs(subs, "Removing…");
+}
+
+dlRefresh.addEventListener("click", function () {
+  dlRefresh.disabled = true;
+  dlStatus.textContent = "Refreshing…";
+  dlMsg.textContent = "";
+  chrome.runtime.sendMessage({ type: "ko-refresh-lists" }, function (status) {
+    dlRefresh.disabled = false;
+    if (status && status.error) dlMsg.textContent = "Refresh failed: " + status.error;
+    renderLists(status);
+  });
+});
+
+dlAdd.addEventListener("click", function () {
+  var url = (dlUrl.value || "").trim();
+  var origin;
+  try {
+    if (!/^https:\/\//i.test(url)) throw 0;
+    origin = new URL(url).origin + "/*";
+  } catch (e) {
+    dlMsg.textContent = "Enter an https:// URL to a plain-text list.";
+    return;
+  }
+  var id = "custom:" + url;
+  if (currentSubs.some(function (s) { return s.id === id; })) {
+    dlMsg.textContent = "That list is already added.";
+    return;
+  }
+  // Custom lists live on arbitrary hosts, so ask for permission to fetch them
+  // (declared as optional_host_permissions). Must run from this click gesture.
+  chrome.permissions.request({ origins: [origin] }, function (granted) {
+    if (!granted) { dlMsg.textContent = "Permission denied — can't fetch that host."; return; }
+    var host;
+    try { host = new URL(url).hostname; } catch (e) { host = url; }
+    var subs = currentSubs.map(stripMeta).concat([{
+      id: id, name: host, desc: url, url: url, builtin: false, enabled: true
+    }]);
+    dlUrl.value = "";
+    pushSubs(subs, "Adding…");
+  });
+});
+
 save.addEventListener("click", function () {
   var patch = {
     allow: parseList("allow"),

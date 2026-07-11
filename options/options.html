@@ -107,6 +107,24 @@
     </section>
 
     <section>
+      <h2>Block list subscriptions</h2>
+      <p class="hint">Subscribe to lists managed by other people.</p>
+      <div id="detectorLists" class="dl-list"></div>
+      <p class="hint dl-legend"><b>Off</b> — not applied. <b>Soft</b> — applied,
+      but established brands (Anker, DeWalt…) are skipped. <b>Strict</b> — applied
+      even to established brands; only your allowlist exempts.</p>
+      <div class="dl-add">
+        <input id="dlUrl" type="url" spellcheck="false" placeholder="https://…/list.txt">
+        <button id="dlAdd" class="ghost">Add list</button>
+      </div>
+      <p class="listmeta">
+        <span id="dlStatus"></span>
+        <button id="dlRefresh" class="ghost">Refresh now</button>
+      </p>
+      <p id="dlMsg" class="dl-msg"></p>
+    </section>
+
+    <section>
       <h2>Your allowlist</h2>
       <p class="hint">Brands you trust. Never filtered, at any level. One per line.</p>
       <textarea id="allow" rows="8" spellcheck="false" placeholder="Anker&#10;Some small maker I like"></textarea>
@@ -140,12 +158,14 @@
     <footer class="colophon">
       <h3>How detection works</h3>
       <p>
-        Every listing's brand is checked against a curated register of roughly
-        5,000 established brands, refreshed daily. Unknown names are scored on the linguistic signature
-        of trademark-squat brands: all-caps strings, vanishing vowels,
-        unpronounceable consonant runs. Your lists above override everything.
-        It all runs locally; the only network request is the daily list
-        refresh from api.knockoff.shopping.
+        Every listing's brand is checked against the block lists you subscribe
+        to above (USPTO trademark data, refreshed monthly from Hugging Face) and a
+        curated register of roughly 5,000 established brands, refreshed daily.
+        Unknown names are also scored on the linguistic signature of
+        trademark-squat brands: all-caps strings, vanishing vowels, unpronounceable
+        consonant runs. Your allowlist and established brands override the lists. It
+        all runs locally; the only network requests are the list refreshes from
+        huggingface.co and api.knockoff.shopping.
       </p>
       <p class="listmeta">
         <span id="listStatus"></span>
