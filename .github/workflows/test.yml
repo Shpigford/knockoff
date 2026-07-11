@@ -1,0 +1,26 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Detector + data integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # run.js has zero dependencies — nothing to install.
+      - name: Run detector + data-integrity checks
+        run: node tests/run.js
+
+      # run.js doesn't load manifest.json; a malformed one would otherwise only
+      # surface at store-upload time.
+      - name: Validate manifest.json
+        run: node -e "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8'))"

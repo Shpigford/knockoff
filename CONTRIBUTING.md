@@ -39,7 +39,8 @@ No build step. After editing:
    and click the badge for the human-readable reason
 
 Quick logic check without the browser: `node tests/run.js` exercises the
-detector against a fixture set of real titles.
+detector against a fixture set of real titles, and validates the brand lists
+(no duplicate, variant, or contradictory entries). CI runs it on every PR.
 
 ## Tuning the heuristics
 
