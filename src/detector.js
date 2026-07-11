@@ -230,6 +230,28 @@ var Knockoff = (function () {
     return null;
   }
 
+  // Find a brand on the shopper's allowlist anywhere in the title (sliding-start,
+  // whole-title, longest window first). classify() layers this on as a fallback
+  // to spare a trusted brand Amazon buried behind a category noun on
+  // category/browse cards (no dedicated brand element to read there) — but only
+  // when the leading brand hasn't already been blocked or flagged, so junk that
+  // merely name-drops a trusted brand for compatibility isn't rescued.
+  // allowKeys is the user's allowlist as normalized keys.
+  function allowedBrandInTokens(tokens, allowKeys) {
+    if (!allowKeys || !allowKeys.size) return null;
+    var ascii = tokens.filter(function (t) { return normalize(t).length > 0; });
+    for (var start = 0; start < ascii.length; start++) {
+      var maxWin = Math.min(idx.knownMaxWords, 4, ascii.length - start);
+      for (var n = maxWin; n >= 1; n--) {
+        var key = normalize(ascii.slice(start, start + n).join(""));
+        if (key && allowKeys.has(key)) {
+          return { name: ascii.slice(start, start + n).join(" "), key: key, listed: true };
+        }
+      }
+    }
+    return null;
+  }
+
   function extractBrand(title, userKeys) {
     if (!title) return null;
     title = stripBaitBracket(title);
@@ -525,6 +547,30 @@ var Knockoff = (function () {
     userAllow.forEach(function (k) { userKeys.add(k); });
     userBlock.forEach(function (k) { userKeys.add(k); });
 
+    var result = leadingBrandVerdict(title, settings, userAllow, userBlock, userKeys);
+
+    // A brand the shopper allowlisted, appearing anywhere in the title, spares
+    // the listing — this rescues a trusted brand Amazon buried behind a category
+    // noun on category/browse cards, where there's no dedicated brand element to
+    // read. But it must NOT rescue a listing whose own leading brand is blocked
+    // or a pseudo-brand: junk that name-drops a trusted brand for compatibility
+    // ("SZHLUX … für Bosch") keeps its verdict, and an explicit blocklist entry
+    // still wins. So only reach for a later allowlisted brand when the leading
+    // brand hasn't already decided the listing against the shopper. (suspect
+    // stays overridable: it's the low-confidence tier, and sparing a trusted
+    // brand matters more than the rare junk name that scores there — false
+    // positives are worse than false negatives.)
+    if (result.verdict !== "allowed" && result.verdict !== "blocked" &&
+        result.verdict !== "flagged") {
+      var allowed = allowedBrandInTokens(stripBaitBracket(title).trim().split(/\s+/), userAllow);
+      if (allowed) return verdictFor(allowed, title, settings, userAllow, userBlock);
+    }
+    return result;
+  }
+
+  // The verdict from the brand at the front of the title — Amazon's leading-word
+  // brand model. classify() layers the allowlist fallback on top of this.
+  function leadingBrandVerdict(title, settings, userAllow, userBlock, userKeys) {
     var b = extractBrand(title, userKeys);
     if (!b) {
       // Local-script title with no listed pseudo-brand: we can't read it, so
