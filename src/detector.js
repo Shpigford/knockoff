@@ -273,6 +273,15 @@ var Knockoff = (function () {
     // K2, No7) are on the lists, which matched above; this only rejects
     // unlisted candidates.
     if (/^[a-z]{1,3}\d+(?:[a-z]{0,2}\d+)*[a-z]{0,2}$/.test(fkey)) return null;
+    // A short, all-caps, vowelless leading token is a spec/material/connector
+    // acronym (CCT, RGB, SMD, PWM, PVC, BNC), not the brand — real short brands
+    // (IBM, TCL, HP, RCA) sit on the lists and matched above. Read as the brand
+    // it mislabels the listing ("CCT" is color temperature) and, being all-caps
+    // and vowelless, scores a confident pseudo-brand. Treat as unbranded so the
+    // listing is judged on having no readable brand. Scripture codes (KJV,
+    // NKJV...) are exempt: they route to the Bible/media skip in classify().
+    if (/^[A-Z]+$/.test(first) && fkey.length <= 4 && !/[aeiouy]/.test(fkey) &&
+        !SCRIPTURE_VERSIONS.has(fkey)) return null;
     if (idx.generic.has(fkey)) return null;         // "Magnetic Bit Driver..."
     return { name: first, key: fkey, listed: false };
   }
