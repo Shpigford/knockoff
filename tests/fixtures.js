@@ -46,6 +46,11 @@ var KO_FIXTURES = [
   ["XLR Cable 10FT Male to Female Microphone Cable", "unbranded"],
   ["AAA Batteries 48 Count", "unbranded"],
   ["MIDI Keyboard Controller 61 Key", "unbranded"],
+  // A short, all-caps, vowelless leading acronym is a spec/material term
+  // ("CCT" = color temperature, "RGB", "SMD"), not the brand — reading it as
+  // one both mislabels the tile and scores it a confident pseudo-brand.
+  ["CCT LED Strip Lights, Dimmable 2700K-6500K Tunable White", "unbranded"],
+  ["RGB LED Strip Lights 32.8ft Music Sync Color Changing", "unbranded"],
   // Metric fastener sizes (issue #49): "M<size>" alone or fused with pitch,
   // length, or sibling sizes in one token
   ["M6-1.0 x 30mm Flanged Hex Head Bolts, 304 Stainless Steel", "unbranded"],
