@@ -274,6 +274,25 @@ var Knockoff = (function () {
     // unlisted candidates.
     if (/^[a-z]{1,3}\d+(?:[a-z]{0,2}\d+)*[a-z]{0,2}$/.test(fkey)) return null;
     if (idx.generic.has(fkey)) return null;         // "Magnetic Bit Driver..."
+
+    // Multi-word brand not on any list: try the first 2 words when the second
+    // also looks like part of a brand name (not generic, not a number/size, not
+    // a commerce or compatibility marker). Only do this when the first word
+    // isn't already all-caps (those names are already strongly signaled, and
+    // adding the next word often drops the all-caps flag, softening the score).
+    var isUpper = first === first.toUpperCase() && first.length >= 2;
+    if (tokens.length >= 2 && !isUpper) {
+      var second = tokens[1].replace(/[,:;!]+$/, "");
+      var skey = normalize(second);
+      if (skey && skey.length >= 2 && !idx.generic.has(skey) &&
+          !/^\d/.test(second) && !/^[a-z]{1,3}\d+/i.test(second) &&
+          !COMPAT_MARKERS.has(second.toLowerCase()) &&
+          !COMPAT_BAIT.has(skey) &&
+          !(second === second.toUpperCase() && second.length <= 3)) {
+        return { name: first + " " + second, key: normalize(first + second), listed: false };
+      }
+    }
+
     return { name: first, key: fkey, listed: false };
   }
 

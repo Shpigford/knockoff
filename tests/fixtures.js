@@ -59,6 +59,13 @@ var KO_FIXTURES = [
   // Unknown but normal-looking (passes at standard, filtered at strict)
   ["Geinxurn 82Pieces Impact Screwdriver Bits Set", "unknown"],
   ["Mulwark 86PC Magnetic Nut Driver Set", "unknown"],
+  // Multi-word brands not on any list: extract both words so the brand name
+  // is complete ("Geometric Future", not just "Geometric"). Single-word
+  // extraction would misrepresent the brand and can hurt scoring.
+  ["Geometric Future 5-Piece Knife Set with Case", "unknown"],
+  // All-caps multi-word brands remain on the single-word extraction so the
+  // all-caps heuristic still fires. Title-case brands gain both words.
+  ["GEOMETRIC FUTURE Knife Set 5-Piece", "suspect"],
   // Compatibility bait: an unlisted brand name-dropping Apple/Samsung hardware
   // mid-title is junk courting those shoppers. Listed brands (Anker, UGREEN,
   // Samsung itself) write identical titles and still pass via the list veto.
