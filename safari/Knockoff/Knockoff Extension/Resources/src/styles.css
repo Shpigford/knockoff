@@ -297,6 +297,36 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
   color: #047857;
 }
 
+/* Report editor: inline name field + icon send, same register as the menu rows */
+.ko-report-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+}
+
+.ko-report-input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid rgba(17, 17, 17, 0.14);
+  border-radius: 6px;
+  background: #fff;
+  font: 400 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #18181b;
+}
+
+.ko-report-input:focus {
+  outline: none;
+  border-color: #a1a1aa;
+}
+
+.ko-report-send {
+  width: auto;
+  flex: 0 0 auto;
+}
+
 /* ── Control panel ──────────────────────────────────────────────────────────
    Toggled by the toolbar button. Same visual system as the popover menu:
    white card, hairline structure, zinc neutrals, one red accent. */

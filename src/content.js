@@ -406,24 +406,12 @@
     }));
     menu.appendChild(group);
 
-    // Add brand report button if brand was found and product was not filtered
-    // due to a low rating.
-    if (result.brand && result.verdict !== "lowrated") {
-      var filtered = Knockoff.shouldAct(result.verdict, settings.level);
-      var suggestion = filtered ? "not_junk" : "is_junk";
+    // Report footer: name the brand and set the shared lists straight. Built
+    // (and gated) by reportFoot — it also covers a filtered tile we read no
+    // brand from, so a real brand we missed can still be named.
+    var foot = reportFoot(tile, result);
+    if (foot) {
       menu.appendChild(el("div", "ko-menu-sep"));
-      var foot = el("div", "ko-menu-foot");
-      var reportBtn = menuButton("flag",
-        filtered ? "Report as a real brand" : "Report as junk",
-        function () {
-          sendReport(result, suggestion, tile.getAttribute("data-asin"), tileTitle(tile));
-          reportBtn.innerHTML = ICONS.seal;
-          var thanks = el("span", "ko-menu-label");
-          thanks.textContent = "Reported. Thank you";
-          reportBtn.appendChild(thanks);
-          reportBtn.disabled = true;
-        });
-      foot.appendChild(reportBtn);
       menu.appendChild(foot);
     }
 
@@ -443,14 +431,15 @@
     return /[.!?]$/.test(s) ? s : s + ".";
   }
 
-  // Misclassification reports keep the shared lists honest. With a deployed
-  // report-worker this is a fire-and-forget POST; without one it opens a
-  // prefilled GitHub issue instead.
-  function sendReport(result, suggestion, asin, productTitle) {
+  // Misclassification reports keep the shared lists honest. `brand` is the name
+  // the shopper confirmed — edited when we truncated ("Geometric" → "Geometric
+  // Future") or missed it. With a deployed report-worker this is a fire-and-forget
+  // POST; without one it opens a prefilled GitHub issue instead.
+  function sendReport(brand, suggestion, verdict, asin, productTitle, reason) {
     if (!REPORT_ENDPOINT) {
-      var title = (suggestion === "is_junk" ? "Junk brand: " : "Real brand: ") + result.brand;
-      var body = "Brand: " + result.brand +
-        "\nCurrent verdict: " + result.verdict +
+      var title = (suggestion === "is_junk" ? "Junk brand: " : "Real brand: ") + brand;
+      var body = "Brand: " + brand +
+        "\nCurrent verdict: " + verdict +
         (asin ? "\nExample ASIN: " + asin : "") +
         "\nMarketplace: " + location.hostname;
       window.open(REPO_URL + "/issues/new?title=" + encodeURIComponent(title) +
@@ -461,17 +450,97 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        brand: result.brand,
+        brand: brand,
         suggestion: suggestion,
-        verdict: result.verdict,
+        verdict: verdict,
         asin: asin || null,
         marketplace: location.hostname,
         extVersion: chrome.runtime.getManifest().version,
         // Review context: what the product was and why it got that verdict.
         title: (productTitle || "").slice(0, 150) || null,
-        reason: (result.reason || "").slice(0, 200) || null
+        reason: (reason || "").slice(0, 200) || null
       })
     }).catch(function () { /* fire-and-forget */ });
+  }
+
+  // Leading n words of a string — a brand prefill for tiles we read no brand from.
+  function firstWords(s, n) {
+    return (s || "").trim().split(/\s+/).slice(0, n).join(" ");
+  }
+
+  // Report footer: name the brand, then tell the shared lists we got it wrong.
+  // Two steps, so the shopper can fix a truncated or missed brand before it
+  // ships: the button reveals a prefilled, editable field; confirming sends it.
+  // A filtered tile asserts "this is actually real" — and we trust the corrected
+  // name locally so it stops being hidden right away, even on an unbranded tile
+  // we never read a name from (the case issue #95 is about). An unfiltered
+  // branded tile reports the reverse ("this is junk"). Rating-only filtering
+  // isn't a brand call, so it gets no report path.
+  function reportFoot(tile, result) {
+    if (result.verdict === "lowrated") return null;
+    var filtered = Knockoff.shouldAct(result.verdict, settings.level);
+    if (!filtered && !result.brand) return null;
+
+    var isReal = filtered;
+    var suggestion = isReal ? "not_junk" : "is_junk";
+    var foot = el("div", "ko-menu-foot");
+
+    var form = el("div", "ko-report-form");
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "ko-report-input";
+    input.maxLength = 64;
+    input.placeholder = "Brand name";
+    input.value = result.brand || firstWords(tileTitle(tile), 2);
+    // Keep typing/clicking in the field from bubbling to the tile link.
+    input.addEventListener("click", function (e) { e.stopPropagation(); });
+    input.addEventListener("keydown", function (e) {
+      e.stopPropagation();
+      if (e.key === "Enter") { e.preventDefault(); submit(); }
+    });
+
+    var send = document.createElement("button");
+    send.type = "button";
+    send.className = "ko-menu-btn ko-report-send";
+    send.innerHTML = ICONS.seal; // static markup only
+    send.title = "Send report";
+    send.setAttribute("aria-label", "Send report");
+    send.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation(); submit();
+    });
+
+    form.appendChild(input);
+    form.appendChild(send);
+
+    foot.appendChild(menuButton("flag",
+      isReal ? "Report as a real brand" : "Report as junk",
+      function () {
+        foot.textContent = "";
+        foot.appendChild(form);
+        input.focus();
+        input.select();
+      }));
+
+    function submit() {
+      var brand = input.value.trim();
+      if (!brand) { input.focus(); return; }
+      sendReport(brand, suggestion, result.verdict,
+        tile.getAttribute("data-asin"), tileTitle(tile), result.reason);
+      // Naming a real brand also trusts it for you, so the tile stops being
+      // hidden (storage change → rescan). Clear any stale block on the name.
+      if (isReal) {
+        setListMembership("block", brand, false);
+        setListMembership("allow", brand, true);
+      }
+      foot.textContent = "";
+      var done = menuButton("seal",
+        isReal ? "Reported — trusted for you" : "Reported. Thank you",
+        function () {});
+      done.disabled = true;
+      foot.appendChild(done);
+    }
+
+    return foot;
   }
 
   function menuButton(icon, text, onClick) {
