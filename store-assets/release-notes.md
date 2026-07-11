@@ -7,6 +7,34 @@ version heading when you cut a release.
 
 ## Unreleased
 
+## 0.5.0
+
+- New: Knockoff now runs on mobile — Firefox for Android, and Safari on
+  iPhone and iPad.
+- New: filter by minimum star rating and review count, so poorly-rated or
+  barely-reviewed listings drop out alongside pseudo-brands.
+- New: when you report a misclassification, you can now name the brand you
+  expected, so corrections land faster.
+- New: pseudo-brands are now filtered on Amazon's "Keep shopping for"
+  recommendation grids, not just the main search results.
+- Improved: Knockoff now reads the brand from Amazon's dedicated byline, not
+  just the product title, for more accurate detection.
+- Improved: certification and compatibility brackets at the start of a title
+  (like "[FCC Certified]") are no longer mistaken for the brand.
+- Improved: allowlisted brands are now recognized even when buried inside
+  category-page titles.
+- Improved: fewer false flags — short vowelless acronyms like CCT and RGB read
+  as unbranded, and accented words like German compounds are no longer misread
+  as pseudo-brands.
+- Improved: expanded the built-in brand lists so more real brands are
+  recognized on sight.
+- Improved: more media titles (books, music, movies) are skipped on
+  all-departments searches.
+- Changed: dimmed listings now stay dimmed when you hover; only an explicit
+  un-hide reveals them.
+- Changed: refreshed app icon and in-app logo with the new red price-tag brand
+  mark.
+
 ## 0.4.0
 
 - New: the control panel now lists every brand it filtered on the current
