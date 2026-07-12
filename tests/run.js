@@ -17,6 +17,7 @@ const ctx = vm.createContext({ URL });
   "data/chinese-major.js",
   "data/flagged-brands.js",
   "data/generic-words.js",
+  "data/config.js",
   "src/detector.js",
   "src/pdp-brand.js"
 ].forEach((f) => {
@@ -260,6 +261,29 @@ for (const e of ctx.KO_FLAGGED_BRANDS) {
   if (realKey[keyOf(e)] && conflict === "none") conflict = `${JSON.stringify(e)} (flagged + ${realKey[keyOf(e)]})`;
 }
 check("flagged-brands: no real-brand contradiction", conflict, "none");
+
+// ── Bundled config shape ─────────────────────────────────────────────────────
+// data/config.js is the fail-safe the content script falls back to when there's
+// no (valid) remote config, so a fat-finger here — a mistyped key, a non-array
+// selector list — would strip the default with no runtime error. Assert the
+// shape content.js/mergeConfig reads. (Selector *syntax* is checked at runtime
+// against a live DOM, which the Node sandbox doesn't have.)
+const cfg = ctx.KO_DEFAULT_CONFIG;
+const sel = (cfg && cfg.selectors) || {};
+for (const key of ["tiles", "title", "titleFallback", "brandRow"]) {
+  check(`config.selectors.${key}: non-empty string array`,
+    Array.isArray(sel[key]) && sel[key].length > 0 &&
+      sel[key].every((s) => typeof s === "string" && !!s.trim()), true);
+}
+check("config.selectors.mediaWork: non-empty string",
+  typeof sel.mediaWork === "string" && !!sel.mediaWork.trim(), true);
+check("config.limits.brandRowMaxLen: positive number",
+  typeof (cfg.limits || {}).brandRowMaxLen === "number" && cfg.limits.brandRowMaxLen > 0, true);
+// The brand-byline fix must stay in the bundled default (the brand <h2> in its
+// own title-recipe row above the title), so a fresh install reads it before any
+// remote config lands — otherwise Sony et al. read as "No brand" again.
+check("config.brandRow keeps the title-recipe brand-row selector",
+  sel.brandRow.indexOf('[data-cy="title-recipe"] > .a-row h2') !== -1, true);
 
 console.log(`\n${pass}/${pass + fail} checks pass`);
 process.exit(fail ? 1 : 0);

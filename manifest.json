@@ -71,6 +71,7 @@
         "data/chinese-major.js",
         "data/flagged-brands.js",
         "data/generic-words.js",
+        "data/config.js",
         "src/detector.js",
         "src/pdp-brand.js",
         "src/content.js"

@@ -11,6 +11,13 @@
 //                                    extension's daily refresh hits this)
 //   GET  /flagged                    curated blocklist additions (text, one
 //                                    per line; extensions fetch daily)
+//   GET  /config                     runtime config (JSON): the DOM selectors
+//                                    the extension uses to read search tiles,
+//                                    edge-cached. Edit CONFIG below + deploy to
+//                                    ship an Amazon-layout fix without an
+//                                    extension release; installs validate it and
+//                                    fall back to their bundled copy on anything
+//                                    malformed.
 //   GET  /review?token=...           HTML triage dashboard: queue of uncurated
 //                                    brands + one-click Trust/Block/Dismiss
 //   POST /curate?token=...           {brand, list: "flagged"|"known"|"dismissed"}
@@ -40,6 +47,32 @@ const CORS = {
 const MAX_REPORTS_PER_IP_PER_HOUR = 30;
 
 const BRANDS_CACHE_SECONDS = 6 * 60 * 60;
+
+// Runtime config the extension pulls on its daily refresh. Edit this and run
+// `wrangler deploy` to ship an Amazon-layout fix (e.g. a moved brand byline) to
+// every install within a day — no extension release, no store review. Keep the
+// shape in sync with data/config.js in the extension; installs validate every
+// field and fall back to their bundled copy, so a typo here can't brick anyone.
+// DATA ONLY — selectors and numbers the shipped code consumes, never code.
+const CONFIG = {
+  selectors: {
+    tiles: [
+      'div[data-component-type="s-search-result"]',
+      'div.octopus-pc-item[data-asin]',
+      'li[class*="ProductGridItem"][data-asin]',
+      'div.p13n-intuition-product-faceout__top-container[data-asin]'
+    ],
+    title: ["h2.a-text-normal", "a.a-link-normal h2", "h2"],
+    titleFallback: ["a.a-text-normal", ".a-size-base-plus:not(.a-text-bold)"],
+    brandRow: [
+      '[data-cy="title-recipe"] > .a-row h2',
+      '[data-cy="title-recipe"] .a-size-base-plus.a-color-base:not(a *)',
+      'h2 + .a-row .a-size-base-plus'
+    ],
+    mediaWork: "a.s-link-style.a-text-bold"
+  },
+  limits: { brandRowMaxLen: 30 }
+};
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -153,6 +186,18 @@ async function handleFlagged(env) {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "no-store",
+      ...CORS
+    }
+  });
+}
+
+// Runtime config: a static JSON blob, edge-cached like /brands. Editing CONFIG
+// + `wrangler deploy` is the whole "push a layout fix" mechanism.
+function handleConfig() {
+  return new Response(JSON.stringify(CONFIG), {
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=" + BRANDS_CACHE_SECONDS,
       ...CORS
     }
   });
@@ -556,6 +601,9 @@ export default {
     }
     if (request.method === "GET" && url.pathname === "/flagged") {
       return handleFlagged(env);
+    }
+    if (request.method === "GET" && url.pathname === "/config") {
+      return handleConfig();
     }
     if (request.method === "GET" && url.pathname === "/review") {
       return handleDashboard(env, url);
