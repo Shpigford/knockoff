@@ -25,7 +25,7 @@ Knockoff is a cross-browser MV3 extension (Chrome/Firefox/Safari) that filters t
 All files in `manifest.json`'s `content_scripts.js` are classic scripts sharing one page scope, loaded in order: the five `data/*.js` files define global brand arrays → `src/detector.js` consumes them into the global `Knockoff` object → `src/content.js` drives everything. Adding a data file means adding it to `manifest.json` AND to the load list in `tests/run.js`.
 
 - **`src/detector.js`** — the detection engine. Pure logic, zero DOM access, unit-testable. Exposes `Knockoff.buildIndexes()` and `Knockoff.classify(title, settings, userAllow, userBlock)`.
-- **`src/content.js`** — all DOM work: tile scanning (`TILE_SELECTORS` is the extension point for new layouts), badges, hide/dim/label actions, in-page control panel, misclassification reporting, and the daily runtime refresh of the community list + curated flags from `api.knockoff.shopping`.
+- **`src/content.js`** — all DOM work: tile scanning (`TILE_SELECTORS` is the extension point for new layouts), badges, hide/dim/label actions, in-page control panel, misclassification reporting, and the daily runtime refresh of the community list + curated flags from `api.knockoff.co`.
 - **`src/background.js`** — trivial; toolbar button → panel toggle.
 - Brand matching is on normalized keys: lowercase alphanumerics only (`"Black+Decker"` ≡ `"blackdecker"`). Never add capitalization/punctuation variants to the data files.
 
@@ -39,10 +39,10 @@ Media/digital categories (Books, Kindle, Audible, music, movies, apps…) are sk
 
 ### Server side (all optional to the shopping path)
 
-- **`report-worker/`** — Cloudflare Worker + D1 at `api.knockoff.shopping`: accepts one-click misclassification reports, serves the community allowlist (`/brands`, D1-backed and edge-cached; the base list was seeded once from `seed-brands.sql`, and `data/community-brands.js` is its bundled snapshot, regenerated at release time) and curated blocklist additions (`/flagged`), and hosts a token-gated `/review` curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. Endpoints documented in `worker.js` header.
-The **marketing site** (knockoff.shopping) and its SEO/content strategy no longer live here — they moved to a separate private repo (Next.js on Vercel). This repo is the extension plus the report worker.
+- **`report-worker/`** — Cloudflare Worker + D1 at `api.knockoff.co`: accepts one-click misclassification reports, serves the community allowlist (`/brands`, D1-backed and edge-cached; the base list was seeded once from `seed-brands.sql`, and `data/community-brands.js` is its bundled snapshot, regenerated at release time) and curated blocklist additions (`/flagged`), and hosts a token-gated `/review` curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. Endpoints documented in `worker.js` header.
+The **marketing site** (knockoff.co) and its SEO/content strategy no longer live here — they moved to a separate private repo (Next.js on Vercel). This repo is the extension plus the report worker.
 
-Everything else runs locally in the content script; the extension's only first-party network dependency is `api.knockoff.shopping`.
+Everything else runs locally in the content script; the extension's only first-party network dependency is `api.knockoff.co`. Older installs still call the legacy host `api.knockoff.shopping` — both hostnames route to the same worker, and the legacy one is kept alive indefinitely because installed extensions can't be force-updated (see `report-worker/wrangler.toml`).
 
 ## Conventions and judgment calls
 

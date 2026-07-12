@@ -2,13 +2,18 @@ name = "knockoff-reports"
 main = "worker.js"
 compatibility_date = "2026-07-01"
 
-# Custom domain — Cloudflare creates the DNS record and cert automatically.
-# The zone root (knockoff.shopping) stays free for the marketing site.
+# Custom domains — Cloudflare creates the DNS record and cert automatically.
+# Both hostnames route to this ONE worker + D1. api.knockoff.co is the current
+# canonical host; api.knockoff.shopping is kept alive INDEFINITELY because every
+# extension installed before the knockoff.co switch calls it for its daily brand
+# refresh and reporting, and installed extensions can't be force-updated. Never
+# remove that route, and keep the knockoff.shopping zone on this Cloudflare account.
 # workers.dev is intentionally off: one canonical URL. (Self-hosters without
 # a domain: delete the routes block and workers_dev line — the workers.dev
 # default works, /brands just serves uncached there.)
 workers_dev = false
 routes = [
+  { pattern = "api.knockoff.co", custom_domain = true },
   { pattern = "api.knockoff.shopping", custom_domain = true }
 ]
 

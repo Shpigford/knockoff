@@ -60,7 +60,7 @@ resolved through this pipeline (first match wins):
 | 2 | Your blocklist | `blocked`, always filtered |
 | 3 | Seed list of notorious pseudo-brands ([`data/flagged-brands.js`](data/flagged-brands.js)) | `flagged` |
 | 4 | Established Chinese-owned brands ([`data/chinese-major.js`](data/chinese-major.js)) | `known`, or `flagged` if you enable that setting |
-| 5 | ~5,000 established brands ([`data/known-brands.js`](data/known-brands.js) + the community allowlist in [`data/community-brands.js`](data/community-brands.js), refreshed daily from `api.knockoff.shopping/brands`) | `known` |
+| 5 | ~5,000 established brands ([`data/known-brands.js`](data/known-brands.js) + the community allowlist in [`data/community-brands.js`](data/community-brands.js), refreshed daily from `api.knockoff.co/brands`) | `known` |
 | 6 | Name heuristics (see below) | `flagged` / `suspect` / `unknown` |
 | - | No brand at the front of the title at all | `unbranded` |
 

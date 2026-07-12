@@ -94,8 +94,8 @@ function parseList(id) {
 // instead of waiting out the 24-hour cycle; content scripts pick the new list
 // up via storage.onChanged.
 
-var BRANDS_URL = "https://api.knockoff.shopping/brands";
-var FLAGGED_URL = "https://api.knockoff.shopping/flagged";
+var BRANDS_URL = "https://api.knockoff.co/brands";
+var FLAGGED_URL = "https://api.knockoff.co/flagged";
 var refreshBtn = document.getElementById("refreshList");
 var listStatus = document.getElementById("listStatus");
 
@@ -134,7 +134,7 @@ refreshBtn.addEventListener("click", function () {
     .catch(function (err) {
       listStatus.textContent = err === "short list"
         ? "The server sent back an implausibly short list — kept the current one."
-        : "Couldn't reach api.knockoff.shopping — try again in a minute.";
+        : "Couldn't reach api.knockoff.co — try again in a minute.";
     })
     .finally(function () { refreshBtn.disabled = false; });
 });

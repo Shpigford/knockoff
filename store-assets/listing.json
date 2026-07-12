@@ -34,9 +34,9 @@
       "amazon shopping",
       "product filter"
     ],
-    "homepageUrl": "https://knockoff.shopping",
+    "homepageUrl": "https://knockoff.co",
     "supportUrl": "https://github.com/Shpigford/knockoff/issues",
-    "privacyUrl": "https://knockoff.shopping/privacy.html"
+    "privacyUrl": "https://knockoff.co/privacy.html"
   },
 
   "chrome": {
