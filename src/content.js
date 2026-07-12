@@ -1124,19 +1124,21 @@
   chrome.storage.onChanged.addListener(function (changes, area) {
     // The options page's "Refresh now" (or another tab's daily refresh)
     // wrote a fresh community list; fold it in without waiting for a reload.
-    if (area === "local" && (changes.communityBrands || changes.remoteFlagged)) {
-      chrome.storage.local.get(["communityBrands", "remoteFlagged"]).then(function (c) {
-        Knockoff.buildIndexes(c.communityBrands || null, c.remoteFlagged || null);
-        rescan();
-      });
-      return;
-    }
-    // A fresh remote config (daily refresh or the options "Refresh now"): apply
-    // it live. Validated in mergeConfig, so a bad push falls back to defaults.
-    if (area === "local" && changes.koConfig) {
-      CONFIG = mergeConfig(changes.koConfig.newValue);
-      rescan();
-      return;
+    // A fresh remote config and a fresh brand list can arrive in the SAME
+    // storage write — the options "Refresh now" sets both keys at once — so
+    // handle them together, not as mutually-exclusive branches. Apply the
+    // config first (validated in mergeConfig; a bad push falls back to
+    // defaults) so any rescan below runs with the new selectors.
+    if (area === "local") {
+      if (changes.koConfig) CONFIG = mergeConfig(changes.koConfig.newValue);
+      if (changes.communityBrands || changes.remoteFlagged) {
+        chrome.storage.local.get(["communityBrands", "remoteFlagged"]).then(function (c) {
+          Knockoff.buildIndexes(c.communityBrands || null, c.remoteFlagged || null);
+          rescan();
+        });
+        return;
+      }
+      if (changes.koConfig) { rescan(); return; }
     }
     if (area !== "sync") return;
     loadSettings().then(rescan);
