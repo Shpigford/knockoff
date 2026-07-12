@@ -12,12 +12,12 @@
   // Community allowlist refresh: once a day, re-fetch our curated brand list
   // so new brands don't require an extension update. Served from our own API,
   // so the extension has exactly one first-party network dependency.
-  var BRANDS_URL = "https://api.knockoff.shopping/brands";
+  var BRANDS_URL = "https://api.knockoff.co/brands";
   var BRANDS_REFRESH_MS = 24 * 60 * 60 * 1000;
 
   // One-click misclassification reports (see report-worker/). Set this to your
   // deployed worker URL. Leave empty to fall back to opening a GitHub issue.
-  var REPORT_ENDPOINT = "https://api.knockoff.shopping";
+  var REPORT_ENDPOINT = "https://api.knockoff.co";
   var REPO_URL = "https://github.com/Shpigford/knockoff";
 
   var DEFAULTS = {

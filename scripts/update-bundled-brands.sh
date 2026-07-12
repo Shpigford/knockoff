@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Regenerate data/community-brands.js from the live curated list at
-# api.knockoff.shopping, so fresh installs filter correctly before their
+# api.knockoff.co, so fresh installs filter correctly before their
 # first daily refresh. The /release skill runs this at release time.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-curl -sfL "https://api.knockoff.shopping/brands" -o /tmp/knockoff-brands.txt
+curl -sfL "https://api.knockoff.co/brands" -o /tmp/knockoff-brands.txt
 
 python3 - <<'EOF'
 import json

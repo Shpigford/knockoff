@@ -83,7 +83,7 @@ Never skip this step, even for a "trivial" release.
 6. Create a GitHub release for the tag, body = this version's section from
    `store-assets/release-notes.md`:
    `gh release create v<version> --title "v<version>" --notes "<version section>"`.
-   The public changelog (knockoff.shopping/changelog, served from the separate
+   The public changelog (knockoff.co/changelog, served from the separate
    private marketing repo) is generated from these GitHub releases by its
    `/changelog` skill — skip this and the changelog won't pick up the release.
 
