@@ -78,8 +78,11 @@ Never skip this step, even for a "trivial" release.
    Xcode project (`MARKETING_VERSION`) and syncs the extension resources.
    Never edit `MARKETING_VERSION` by hand.
 4. Re-run `node scripts/render-listing.js --check` and `node tests/run.js`.
-5. Commit everything as `Release v<version>`, tag `v<version>`, and
-   `git push origin main --follow-tags`.
+5. Commit everything as `Release v<version>`, create an **annotated** tag
+   (`git tag -a v<version> -m "v<version>"`), and
+   `git push origin main --follow-tags`. The tag must be annotated —
+   `--follow-tags` silently skips lightweight tags, so a plain `git tag
+   v<version>` would push the commit but not the tag.
 6. Create a GitHub release for the tag, body = this version's section from
    `store-assets/release-notes.md`:
    `gh release create v<version> --title "v<version>" --notes "<version section>"`.
