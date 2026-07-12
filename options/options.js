@@ -96,6 +96,7 @@ function parseList(id) {
 
 var BRANDS_URL = "https://api.knockoff.co/brands";
 var FLAGGED_URL = "https://api.knockoff.co/flagged";
+var CONFIG_URL = "https://api.knockoff.co/config";
 var refreshBtn = document.getElementById("refreshList");
 var listStatus = document.getElementById("listStatus");
 
@@ -118,7 +119,11 @@ refreshBtn.addEventListener("click", function () {
     fetch(BRANDS_URL, { cache: "reload" }).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); }),
     // An empty *successful* response is valid; on an error keep the cached
     // copy (omit the key from the patch) rather than overwrite it with nothing.
-    fetch(FLAGGED_URL, { cache: "reload" }).then(function (r) { return r.ok ? r.text() : null; })
+    fetch(FLAGGED_URL, { cache: "reload" }).then(function (r) { return r.ok ? r.text() : null; }),
+    // Runtime config (selectors). Swallow its own errors so a config hiccup
+    // can't fail the brand refresh; the content script validates it on apply.
+    fetch(CONFIG_URL, { cache: "reload" }).then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
   ])
     .then(function (texts) {
       var brands = texts[0].split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
@@ -128,6 +133,7 @@ refreshBtn.addEventListener("click", function () {
       if (texts[1] !== null) {
         patch.remoteFlagged = texts[1].split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
       }
+      if (texts[2]) { patch.koConfig = texts[2]; patch.koConfigAt = Date.now(); }
       return chrome.storage.local.set(patch);
     })
     .then(renderListStatus)
