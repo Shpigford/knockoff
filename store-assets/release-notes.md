@@ -7,6 +7,16 @@ version heading when you cut a release.
 
 ## Unreleased
 
+## 0.5.1
+
+- Fixed: real brands are no longer dimmed on Amazon's newer search layout,
+  where the brand sits on its own line above the product title (fixes Sony,
+  SmallRig, and similar "[brand] [product]" searches).
+- Improved: Knockoff can now adapt to Amazon layout changes without waiting for
+  a store update, so filtering keeps working when Amazon reshuffles its page
+  structure.
+- Changed: Knockoff's website has moved to knockoff.co.
+
 ## 0.5.0
 
 - New: Knockoff now runs on mobile — Firefox for Android, and Safari on

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Knockoff - Amazon Brand Filter",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Filters pseudo-brand junk out of Amazon and can hide sponsored listings. Buy from real, established brands.",
   "permissions": ["storage"],
   "icons": {

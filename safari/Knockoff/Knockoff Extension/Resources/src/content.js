@@ -15,6 +15,13 @@
   var BRANDS_URL = "https://api.knockoff.co/brands";
   var BRANDS_REFRESH_MS = 24 * 60 * 60 * 1000;
 
+  // Runtime config (DOM selectors + parsing tunables) refreshed daily alongside
+  // the brand list, so an Amazon layout fix ships as a config push, not a
+  // release. Bundled default in data/config.js; the remote copy replaces it only
+  // after mergeConfig validates it.
+  var CONFIG_URL = "https://api.knockoff.co/config";
+  var CONFIG = KO_DEFAULT_CONFIG;
+
   // One-click misclassification reports (see report-worker/). Set this to your
   // deployed worker URL. Leave empty to fall back to opening a GitHub issue.
   var REPORT_ENDPOINT = "https://api.knockoff.co";
@@ -66,16 +73,16 @@
     }, 800);
   }
 
-  // Product tiles across Amazon layouts. data-asin anchoring has survived
-  // every redesign since ~2019. Add new layouts here (see CONTRIBUTING.md).
-  var TILE_SELECTORS = [
-    'div[data-component-type="s-search-result"]', // search results
-    'div.octopus-pc-item[data-asin]',             // category "octopus" pages
-    'li[class*="ProductGridItem"][data-asin]',    // some browse grids
-    // p13n "faceout" recommendation grids: "Keep shopping for" mission pages
-    // (/hz/mobile/mission/), homepage rows, "Related to items you've viewed".
-    'div.p13n-intuition-product-faceout__top-container[data-asin]'
-  ].join(",");
+  // Tile / title / brand-row selectors live in CONFIG (data/config.js), so a
+  // layout fix can ship as a config push. First element matching any selector
+  // in a priority list, in order (longest-lived layout last); null if none.
+  function firstMatch(root, selectors) {
+    for (var i = 0; i < selectors.length; i++) {
+      var el = root.querySelector(selectors[i]);
+      if (el) return el;
+    }
+    return null;
+  }
 
   // Engraved-line SVG glyphs (24 viewBox, 2px round stroke). Static strings
   // authored here; never interpolate page content into these.
@@ -119,8 +126,48 @@
     return text.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
   }
 
+  // Fold an untrusted remote config over the bundled defaults, key by key,
+  // keeping each remote value only when it validates and the default otherwise.
+  // Every selector is syntax-checked (a bad selector throws in querySelector)
+  // and every list/number is bounded, so a malformed or hostile /config push
+  // can only ever fall back to data/config.js — it can't break the page, and
+  // nothing here is code: selectors are strings the shipped querySelector runs.
+  function isSelector(s) {
+    if (typeof s !== "string" || !s || s.length > 200) return false;
+    try { document.querySelector(s); return true; } catch (e) { return false; }
+  }
+  function selectorList(v, fallback) {
+    if (!Array.isArray(v) || !v.length || v.length > 20) return fallback;
+    var out = v.filter(isSelector);
+    return out.length ? out : fallback;
+  }
+  function mergeConfig(remote) {
+    var d = KO_DEFAULT_CONFIG;
+    if (!remote || typeof remote !== "object") return d;
+    var rs = remote.selectors || {};
+    var maxLen = (remote.limits || {}).brandRowMaxLen;
+    return {
+      selectors: {
+        tiles: selectorList(rs.tiles, d.selectors.tiles),
+        title: selectorList(rs.title, d.selectors.title),
+        titleFallback: selectorList(rs.titleFallback, d.selectors.titleFallback),
+        brandRow: selectorList(rs.brandRow, d.selectors.brandRow),
+        mediaWork: isSelector(rs.mediaWork) ? rs.mediaWork : d.selectors.mediaWork
+      },
+      limits: {
+        brandRowMaxLen: (typeof maxLen === "number" && maxLen >= 5 && maxLen <= 200)
+          ? maxLen : d.limits.brandRowMaxLen
+      }
+    };
+  }
+
   function loadCommunityList() {
-    return chrome.storage.local.get(["communityBrands", "remoteFlagged", "communityFetchedAt"]).then(function (c) {
+    return chrome.storage.local.get(
+      ["communityBrands", "remoteFlagged", "communityFetchedAt", "koConfig", "koConfigAt"]
+    ).then(function (c) {
+      // Apply the cached remote config (if any) before the first scan.
+      CONFIG = mergeConfig(c.koConfig);
+
       var stale = !c.communityFetchedAt || Date.now() - c.communityFetchedAt > BRANDS_REFRESH_MS;
       if (stale) {
         Promise.all([
@@ -146,6 +193,20 @@
             }
           })
           .catch(function () { /* offline or rate-limited; bundled snapshot still works */ });
+      }
+
+      // Config refresh is independent of the brand list (its own clock), so a
+      // bad/absent config never blocks a brand refresh or vice versa. Stored raw
+      // and validated on apply, so an install always has the bundled fallback.
+      var cfgStale = !c.koConfigAt || Date.now() - c.koConfigAt > BRANDS_REFRESH_MS;
+      if (cfgStale) {
+        fetch(CONFIG_URL).then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+          .then(function (cfg) {
+            chrome.storage.local.set({ koConfig: cfg, koConfigAt: Date.now() });
+            CONFIG = mergeConfig(cfg);
+            rescan();
+          })
+          .catch(function () { /* offline or bad config; bundled selectors hold */ });
       }
       return c;
     });
@@ -176,33 +237,28 @@
     // textContent, not aria-label: sponsored tiles prefix their aria-label
     // with a localized "Sponsored Ad – ..." which would be read as the brand.
     // The title is the line inside the product link (its <h2> carries
-    // a-text-normal), so prefer it: brand-byline layouts add a second, smaller
-    // <h2> for the brand that precedes the title in the DOM, and a plain
-    // "first h2" lookup would return the brand instead of the title.
-    var h2 = tile.querySelector("h2.a-text-normal") ||
-             tile.querySelector("a.a-link-normal h2") ||
-             tile.querySelector("h2");
+    // a-text-normal); the brand-byline layouts add a second, smaller <h2> for
+    // the brand ahead of it, so CONFIG.selectors.title is ordered to skip it.
+    var h2 = firstMatch(tile, CONFIG.selectors.title);
     var text = h2
       ? h2.textContent || h2.getAttribute("aria-label") || ""
       // p13n "faceout" tiles carry no h2: the title is a non-bold
       // .a-size-base-plus span (its bold siblings are the brand row and an
       // "In cart" status). The brand is embedded at the front of this title,
       // so classify() reads it from there like any other layout.
-      : (tile.querySelector("a.a-text-normal") ||
-         tile.querySelector(".a-size-base-plus:not(.a-text-bold)") ||
-         {}).textContent || "";
+      : (firstMatch(tile, CONFIG.selectors.titleFallback) || {}).textContent || "";
     return text.replace(SPONSORED_PREFIX, "");
   }
 
   // Some layouts render the brand in its own row above the title. When that
   // row exists it is authoritative: Amazon has been stripping the brand out of
-  // the title itself, so this is the only place the brand survives.
+  // the title itself, so this is the only place the brand survives. Selectors
+  // live in CONFIG so a layout change is a config push, not a release.
   function tileBrandRow(tile) {
-    var el = tile.querySelector(
-      '[data-cy="title-recipe"] .a-size-base-plus.a-color-base:not(a *), h2 + .a-row .a-size-base-plus'
-    );
+    var el = tile.querySelector(CONFIG.selectors.brandRow.join(","));
     var text = el && el.textContent ? el.textContent.trim() : "";
-    return text && text.length <= 30 && !/\d{3,}/.test(text) ? text : "";
+    return text && text.length <= CONFIG.limits.brandRowMaxLen &&
+      !/\d{3,}/.test(text) ? text : "";
   }
 
   // A book / music / movie tile carries Amazon's format-swatch links
@@ -215,7 +271,7 @@
   // no book/music/movie alias to match. Skipping is the safe direction: a tile
   // we sit out is simply left unfiltered, never mislabeled.
   function tileIsMediaWork(tile) {
-    return !!tile.querySelector("a.s-link-style.a-text-bold");
+    return !!tile.querySelector(CONFIG.selectors.mediaWork);
   }
 
   // Get product rating. Prefer alt text as star icons increment by half stars
@@ -1039,7 +1095,7 @@
         if (hasSearchState()) clearMarks();
       } else {
         searchAllow = pageSearchTokens();
-        document.querySelectorAll(TILE_SELECTORS).forEach(processTile);
+        document.querySelectorAll(CONFIG.selectors.tiles.join(",")).forEach(processTile);
       }
       // Product pages stay badged regardless: the dropdown can carry a stale
       // department onto a PDP, and book PDPs are inherently safe (their
@@ -1068,12 +1124,21 @@
   chrome.storage.onChanged.addListener(function (changes, area) {
     // The options page's "Refresh now" (or another tab's daily refresh)
     // wrote a fresh community list; fold it in without waiting for a reload.
-    if (area === "local" && (changes.communityBrands || changes.remoteFlagged)) {
-      chrome.storage.local.get(["communityBrands", "remoteFlagged"]).then(function (c) {
-        Knockoff.buildIndexes(c.communityBrands || null, c.remoteFlagged || null);
-        rescan();
-      });
-      return;
+    // A fresh remote config and a fresh brand list can arrive in the SAME
+    // storage write — the options "Refresh now" sets both keys at once — so
+    // handle them together, not as mutually-exclusive branches. Apply the
+    // config first (validated in mergeConfig; a bad push falls back to
+    // defaults) so any rescan below runs with the new selectors.
+    if (area === "local") {
+      if (changes.koConfig) CONFIG = mergeConfig(changes.koConfig.newValue);
+      if (changes.communityBrands || changes.remoteFlagged) {
+        chrome.storage.local.get(["communityBrands", "remoteFlagged"]).then(function (c) {
+          Knockoff.buildIndexes(c.communityBrands || null, c.remoteFlagged || null);
+          rescan();
+        });
+        return;
+      }
+      if (changes.koConfig) { rescan(); return; }
     }
     if (area !== "sync") return;
     loadSettings().then(rescan);
