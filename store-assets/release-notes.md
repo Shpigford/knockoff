@@ -7,6 +7,11 @@ version heading when you cut a release.
 
 ## Unreleased
 
+## 0.7.2
+
+- Under-the-hood reliability and anti-abuse hardening for the community seller
+  map.
+
 ## 0.7.1
 
 - Fixed: the seller-map contribution stats could show a community total
