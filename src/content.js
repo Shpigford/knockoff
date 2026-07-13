@@ -1102,7 +1102,9 @@
   var communityStats = null;
   function getCommunityStats() {
     return chrome.storage.local.get({ koStats: null }).then(function (s) {
-      if (s.koStats && s.koStats.at > Date.now() - STATS_TTL_MS) {
+      // A cached blob without `reported` predates that field — treat as stale.
+      if (s.koStats && s.koStats.reported != null &&
+          s.koStats.at > Date.now() - STATS_TTL_MS) {
         communityStats = s.koStats;
         return s.koStats;
       }
@@ -1111,7 +1113,7 @@
       return fetch(MERCHANTS_URL + "/stats")
         .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
         .then(function (j) {
-          var stats = { total: j.total, resolved: j.resolved, at: Date.now() };
+          var stats = { total: j.total, resolved: j.resolved, reported: j.reported, at: Date.now() };
           chrome.storage.local.set({ koStats: stats });
           communityStats = stats;
           return stats;
@@ -1123,14 +1125,14 @@
   // The Wordle lesson: the lowest-friction share is plain text + emoji that
   // reads well pasted anywhere. Built only from stats the user chooses to
   // publish; nothing else rides along.
-  function buildShareText(log, communityResolved) {
+  function buildShareText(log, communityMapped) {
     var n = Object.keys(log).length;
     var countries = passportCountries(log);
     var firsts = Object.keys(log).filter(function (k) { return log[k] && log[k].f; }).length;
     var lines = [];
     lines.push("🕵️ I've mapped " + n.toLocaleString() + " Amazon seller" + (n === 1 ? "" : "s") +
       " for Knockoff's community map" +
-      (communityResolved ? " (" + communityResolved.toLocaleString() + " and counting)" : ""));
+      (communityMapped ? " (" + communityMapped.toLocaleString() + " and counting)" : ""));
     if (countries.length) {
       lines.push(countries.slice(0, 8).map(Knockoff.flagEmoji).join("") +
         (countries.length > 8 ? " +" + (countries.length - 8) : "") +
@@ -1204,7 +1206,7 @@
       // Storage read only — a network fetch here could outlive the
       // user-activation window the clipboard write needs.
       chrome.storage.local.get({ koMerchantReported: {} }).then(function (s) {
-        var total = communityStats && communityStats.resolved;
+        var total = communityStats && communityStats.reported;
         copyText(buildShareText(s.koMerchantReported, total)).then(function (ok) {
           if (ok) share.textContent = "Copied!";
           dismiss = setTimeout(out, 2000);
@@ -1423,7 +1425,7 @@
       // user-activation window the clipboard write needs. The community
       // total comes from the in-memory copy updatePanelState keeps fresh.
       chrome.storage.local.get({ koMerchantReported: {} }).then(function (st) {
-        var total = communityStats && communityStats.resolved;
+        var total = communityStats && communityStats.reported;
         copyText(buildShareText(st.koMerchantReported, total)).then(function (ok) {
           if (!ok) return;
           mappedShare.classList.add("ko-share-done");
@@ -1603,9 +1605,13 @@
           // total motivating instead of diluting. Silent when unavailable.
           getCommunityStats().then(function (stats) {
             var subEl = document.getElementById("ko-panel-mapped-sub");
-            if (subEl && stats && stats.resolved) {
+            // `reported` counts distinct sellers with at least one crowd vote —
+            // the same universe as the personal count above it, so this line
+            // can never read smaller than the big number (unlike `resolved`,
+            // which lags on the two-reporter consensus rule).
+            if (subEl && stats && stats.reported) {
               subEl.textContent = "of the community's " +
-                stats.resolved.toLocaleString() + " sellers";
+                stats.reported.toLocaleString();
               subEl.style.display = "";
             }
           });
