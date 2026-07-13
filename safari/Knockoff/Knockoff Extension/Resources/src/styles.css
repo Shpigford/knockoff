@@ -755,6 +755,87 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
   color: #a1a1aa;
 }
 
+/* ── First-catch toast ──────────────────────────────────────────────────── */
+
+#ko-intro {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483646;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 440px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #18181b;
+  color: #fafafa;
+  font: 400 13.5px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+#ko-intro.ko-intro-raised {
+  bottom: 64px;
+}
+
+.ko-intro-logo {
+  flex-shrink: 0;
+}
+
+.ko-intro-logo svg {
+  display: block;
+  width: 30px;
+  height: 34px;
+}
+
+#ko-intro b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Slide in with a slight overshoot, then ping twice with the brand red —
+   motion and color do the attention work so the toast itself can stay quiet. */
+@media (prefers-reduced-motion: no-preference) {
+  #ko-intro {
+    animation:
+      ko-intro-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15) both,
+      ko-intro-ping 1.4s ease-out 0.7s 2;
+  }
+}
+
+@keyframes ko-intro-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ko-intro-ping {
+  0%   { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 0 rgba(224, 16, 36, 0.55); }
+  70%  { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 14px rgba(224, 16, 36, 0); }
+  100% { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 0 rgba(224, 16, 36, 0); }
+}
+
+#ko-intro button {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  background: transparent;
+  color: #fafafa;
+  font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  cursor: pointer;
+}
+
+#ko-intro button:hover {
+  border-color: #71717a;
+}
+
 /* ── Touch devices ──────────────────────────────────────────────────────────
    Lift the count pill clear of Amazon's mobile bottom bar. Dimmed listings
    already sit at a stable, readable opacity on every device (see above), so
@@ -762,5 +843,13 @@ html.ko-hide-sponsored .s-result-item.s-widget:has(
 @media (hover: none) {
   #ko-pill {
     bottom: 72px;
+  }
+
+  #ko-intro {
+    bottom: 72px;
+  }
+
+  #ko-intro.ko-intro-raised {
+    bottom: 118px;
   }
 }

@@ -21,6 +21,7 @@
 		6A4717112FFD45CA00AE2564 /* Knockoff Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6A4717102FFD45CA00AE2564 /* Knockoff Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6A4717162FFD45CA00AE2564 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4717152FFD45CA00AE2564 /* SafariWebExtensionHandler.swift */; };
 		6A4717272FFD45CA00AE2564 /* options in Resources */ = {isa = PBXBuildFile; fileRef = 6A4717222FFD45CA00AE2564 /* options */; };
+		6A47172C2FFD45CA00AE2564 /* onboarding in Resources */ = {isa = PBXBuildFile; fileRef = 6A47172D2FFD45CA00AE2564 /* onboarding */; };
 		6A4717282FFD45CA00AE2564 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = 6A4717232FFD45CA00AE2564 /* icons */; };
 		6A4717292FFD45CA00AE2564 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 6A4717242FFD45CA00AE2564 /* manifest.json */; };
 		6A47172A2FFD45CA00AE2564 /* data in Resources */ = {isa = PBXBuildFile; fileRef = 6A4717252FFD45CA00AE2564 /* data */; };
@@ -87,6 +88,7 @@
 		6A4717152FFD45CA00AE2564 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		6A4717172FFD45CA00AE2564 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		6A4717222FFD45CA00AE2564 /* options */ = {isa = PBXFileReference; lastKnownFileType = folder; name = options; path = Resources/options; sourceTree = "<group>"; };
+		6A47172D2FFD45CA00AE2564 /* onboarding */ = {isa = PBXFileReference; lastKnownFileType = folder; name = onboarding; path = Resources/onboarding; sourceTree = "<group>"; };
 		6A4717232FFD45CA00AE2564 /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = Resources/icons; sourceTree = "<group>"; };
 		6A4717242FFD45CA00AE2564 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
 		6A4717252FFD45CA00AE2564 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; name = data; path = Resources/data; sourceTree = "<group>"; };
@@ -198,6 +200,7 @@
 			isa = PBXGroup;
 			children = (
 				6A4717222FFD45CA00AE2564 /* options */,
+				6A47172D2FFD45CA00AE2564 /* onboarding */,
 				6A4717232FFD45CA00AE2564 /* icons */,
 				6A4717242FFD45CA00AE2564 /* manifest.json */,
 				6A4717252FFD45CA00AE2564 /* data */,
@@ -342,6 +345,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6A4717272FFD45CA00AE2564 /* options in Resources */,
+				6A47172C2FFD45CA00AE2564 /* onboarding in Resources */,
 				6A4717292FFD45CA00AE2564 /* manifest.json in Resources */,
 				6A47172A2FFD45CA00AE2564 /* data in Resources */,
 				6A4717282FFD45CA00AE2564 /* icons in Resources */,
