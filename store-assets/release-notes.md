@@ -7,6 +7,13 @@ version heading when you cut a release.
 
 ## Unreleased
 
+## 0.7.1
+
+- Fixed: the seller-map contribution stats could show a community total
+  smaller than your own count (like "13 mapped / of the community's 1"). The
+  two numbers now count the same thing, so the community total is never less
+  than yours.
+
 ## 0.7.0
 
 - New: listings now show a small flag for where the seller is based — like
