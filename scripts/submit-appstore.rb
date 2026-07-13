@@ -2,12 +2,15 @@
 # frozen_string_literal: true
 #
 # Submit an uploaded Knockoff build (macOS or iOS) to App Store review.
-# Usage: ./scripts/submit-appstore.rb [<build_number>] [--platform=MAC_OS|IOS] [--preflight] [--release-type=MANUAL|AFTER_APPROVAL]
+# Usage: ./scripts/submit-appstore.rb [<build_number>] [--platform=MAC_OS|IOS] [--preflight] [--no-submit] [--release-type=MANUAL|AFTER_APPROVAL]
 #
 # --platform defaults to MAC_OS. Both platforms live in the same app record
 # (shared bundle id) as separate platform versions; run this once per platform.
 # Run AFTER release-safari.sh has uploaded the build(s); they share one build number.
 # --preflight checks ASC metadata without submitting (run before archiving).
+# --no-submit creates the version (with the chosen releaseType) and attaches the
+#   build, but stops short of submitting for review - so you can tweak
+#   screenshots/text and click "Submit for Review" in ASC yourself.
 # If <build_number> is omitted, reads safari/Knockoff/build/.last-build-number.
 #
 # Credentials (App Store Connect API key) come from .env.asc in the repo root:
@@ -37,12 +40,14 @@ if ENV['ASC_KEY_ID'].to_s.empty? && File.exist?(env_file)
 end
 
 preflight_only = false
+no_submit = false
 release_type = 'MANUAL'
 platform = 'MAC_OS'
 positional = []
 ARGV.each do |arg|
   case arg
   when '--preflight' then preflight_only = true
+  when '--no-submit' then no_submit = true
   when /\A--release-type=(.+)\z/
     release_type = Regexp.last_match(1)
     abort "Invalid --release-type. Must be one of: #{VALID_RELEASE_TYPES.join(', ')}" unless VALID_RELEASE_TYPES.include?(release_type)
@@ -254,8 +259,19 @@ puts 'Attaching build to version...'
 req(:patch, "/v1/appStoreVersions/#{version_id}/relationships/build",
     { data: { type: 'builds', id: build['id'] } })
 
-puts 'Submitting for App Review...'
 asc_url = "https://appstoreconnect.apple.com/apps/#{APP_ID}/appstore/#{version_id}"
+
+if no_submit
+  puts ''
+  puts "Knockoff v#{VERSION} (build #{BUILD_NUMBER}, #{PLATFORM}) queued in App Store Connect - NOT submitted."
+  puts "   Release: #{release_type == 'MANUAL' ? 'manual (click Release this version after approval)' : 'auto on approval'}"
+  puts '   Build is attached and the version is editable. Tweak screenshots/text, then'
+  puts '   click "Submit for Review" in ASC:'
+  puts "   #{asc_url}"
+  exit 0
+end
+
+puts 'Submitting for App Review...'
 begin
   # Reuse an open (unsubmitted) review submission if one exists from a prior attempt.
   open_subs = req(:get, "/v1/reviewSubmissions?filter%5Bapp%5D=#{APP_ID}&filter%5Bplatform%5D=#{PLATFORM}&filter%5Bstate%5D=READY_FOR_REVIEW&limit=1")
