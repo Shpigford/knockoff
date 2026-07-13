@@ -7,6 +7,16 @@ version heading when you cut a release.
 
 ## Unreleased
 
+## 0.6.0
+
+- New: installing Knockoff now opens a quick welcome page that confirms it's on
+  and lets you see it work on a live Amazon search, instead of dropping you into
+  a settings form.
+- New: the first time Knockoff filters a search, a one-time toast confirms it's
+  working and points out the toolbar button.
+- Changed: the Mac, iPhone, and iPad app icons now use the new red price-tag
+  mark, matching the browser extension.
+
 ## 0.5.1
 
 - Fixed: real brands are no longer dimmed on Amazon's newer search layout,
