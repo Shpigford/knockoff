@@ -1217,6 +1217,48 @@
     document.body.appendChild(toast);
   }
 
+  // Proof-of-work for /merchants/report: fetch a signed challenge, grind
+  // nonces with WebCrypto until the digest clears the server's difficulty
+  // (sub-second at the current 14 bits), bound to this exact report so a
+  // solution can't be replayed for a different seller or country. Bounded:
+  // gives up after ~8x the expected work or 15s and reports without proof —
+  // the server then declines the vote, and the local experience (toast,
+  // passport, counts) is untouched. This is what makes bare-curl spam cost
+  // an implementation instead of a one-liner.
+  function sha256Hex(str) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str))
+      .then(function (buf) {
+        var b = new Uint8Array(buf);
+        var out = "";
+        for (var i = 0; i < b.length; i++) out += (b[i] < 16 ? "0" : "") + b[i].toString(16);
+        return out;
+      });
+  }
+
+  function solvePow(payload) {
+    return fetch(MERCHANTS_URL + "/challenge")
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (ch) {
+        if (typeof ch.c !== "string" || typeof ch.bits !== "number" || ch.bits > 24) {
+          return null;
+        }
+        var deadline = Date.now() + 15000;
+        var maxTries = Math.pow(2, ch.bits) * 8;
+        var n = 0;
+        function attempt() {
+          if (n > maxTries || Date.now() > deadline) return null;
+          var nonce = (n++).toString(36);
+          return sha256Hex(ch.c + ":" + nonce + ":" + payload).then(function (digest) {
+            return Knockoff.hexLeadingZeroBits(digest) >= ch.bits
+              ? { c: ch.c, n: nonce }
+              : attempt();
+          });
+        }
+        return attempt();
+      })
+      .catch(function () { return null; }); // old worker/offline: report unproofed
+  }
+
   // Seller profile pages (/sp?seller=...) print the business address; each
   // address block's last line is an ISO country code. Report it once per
   // seller per while — this is the crowd source the whole map is built from.
@@ -1265,12 +1307,15 @@
       var name = (nameEl && nameEl.textContent || "").replace(/\s+/g, " ").trim()
         .slice(0, 100) || null;
       // The response says whether this seller was unmapped by everyone —
-      // the pioneer moment. Toast waits one round-trip for it; on failure
-      // (offline, old worker) it degrades to the plain celebration.
-      fetch(MERCHANTS_URL + "/report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: id, country: country, name: name })
+      // the pioneer moment. Toast waits on the proof-of-work grind (sub-
+      // second) plus one round-trip; on failure (offline, old worker) it
+      // degrades to the plain celebration.
+      solvePow(id + ":" + country).then(function (pow) {
+        return fetch(MERCHANTS_URL + "/report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: id, country: country, name: name, pow: pow || undefined })
+        });
       })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (resp) {

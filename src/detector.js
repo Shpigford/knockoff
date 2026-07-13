@@ -751,6 +751,21 @@ var Knockoff = (function () {
     return bizCountries.size === 1 ? biz[0].country : null;
   }
 
+  // Leading zero bits of a hex digest — the difficulty check for the
+  // proof-of-work the report endpoint requires (content.js grinds nonces
+  // until a digest clears the server's bit threshold).
+  function hexLeadingZeroBits(hex) {
+    var bits = 0;
+    for (var i = 0; i < (hex || "").length; i++) {
+      var v = parseInt(hex[i], 16);
+      if (isNaN(v)) return 0;
+      if (v === 0) { bits += 4; continue; }
+      bits += Math.clz32(v) - 28;
+      break;
+    }
+    return bits;
+  }
+
   // ISO alpha-2 → 🇨🇳-style emoji via regional-indicator letters.
   function flagEmoji(cc) {
     if (!/^[A-Z]{2}$/.test(cc || "")) return "";
@@ -788,6 +803,7 @@ var Knockoff = (function () {
     isMerchantId: isMerchantId,
     countryFromAddressLines: countryFromAddressLines,
     countryFromSellerRows: countryFromSellerRows,
+    hexLeadingZeroBits: hexLeadingZeroBits,
     flagEmoji: flagEmoji,
     isMediaAlias: isMediaAlias,
     displayName: displayName,

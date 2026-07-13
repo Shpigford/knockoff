@@ -317,6 +317,14 @@ check("address → country: non-array", Knockoff.countryFromAddressLines(null), 
 check("flag emoji CN", Knockoff.flagEmoji("CN"), "\u{1F1E8}\u{1F1F3}");
 check("flag emoji US", Knockoff.flagEmoji("US"), "\u{1F1FA}\u{1F1F8}");
 check("flag emoji garbage", Knockoff.flagEmoji("Z"), "");
+// Proof-of-work difficulty check: leading zero bits of a hex digest.
+check("pow bits: all-f", Knockoff.hexLeadingZeroBits("ffff"), 0);
+check("pow bits: one nibble", Knockoff.hexLeadingZeroBits("0fff"), 4);
+check("pow bits: partial nibble", Knockoff.hexLeadingZeroBits("1fff"), 3);
+check("pow bits: 00 then 8", Knockoff.hexLeadingZeroBits("008f"), 8);
+check("pow bits: 001", Knockoff.hexLeadingZeroBits("001f"), 11);
+check("pow bits: garbage", Knockoff.hexLeadingZeroBits("zz"), 0);
+check("pow bits: empty", Knockoff.hexLeadingZeroBits(""), 0);
 
 // Multi-block seller pages (EU): business address vs customer-services
 // address, grouped by label rows. Verbatim shape of a real amazon.de page —
