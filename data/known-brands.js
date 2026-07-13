@@ -278,7 +278,7 @@ var KO_KNOWN_BRANDS = [
   "Orijen", "Outward Hound", "Oxbow", "Pedigree", "Penn-Plax", "PetFusion",
   "PetSafe", "Primal", "Purina", "Purina Pro Plan", "Python", "Royal Canin",
   "Seachem", "Seresto", "Sheba", "Sicce", "Stella & Chewy's",
-  "Taste of the Wild", "Temptations", "Tetra", "Tidy Cats", "Tiki Cat",
+  "Taste of the Wild", "Temptations", "Tetra", "Tidy Cats", "Tiki Cat", "TUG",
   "Vet's Best", "Wahl Pet", "Wellness", "Weruva", "West Paw", "Whistle",
   "Wholehearted", "World's Best", "Zilla", "Zoo Med", "Zuke's",
   // ── Music instruments ─────────────────────────────────────────
