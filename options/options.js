@@ -4,10 +4,6 @@
 
 var FIELDS = ["enabled", "hideSponsored", "sellerCountry", "flagChineseMajor", "showKnownBadge", "filterUnrated"];
 
-// Firefox defaults sellerCountry off (same check as content.js): the gecko
-// manifest declares data_collection_permissions "none", so the feature must
-// be opt-in there to keep that declaration truthful on AMO.
-var IS_FIREFOX = chrome.runtime.getURL("").indexOf("moz-extension:") === 0;
 var SEGS = ["action", "level"];
 var save = document.getElementById("save");
 var minRatingSelect = document.getElementById("minRating");
@@ -41,7 +37,7 @@ var SYNC_DEFAULTS = {
   action: "dim",
   level: "standard",
   hideSponsored: false,
-  sellerCountry: !IS_FIREFOX,
+  sellerCountry: true,
   flagChineseMajor: false,
   showKnownBadge: false,
   allow: [],

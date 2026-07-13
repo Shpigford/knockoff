@@ -27,12 +27,6 @@
   var REPORT_ENDPOINT = "https://api.knockoff.co";
   var REPO_URL = "https://github.com/Shpigford/knockoff";
 
-  // Firefox ships sellerCountry OFF by default: the gecko manifest declares
-  // data_collection_permissions "none", and a default-on feature that sends
-  // seller IDs from browsed pages would make that declaration false. Opt-in
-  // keeps it truthful on AMO; other browsers default on.
-  var IS_FIREFOX = chrome.runtime.getURL("").indexOf("moz-extension:") === 0;
-
   var DEFAULTS = {
     enabled: true,
     action: "dim",            // hide | dim | label
@@ -40,7 +34,9 @@
     flagChineseMajor: false,  // also flag established Chinese brands
     showKnownBadge: false,    // show a ✓ badge on recognized brands too
     hideSponsored: false,     // hide Amazon "Sponsored" search tiles (opt-in)
-    sellerCountry: !IS_FIREFOX, // flag listings with the seller's country
+    sellerCountry: true,      // flag listings with the seller's country (all
+                              // browsers; Firefox manifest declares
+                              // data_collection_permissions "websiteContent")
     allow: [],                // user allowlist (display names)
     block: [],                // user blocklist (display names)
     minRating: 0,             // rating filter: 0 = off, else 3.0–5.0
