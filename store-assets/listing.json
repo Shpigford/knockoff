@@ -57,10 +57,12 @@
   "safari": {
     "subtitle": "Filter Amazon's pseudo-brands",
     "subtitleCharLimit": 30,
-    "keywords": "amazon,sponsored,ads,brand filter,pseudo-brand,knockoff,fake brands,shopping,ad blocker",
+    "keywords": "sponsored,ads,adblocker,fake,counterfeit,dropshipping,junk,shopping,seller,scam,reviews,deals",
     "keywordsCharLimit": 100,
-    "promotionalText": "Cut the trademark-squat junk brands out of Amazon search, and optionally the sponsored ads too. Buy from real brands. Runs locally, no tracking.",
+    "promotionalText": "Amazon is full of trademark-squat junk brands like SZHLUX and HORUSDY. Knockoff filters them out of your search so you buy from real brands. Hide sponsored ads too.",
     "promotionalTextCharLimit": 170,
-    "note": "Set via the App Store Connect API (see scripts/submit-appstore.rb)."
+    "description": "Amazon is flooded with trademark-squat \"brands\": random strings like SZHLUX, HORUSDY, and LATTOOK, registered at the USPTO purely to unlock Amazon Brand Registry. They sell commodity goods with no company, no warranty, and no reputation behind them.\n\nKnockoff is a Safari extension that appraises every listing's brand right in your Amazon search results and hides, dims, or labels the junk, so what's left is brands with a reputation to lose. Works on iPhone, iPad, and Mac.\n\nFeatured in Fast Company, Gizmodo, 404 Media, PC Gamer, Yahoo, and Lifehacker.\n\nHOW IT WORKS\n• Every brand is checked against a curated register of established brands, refreshed daily.\n• Unknown names are scored on the linguistic signature of pseudo-brands: all-caps squat-length strings, vanishing vowels, unpronounceable consonant runs.\n• Your allowlist and blocklist override everything.\n\nFEATURES\n• Hide, dim, or label flagged listings, with a one-click reveal.\n• Optionally hide Amazon's paid \"Sponsored\" listings too (off by default).\n• Three filter levels: Relaxed, Standard, Strict.\n• Trust or block any brand in one click, right from the results.\n• One-click misclassification reporting that improves the shared lists for everyone.\n\nPRIVATE BY DESIGN\nEverything runs locally on your device. No accounts, no analytics, no tracking. The only network request is a daily brand-list refresh. Reports are opt-in and anonymous.\n\nFree and fair source (FSL-1.1-MIT). Works on 23 Amazon marketplaces worldwide, including amazon.com, .ca, .co.uk, .de, .fr, .co.jp, .in, and .com.au.\n\nTo turn it on: enable Knockoff in Safari's Extensions settings and allow it on Amazon. Search as usual, and the junk brands drop out.",
+    "descriptionCharLimit": 4000,
+    "note": "Set via the App Store Connect API (see scripts/submit-appstore.rb). description overrides shared.description with Safari/iOS-specific copy."
   }
 }
