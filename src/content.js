@@ -50,6 +50,7 @@
   var stats = { scanned: 0, filtered: 0, byVerdict: {}, brands: {} };
   var revealed = false; // session-only "show hidden items" toggle
   var brandsCollapsed = false; // persisted: panel "Filtered brands" box folded shut
+  var introShown = true; // one-time first-catch toast; true until storage says otherwise
 
   // Lifetime tally shown in the popup. Deduped per ASIN per page load so
   // rescans (settings changes) don't double-count; drift across concurrent
@@ -654,6 +655,40 @@
     pill.appendChild(action);
   }
 
+  // ── First-catch toast ──────────────────────────────────────────────────────
+  // Once ever: the first time a page actually has something filtered, confirm
+  // the extension is working and point at the toolbar button — the moment the
+  // panel becomes relevant is the moment to teach it.
+
+  function maybeShowIntroToast() {
+    if (introShown || stats.filtered === 0) return;
+    introShown = true;
+    chrome.storage.local.set({ introShown: true });
+    var toast = el("div", "");
+    toast.id = "ko-intro";
+    toast.setAttribute("role", "status"); // announce once to screen readers
+    var logo = el("span", "ko-intro-logo");
+    logo.innerHTML = PANEL_LOGO; // static markup only
+    toast.appendChild(logo);
+    var msg = document.createElement("span");
+    var count = document.createElement("b");
+    count.textContent = stats.filtered;
+    msg.appendChild(document.createTextNode("Knockoff filtered "));
+    msg.appendChild(count);
+    msg.appendChild(document.createTextNode(
+      " listing" + (stats.filtered === 1 ? "" : "s") + " on this page. " +
+      "The toolbar button opens the\u00a0panel.")); // nbsp: no widow word
+    var ok = document.createElement("button");
+    ok.type = "button";
+    ok.textContent = "Got it";
+    ok.addEventListener("click", function () { toast.remove(); });
+    toast.appendChild(msg);
+    toast.appendChild(ok);
+    // Sit above the count pill when both are up (hide mode).
+    if (document.getElementById("ko-pill")) toast.classList.add("ko-intro-raised");
+    document.body.appendChild(toast);
+  }
+
   // ── Product detail page byline ─────────────────────────────────────────────
 
   function processProductPage() {
@@ -1104,6 +1139,7 @@
     }
     updatePill();
     updatePanelState();
+    maybeShowIntroToast();
   }
 
   // Wipe all Knockoff state from the page and re-apply from scratch.
@@ -1160,8 +1196,9 @@
     document.querySelectorAll(".ko-menu").forEach(function (menu) { menu.remove(); });
   }, true);
 
-  chrome.storage.local.get({ brandsCollapsed: false }).then(function (s) {
+  chrome.storage.local.get({ brandsCollapsed: false, introShown: false }).then(function (s) {
     brandsCollapsed = s.brandsCollapsed;
+    introShown = s.introShown;
   });
 
   loadSettings()
