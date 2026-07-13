@@ -595,6 +595,8 @@
 					SafariServices,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = shopping.knockoff.Knockoff.Extension;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = shopping.knockoff.Knockoff.SafariExtension;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphonesimulator*]" = shopping.knockoff.Knockoff.SafariExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -633,6 +635,8 @@
 					SafariServices,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = shopping.knockoff.Knockoff.Extension;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = shopping.knockoff.Knockoff.SafariExtension;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphonesimulator*]" = shopping.knockoff.Knockoff.SafariExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
