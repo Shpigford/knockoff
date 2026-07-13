@@ -16,7 +16,6 @@ Knockoff is a cross-browser MV3 extension (Chrome/Firefox/Safari) that filters t
 - **Firefox / AMO release:** `scripts/release-firefox.sh` — lints and submits a listed version via `web-ext`, pulling version notes from `store-assets/release-notes.md`; needs `.env.amo` (see `.env.amo.example`).
 - **Safari App Store release:** `scripts/release-safari.sh` (archive + upload), then `scripts/submit-appstore.rb`.
 - **Refresh bundled community list:** `scripts/update-bundled-brands.sh` regenerates `data/community-brands.js` from the live `/brands` endpoint (generated file — never hand-edit). `/release` runs it at release time.
-- **Deploy the worker:** `wrangler deploy` inside `report-worker/`. First-time D1/secret setup is documented in the header of `report-worker/worker.js`.
 
 ## Architecture
 
@@ -39,10 +38,9 @@ Media/digital categories (Books, Kindle, Audible, music, movies, apps…) are sk
 
 ### Server side (all optional to the shopping path)
 
-- **`report-worker/`** — Cloudflare Worker + D1 at `api.knockoff.co`: accepts one-click misclassification reports, serves the community allowlist (`/brands`, D1-backed and edge-cached; the base list was seeded once from `seed-brands.sql`, and `data/community-brands.js` is its bundled snapshot, regenerated at release time) and curated blocklist additions (`/flagged`), and hosts a token-gated `/review` curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. Endpoints documented in `worker.js` header.
-The **marketing site** (knockoff.co) and its SEO/content strategy no longer live here — they moved to a separate private repo (Next.js on Vercel). This repo is the extension plus the report worker.
+The API — a Cloudflare Worker + D1 at `api.knockoff.co` — lives in a separate private repo. It accepts one-click misclassification reports, serves the community allowlist (`/brands`; `data/community-brands.js` is its bundled snapshot, regenerated at release time), curated blocklist additions (`/flagged`), and runtime config (`/config`, whose shape must stay in sync with `data/config.js` here), and hosts the curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. The **marketing site** (knockoff.co) is likewise a separate private repo (Next.js on Vercel). This repo is just the extension.
 
-Everything else runs locally in the content script; the extension's only first-party network dependency is `api.knockoff.co`. Older installs still call the legacy host `api.knockoff.shopping` — both hostnames route to the same worker, and the legacy one is kept alive indefinitely because installed extensions can't be force-updated (see `report-worker/wrangler.toml`).
+Everything else runs locally in the content script; the extension's only first-party network dependency is `api.knockoff.co`. Older installs still call the legacy host `api.knockoff.shopping` — both hostnames route to the same worker, and the legacy one is kept alive indefinitely because installed extensions can't be force-updated.
 
 ## Conventions and judgment calls
 
