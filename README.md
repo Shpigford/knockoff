@@ -96,15 +96,11 @@ is never hidden out from under you.
 ## Reporting misclassifications
 
 The badge menu has one-click reporting ("this is junk" / "this is a real
-brand"). Reports go to a tiny Cloudflare Worker backed by D1
-([`report-worker/`](report-worker/)) and are reviewed by hand to improve the
-bundled lists. No PII: the payload is brand, verdict, ASIN, marketplace, and
-extension version; reporter IPs are stored only as salted hashes for rate
-limiting. If no endpoint is configured the extension falls back to opening a
-prefilled GitHub issue.
-
-Deploying your own endpoint is four commands; see the header of
-[`report-worker/worker.js`](report-worker/worker.js).
+brand"). Reports go to a small API (a Cloudflare Worker backed by D1) and are
+reviewed by hand to improve the bundled lists. No PII: the payload is brand,
+verdict, ASIN, marketplace, and extension version; reporter IPs are stored
+only as salted hashes for rate limiting. If no endpoint is configured the
+extension falls back to opening a prefilled GitHub issue.
 
 ## Contributing
 
@@ -123,7 +119,6 @@ src/detector.js           detection engine (pure logic, no DOM)
 src/content.js            page scanning, badges, actions, in-page control panel
 src/background.js         toolbar button → panel toggle (or options page)
 options/                  settings page (rules, allow/blocklist)
-report-worker/            Cloudflare Worker: reports, curation, brand-list API
 safari/                   Xcode wrapper app for Safari (macOS)
 store-assets/             Chrome Web Store images + the HTML frames that render them
 scripts/                  maintenance scripts

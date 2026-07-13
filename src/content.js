@@ -22,8 +22,8 @@
   var CONFIG_URL = "https://api.knockoff.co/config";
   var CONFIG = KO_DEFAULT_CONFIG;
 
-  // One-click misclassification reports (see report-worker/). Set this to your
-  // deployed worker URL. Leave empty to fall back to opening a GitHub issue.
+  // One-click misclassification reports. Set this to your deployed endpoint.
+  // Leave empty to fall back to opening a GitHub issue.
   var REPORT_ENDPOINT = "https://api.knockoff.co";
   var REPO_URL = "https://github.com/Shpigford/knockoff";
 
@@ -490,8 +490,8 @@
 
   // Misclassification reports keep the shared lists honest. `brand` is the name
   // the shopper confirmed — edited when we truncated ("Geometric" → "Geometric
-  // Future") or missed it. With a deployed report-worker this is a fire-and-forget
-  // POST; without one it opens a prefilled GitHub issue instead.
+  // Future") or missed it. With a report endpoint configured this is a
+  // fire-and-forget POST; without one it opens a prefilled GitHub issue instead.
   function sendReport(brand, suggestion, verdict, asin, productTitle, reason) {
     if (!REPORT_ENDPOINT) {
       var title = (suggestion === "is_junk" ? "Junk brand: " : "Real brand: ") + brand;

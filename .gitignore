@@ -1,7 +1,5 @@
 .DS_Store
 node_modules/
-report-worker/.secrets.local
-report-worker/.wrangler/
 .env.cws
 .env.asc
 .env.amo

@@ -56,14 +56,12 @@ detector against a fixture set of real titles, and validates the brand lists
 
 ## Reporting data
 
-One-click reports from the badge menu land in a D1 table (see
-`report-worker/`). Maintainers triage on the `/review` dashboard, where a
-Block/Trust click curates the brand, and curated verdicts are served by the API
-(`/flagged`, merged into `/brands`) and reach every install within its next
-daily refresh, no extension release needed. Brands that prove permanent
-should still graduate into the bundled data files so fresh installs are
-covered before their first refresh. Endpoints are documented in
-`report-worker/worker.js`.
+One-click reports from the badge menu land in the API's database. Maintainers
+triage on a review dashboard, where a Block/Trust click curates the brand, and
+curated verdicts are served by the API (`/flagged`, merged into `/brands`) and
+reach every install within its next daily refresh, no extension release
+needed. Brands that prove permanent should still graduate into the bundled
+data files so fresh installs are covered before their first refresh.
 
 ## Pull requests
 
