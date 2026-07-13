@@ -7,6 +7,19 @@ version heading when you cut a release.
 
 ## Unreleased
 
+## 0.7.0
+
+- New: listings now show a small flag for where the seller is based — like
+  🇨🇳 CN — on the product image in search results and on the product page, so
+  you can see a listing's origin at a glance. Flags are display-only and never
+  change what Knockoff filters. On by default; you can turn them off in
+  settings.
+- New: when Knockoff doesn't recognize a seller yet, it shows a "Where from?"
+  chip — opening the seller page adds their country to a community-built map
+  that every install benefits from, and the countries you help map fill in a
+  personal passport. Only seller IDs and countries are ever sent, never
+  anything about you, your search, or the products.
+
 ## 0.6.0
 
 - New: installing Knockoff now opens a quick welcome page that confirms it's on
