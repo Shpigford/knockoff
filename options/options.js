@@ -2,7 +2,12 @@
 // arrays of display names in chrome.storage.sync (normalization happens in
 // the detector at lookup time).
 
-var FIELDS = ["enabled", "hideSponsored", "flagChineseMajor", "showKnownBadge", "filterUnrated"];
+var FIELDS = ["enabled", "hideSponsored", "sellerCountry", "flagChineseMajor", "showKnownBadge", "filterUnrated"];
+
+// Firefox defaults sellerCountry off (same check as content.js): the gecko
+// manifest declares data_collection_permissions "none", so the feature must
+// be opt-in there to keep that declaration truthful on AMO.
+var IS_FIREFOX = chrome.runtime.getURL("").indexOf("moz-extension:") === 0;
 var SEGS = ["action", "level"];
 var save = document.getElementById("save");
 var minRatingSelect = document.getElementById("minRating");
@@ -36,6 +41,7 @@ var SYNC_DEFAULTS = {
   action: "dim",
   level: "standard",
   hideSponsored: false,
+  sellerCountry: !IS_FIREFOX,
   flagChineseMajor: false,
   showKnownBadge: false,
   allow: [],
@@ -152,7 +158,7 @@ refreshBtn.addEventListener("click", function () {
 function sanitizeSettings(s) {
   var out = {};
   if (!s || typeof s !== "object") return out;
-  ["enabled", "hideSponsored", "flagChineseMajor", "showKnownBadge", "filterUnrated"].forEach(function (k) {
+  ["enabled", "hideSponsored", "sellerCountry", "flagChineseMajor", "showKnownBadge", "filterUnrated"].forEach(function (k) {
     if (typeof s[k] === "boolean") out[k] = s[k];
   });
   if (["hide", "dim", "label"].indexOf(s.action) >= 0) out.action = s.action;

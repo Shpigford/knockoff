@@ -680,6 +680,84 @@ var Knockoff = (function () {
     return r;
   }
 
+  // ── Seller country ───────────────────────────────────────────────────────
+  // Pure pieces of the seller-country feature; the network + DOM work lives
+  // in content.js. Countries are display-only — a flag on listings — never
+  // an input to the filtering verdict.
+
+  // Amazon seller IDs run 13-14 chars ("A" + uppercase alphanumerics); the
+  // range leaves headroom without accepting arbitrary page garbage.
+  var MERCHANT_ID_RE = /^A[0-9A-Z]{9,20}$/;
+
+  function isMerchantId(s) {
+    return typeof s === "string" && MERCHANT_ID_RE.test(s);
+  }
+
+  // Seller-profile addresses end with an ISO 3166-1 alpha-2 code on its own
+  // line ("CN", "US"). Scan from the end so a trailing blank line can't hide
+  // it; anything else (a localized country name, a postcode) is no match —
+  // reporting nothing is always safe.
+  function countryFromAddressLines(lines) {
+    if (!Array.isArray(lines)) return null;
+    for (var i = lines.length - 1; i >= 0; i--) {
+      var line = (lines[i] || "").trim();
+      if (!line) continue;
+      return /^[A-Z]{2}$/.test(line) ? line : null;
+    }
+    return null;
+  }
+
+  // A seller page's detail section as [{text, indent}] rows: indented rows are
+  // address lines, everything else is a label ("Business Address:"). US pages
+  // carry one address; EU pages add a customer-services address, often a mail
+  // forwarder in a different country. When every block agrees, the answer is
+  // unambiguous. When they differ, only a block sitting under a recognized
+  // business-address label (bizLabels: lowercased substrings, per UI language)
+  // is trusted; an unrecognized layout reports nothing rather than guessing.
+  function countryFromSellerRows(rows, bizLabels) {
+    if (!Array.isArray(rows)) return null;
+    var blocks = [];
+    var current = null;
+    var label = "";
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i] || {};
+      if (r.indent) {
+        if (!current) {
+          current = { label: label.toLowerCase(), lines: [] };
+          blocks.push(current);
+        }
+        current.lines.push(r.text);
+      } else {
+        current = null;
+        label = (r.text || "").trim();
+      }
+    }
+    var located = [];
+    for (var b = 0; b < blocks.length; b++) {
+      var c = countryFromAddressLines(blocks[b].lines);
+      if (c) located.push({ label: blocks[b].label, country: c });
+    }
+    if (!located.length) return null;
+    var countries = new Set(located.map(function (x) { return x.country; }));
+    if (countries.size === 1) return located[0].country;
+    var biz = located.filter(function (x) {
+      return (bizLabels || []).some(function (l) {
+        // Normalize here, not just in the defaults: a mixed-case remote
+        // config push must degrade to "still works", never "silently off".
+        return x.label.indexOf(String(l).toLowerCase()) !== -1;
+      });
+    });
+    var bizCountries = new Set(biz.map(function (x) { return x.country; }));
+    return bizCountries.size === 1 ? biz[0].country : null;
+  }
+
+  // ISO alpha-2 → 🇨🇳-style emoji via regional-indicator letters.
+  function flagEmoji(cc) {
+    if (!/^[A-Z]{2}$/.test(cc || "")) return "";
+    return String.fromCodePoint(0x1f1e6 + cc.charCodeAt(0) - 65,
+                                0x1f1e6 + cc.charCodeAt(1) - 65);
+  }
+
   // Which verdicts get acted on at each filter level.
   var ACT_ON = {
     relaxed:  { blocked: 1, flagged: 1 },
@@ -707,6 +785,10 @@ var Knockoff = (function () {
     classifyBrand: classifyBrand,
     classifySeller: classifySeller,
     shouldAct: shouldAct,
+    isMerchantId: isMerchantId,
+    countryFromAddressLines: countryFromAddressLines,
+    countryFromSellerRows: countryFromSellerRows,
+    flagEmoji: flagEmoji,
     isMediaAlias: isMediaAlias,
     displayName: displayName,
     _idx: idx // exposed for tests/debugging

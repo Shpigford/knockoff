@@ -55,12 +55,77 @@ var KO_DEFAULT_CONFIG = {
     // Format-swatch link on book/music/movie tiles (Paperback, Kindle, Blu-ray…).
     // Its presence marks a media work to sit out; the class pair is stable
     // across marketplaces where physical-goods tiles never render it.
-    mediaWork: "a.s-link-style.a-text-bold"
+    mediaWork: "a.s-link-style.a-text-bold",
+    // The featured offer's seller ID inside a search tile (seller-country
+    // feature). Both carry the same "A..." ID: read element.value first, then
+    // the data-csa-c-merchant-id attribute.
+    merchantId: [
+      'input[name="merchantId"]',
+      "[data-csa-c-merchant-id]"
+    ],
+    // Seller profile page (/sp?seller=...): every row of the detail section
+    // (labels + address lines), and the address lines alone. EU pages carry
+    // several address blocks (business + customer services); rows matching
+    // sellerAddressRow group into blocks under their preceding label row,
+    // and each block's last line is an ISO country code.
+    sellerInfoRow: [
+      "#page-section-detail-seller-info .a-row"
+    ],
+    sellerAddressRow: [
+      "#page-section-detail-seller-info .a-row.indent-left"
+    ],
+    // The storefront display name on that same page, reported alongside the
+    // country so the backfill queue shows who a seller ID is.
+    sellerName: [
+      "#seller-name"
+    ],
+    // Where the seller-country chip anchors inside a tile: the product image,
+    // like Amazon's own "Overall Pick" badge — tile text (More Buying Choices,
+    // delivery lines) crowds every other corner. Falls back to the tile root.
+    merchantChipAnchor: [
+      '[data-cy="image-container"]',
+      ".s-product-image-container"
+    ]
   },
   limits: {
     // A "brand row" longer than this is really the title bleeding through a
     // stale selector, not a brand — reject it rather than read a sentence as a
     // brand name. (Brand names are short; titles are long.)
     brandRowMaxLen: 30
-  }
+  },
+  // "Business Address" label substrings (lowercased), per marketplace UI
+  // language. Only consulted when a seller page shows address blocks in
+  // DIFFERENT countries (EU pages add a customer-services address): the
+  // business block wins, and if no label matches, nothing is reported.
+  sellerBizLabels: [
+    "business address",     // en
+    "geschäftsadresse",     // de
+    "adresse commerciale",  // fr
+    "indirizzo aziendale",  // it
+    "dirección comercial",  // es
+    "endereço comercial",   // pt-BR
+    "bedrijfsadres",        // nl
+    "företagsadress",       // sv
+    "adres firmy"           // pl
+  ],
+  // Amazon retail's own seller IDs, one per marketplace — the featured seller
+  // on a large share of tiles, so they're skipped everywhere client-side
+  // (no chip, no lookup, no sighting). US and DE verified live; the rest are
+  // the well-documented values, correctable by config push.
+  amazonSellerIds: [
+    "ATVPDKIKX0DER",  // amazon.com
+    "A3JWKAKR8XB7XF", // amazon.de
+    "A3P5ROKL5A1OLE", // amazon.co.uk
+    "A1X6FK5RDHNB96", // amazon.fr
+    "APJ6JRA9NG5V4",  // amazon.it
+    "A1AT7YVPFBWXBL", // amazon.es
+    "A17D2BRD4YMT0X", // amazon.nl
+    "ANU9KP01APNAG",  // amazon.se
+    "A3DWYIK6Y9EEQB", // amazon.ca
+    "AVDBXBAVVSXLQ",  // amazon.com.mx
+    "A1ZZFT5FULY4LN", // amazon.com.br
+    "AN1VRQENFRJN5",  // amazon.co.jp
+    "ANEGB3WVEVKZB",  // amazon.com.au
+    "A19VAU5U5O7RUS"  // amazon.sg
+  ]
 };
