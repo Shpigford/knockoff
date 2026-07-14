@@ -97,7 +97,7 @@ var KO_KNOWN_BRANDS = [
   "Akro-Mils", "Arm & Hammer", "Bar Keepers Friend", "Bissell", "Bon Ami",
   "Brabantia", "Casabella", "Clorox", "ClosetMaid", "Command",
   "Container Store", "Cosco", "DeWalt ToughSystem", "Dirt Devil", "Dyson",
-  "Edsal", "Elfa", "Eureka", "Full Circle", "Gladiator", "Goo Gone",
+  "Edsal", "Elfa", "Eureka", "Freezer Sanity", "Full Circle", "Gladiator", "Goo Gone",
   "Honey-Can-Do", "Hoover", "Household Essentials", "Husky Storage", "iDesign",
   "InterDesign", "iRobot", "Joseph Joseph", "Keter", "Kirby", "Krud Kutter",
   "Libman", "Lifetime", "Lysol", "mDesign", "Method", "Miele",
