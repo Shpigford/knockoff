@@ -24,6 +24,6 @@ var KO_CHINESE_MAJOR = [
   "WORKPRO", "Hychika", "Kimo", "Dongcheng", "Hoto",
   "Viofo", "70mai", "Vantrue", "Wolfbox",
   "Minisforum", "Beelink", "GMKtec", "Chuwi", "Teclast", "Onn China",
-  "Hubsan", "Holy Stone", "Potensic", "Ruko",
+  "Hubsan", "Holy Stone", "Potensic", "Ruko", "BETAFPV", "GEPRC",
   "Laifen", "Dreame Hair", "Tymo", "Slick Gorilla China"
 ];
