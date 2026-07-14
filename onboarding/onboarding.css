@@ -1,0 +1,68 @@
+/* Knockoff: post-install welcome page. Rides on options.css for the shared
+   system (variables, masthead, sections, colophon); only the hero CTA and
+   the pin illustration live here.                                           */
+
+.hero h2 {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.hero .hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+}
+
+.cta {
+  display: inline-block;
+  padding: 10px 22px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--bg);
+  font: 500 13.5px/1.4 var(--sans);
+  text-decoration: none;
+  transition: opacity 0.12s ease;
+}
+
+.cta:hover { opacity: 0.85; }
+.cta:active { opacity: 0.75; }
+
+.cta-sub {
+  margin: 10px 0 2px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* ── Pin card ───────────────────────────────────────────────────────────── */
+
+.pin {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.pin-copy { flex: 1; }
+
+.pin-copy .hint { margin-bottom: 0; }
+
+.pin-art {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.pa-bar   { fill: var(--track); stroke: var(--line); }
+.pa-field { fill: var(--card); stroke: var(--line); }
+.pa-puzzle { fill: var(--ink-3); }
+.pa-menu  { fill: var(--card); stroke: var(--line); }
+.pa-line  { fill: var(--track); }
+.pa-rowbg { fill: var(--track); }
+.pa-pinicon {
+  fill: none;
+  stroke: #e01024;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 520px) {
+  .pin { flex-direction: column; align-items: flex-start; }
+}

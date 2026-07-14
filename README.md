@@ -1,8 +1,8 @@
-![Knockoff: Amazon, without the knockoffs](store-assets/promo-marquee.png)
+![Knockoff: Amazon, without the knockoffs](store-assets/promo-og.png)
 
 # Knockoff
 
-**A Chrome extension that filters pseudo-brand junk out of Amazon.** Buy from
+**A browser extension that filters pseudo-brand junk out of Amazon.** Buy from
 real, established brands, even when that means paying more.
 
 Amazon is flooded with trademark-squat "brands" (SZHLUX, HORUSDY, LATTOOK,
@@ -13,7 +13,8 @@ labels them, right in the search results.
 
 ## Install
 
-**[Add to Chrome](https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce)** from the Chrome Web Store.
+**[Add to Chrome](https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce)** from the Chrome Web Store, or
+**[Add to Firefox](https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/)** from Firefox Add-ons.
 
 Or load it unpacked for development:
 
@@ -36,6 +37,17 @@ The Xcode project carries its own copy of the extension files; after
 editing the extension, run [`scripts/sync-safari.sh`](scripts/sync-safari.sh)
 to update it before rebuilding.
 
+## Press
+
+Some of the coverage since launch:
+
+- [Fast Company](https://www.fastcompany.com/91570721/amazon-shopping-slop-viral-new-tool-filters-out-knockoff-brands)
+- [Gizmodo](https://gizmodo.com/new-browser-extension-helps-you-dodge-amazons-sea-of-knock-off-products-2000783054)
+- [404 Media](https://www.404media.co/knockoff-browser-extension-hides-sketchy-brands-on-amazon/)
+- [PC Gamer](https://www.pcgamer.com/hardware/this-chrome-extension-hides-knockoff-brands-on-amazon-sorry-to-brands-like-wnpethome-eheyciga-yxy/)
+- [Yahoo](https://tech.yahoo.com/apps/articles/chrome-extension-removes-unknown-brands-162002361.html)
+- [Lifehacker](https://lifehacker.com/tech/knockoff-browser-extension-hides-shady-items-on-amazon)
+
 ## How it works
 
 Everything runs locally in a content script. No accounts, no tracking, no
@@ -48,7 +60,7 @@ resolved through this pipeline (first match wins):
 | 2 | Your blocklist | `blocked`, always filtered |
 | 3 | Seed list of notorious pseudo-brands ([`data/flagged-brands.js`](data/flagged-brands.js)) | `flagged` |
 | 4 | Established Chinese-owned brands ([`data/chinese-major.js`](data/chinese-major.js)) | `known`, or `flagged` if you enable that setting |
-| 5 | ~5,000 established brands ([`data/known-brands.js`](data/known-brands.js) + the community allowlist in [`data/community-brands.js`](data/community-brands.js), refreshed daily from `api.knockoff.shopping/brands`) | `known` |
+| 5 | ~5,000 established brands ([`data/known-brands.js`](data/known-brands.js) + the community allowlist in [`data/community-brands.js`](data/community-brands.js), refreshed daily from `api.knockoff.co/brands`) | `known` |
 | 6 | Name heuristics (see below) | `flagged` / `suspect` / `unknown` |
 | - | No brand at the front of the title at all | `unbranded` |
 
@@ -84,15 +96,11 @@ is never hidden out from under you.
 ## Reporting misclassifications
 
 The badge menu has one-click reporting ("this is junk" / "this is a real
-brand"). Reports go to a tiny Cloudflare Worker backed by D1
-([`report-worker/`](report-worker/)) and are reviewed by hand to improve the
-bundled lists. No PII: the payload is brand, verdict, ASIN, marketplace, and
-extension version; reporter IPs are stored only as salted hashes for rate
-limiting. If no endpoint is configured the extension falls back to opening a
-prefilled GitHub issue.
-
-Deploying your own endpoint is four commands; see the header of
-[`report-worker/worker.js`](report-worker/worker.js).
+brand"). Reports go to a small API (a Cloudflare Worker backed by D1) and are
+reviewed by hand to improve the bundled lists. No PII: the payload is brand,
+verdict, ASIN, marketplace, and extension version; reporter IPs are stored
+only as salted hashes for rate limiting. If no endpoint is configured the
+extension falls back to opening a prefilled GitHub issue.
 
 ## Contributing
 
@@ -111,9 +119,7 @@ src/detector.js           detection engine (pure logic, no DOM)
 src/content.js            page scanning, badges, actions, in-page control panel
 src/background.js         toolbar button → panel toggle (or options page)
 options/                  settings page (rules, allow/blocklist)
-report-worker/            Cloudflare Worker: reports, curation, brand-list API
 safari/                   Xcode wrapper app for Safari (macOS)
-site/                     knockoff.shopping landing page (static, Cloudflare)
 store-assets/             Chrome Web Store images + the HTML frames that render them
 scripts/                  maintenance scripts
 ```

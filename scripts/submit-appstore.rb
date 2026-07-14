@@ -1,11 +1,16 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 #
-# Submit an uploaded Knockoff macOS build to App Store review.
-# Usage: ./scripts/submit-appstore.rb [<build_number>] [--preflight] [--release-type=MANUAL|AFTER_APPROVAL]
+# Submit an uploaded Knockoff build (macOS or iOS) to App Store review.
+# Usage: ./scripts/submit-appstore.rb [<build_number>] [--platform=MAC_OS|IOS] [--preflight] [--no-submit] [--release-type=MANUAL|AFTER_APPROVAL]
 #
-# Run AFTER release-safari.sh has uploaded the build.
+# --platform defaults to MAC_OS. Both platforms live in the same app record
+# (shared bundle id) as separate platform versions; run this once per platform.
+# Run AFTER release-safari.sh has uploaded the build(s); they share one build number.
 # --preflight checks ASC metadata without submitting (run before archiving).
+# --no-submit creates the version (with the chosen releaseType) and attaches the
+#   build, but stops short of submitting for review - so you can tweak
+#   screenshots/text and click "Submit for Review" in ASC yourself.
 # If <build_number> is omitted, reads safari/Knockoff/build/.last-build-number.
 #
 # Credentials (App Store Connect API key) come from .env.asc in the repo root:
@@ -23,7 +28,7 @@ BUNDLE_ID = 'shopping.knockoff.Knockoff'
 API = 'https://api.appstoreconnect.apple.com'
 BUILD_POLL_TIMEOUT = 30 * 60
 VALID_RELEASE_TYPES = %w[MANUAL AFTER_APPROVAL].freeze
-PLATFORM = 'MAC_OS'
+VALID_PLATFORMS = %w[MAC_OS IOS].freeze
 
 # Load .env.asc if the vars aren't already in the environment.
 env_file = File.join(ROOT, '.env.asc')
@@ -35,17 +40,24 @@ if ENV['ASC_KEY_ID'].to_s.empty? && File.exist?(env_file)
 end
 
 preflight_only = false
+no_submit = false
 release_type = 'MANUAL'
+platform = 'MAC_OS'
 positional = []
 ARGV.each do |arg|
   case arg
   when '--preflight' then preflight_only = true
+  when '--no-submit' then no_submit = true
   when /\A--release-type=(.+)\z/
     release_type = Regexp.last_match(1)
     abort "Invalid --release-type. Must be one of: #{VALID_RELEASE_TYPES.join(', ')}" unless VALID_RELEASE_TYPES.include?(release_type)
+  when /\A--platform=(.+)\z/
+    platform = Regexp.last_match(1)
+    abort "Invalid --platform. Must be one of: #{VALID_PLATFORMS.join(', ')}" unless VALID_PLATFORMS.include?(platform)
   else positional << arg
   end
 end
+PLATFORM = platform
 
 VERSION = JSON.parse(File.read(File.join(ROOT, 'manifest.json')))['version']
 
@@ -247,8 +259,19 @@ puts 'Attaching build to version...'
 req(:patch, "/v1/appStoreVersions/#{version_id}/relationships/build",
     { data: { type: 'builds', id: build['id'] } })
 
-puts 'Submitting for App Review...'
 asc_url = "https://appstoreconnect.apple.com/apps/#{APP_ID}/appstore/#{version_id}"
+
+if no_submit
+  puts ''
+  puts "Knockoff v#{VERSION} (build #{BUILD_NUMBER}, #{PLATFORM}) queued in App Store Connect - NOT submitted."
+  puts "   Release: #{release_type == 'MANUAL' ? 'manual (click Release this version after approval)' : 'auto on approval'}"
+  puts '   Build is attached and the version is editable. Tweak screenshots/text, then'
+  puts '   click "Submit for Review" in ASC:'
+  puts "   #{asc_url}"
+  exit 0
+end
+
+puts 'Submitting for App Review...'
 begin
   # Reuse an open (unsubmitted) review submission if one exists from a prior attempt.
   open_subs = req(:get, "/v1/reviewSubmissions?filter%5Bapp%5D=#{APP_ID}&filter%5Bplatform%5D=#{PLATFORM}&filter%5Bstate%5D=READY_FOR_REVIEW&limit=1")

@@ -38,6 +38,7 @@ checkLen("firefox.summary", L.firefox.summary, L.firefox.summaryCharLimit);
 checkLen("safari.subtitle", L.safari.subtitle, L.safari.subtitleCharLimit);
 checkLen("safari.keywords", L.safari.keywords, L.safari.keywordsCharLimit);
 checkLen("safari.promotionalText", L.safari.promotionalText, L.safari.promotionalTextCharLimit);
+checkLen("safari.description", L.safari.description || L.shared.description, L.safari.descriptionCharLimit);
 
 // The manifest's short description is a fourth surface the summary can drift on;
 // keep it identical to shared.summary. (Chrome caps manifest description at 132,
@@ -92,7 +93,7 @@ block("SAFARI / APP STORE  —  push via App Store Connect (scripts/submit-appst
   ["Subtitle", L.safari.subtitle],
   ["Keywords", L.safari.keywords],
   ["Promotional text", L.safari.promotionalText],
-  ["Description", L.shared.description]
+  ["Description", L.safari.description || L.shared.description]
 ]);
 
 // The current "What's new" copy: everything under the Unreleased heading.

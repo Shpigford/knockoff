@@ -24,7 +24,7 @@ cd "$ROOT_DIR"
 # no MV3 service worker (bug 1573659) and requires background.scripts.
 BUILD_DIR="$(mktemp -d)"
 trap 'rm -rf "$BUILD_DIR"' EXIT
-cp -R manifest.json src data options icons "$BUILD_DIR/"
+cp -R manifest.json src data options onboarding icons "$BUILD_DIR/"
 node -e "
   const fs = require('fs');
   const p = process.argv[1];
@@ -33,6 +33,6 @@ node -e "
   fs.writeFileSync(p, JSON.stringify(m, null, 2) + '\n');
 " "$BUILD_DIR/manifest.json"
 
-( cd "$BUILD_DIR" && zip -r "$ZIP_PATH" manifest.json src data options icons -x "*.DS_Store" )
+( cd "$BUILD_DIR" && zip -r "$ZIP_PATH" manifest.json src data options onboarding icons -x "*.DS_Store" )
 
 echo "Created $ZIP_PATH"

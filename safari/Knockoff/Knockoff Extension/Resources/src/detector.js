@@ -19,6 +19,9 @@
 //   strict   → blocked, flagged, suspect, unbranded, unknown
 //              (strict = allowlist-only: anything not recognized is filtered)
 //
+// Separately, rating and review criteria (applied by content.js) can filter a
+// product regardless of verdict unless the brand is in the user allowlist.
+//
 // The curated allowlist always vetoes the heuristics. Plenty of legitimate
 // brands look "gibberish" (ASICS, HOKA, RYOBI), so they must live in a list.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,6 +38,58 @@ var Knockoff = (function () {
     return (s || "").toLowerCase()
       .normalize("NFD").replace(/\p{Mn}/gu, "")          // fold diacritics: é→e, ü→u
       .replace(/[^a-z0-9]/g, "");
+  }
+
+  // ── Rating helpers ───────────────────────────────────────────────────────
+  // Parsers for the product rating and review count from the content script
+  // Kept here so they're unit-testable.
+
+  // Parse a star alt-text ("4.3 out of 5 stars", "4,3 von 5 Sternen") to a
+  // number. Accept "." or "," as decimal mark. Extracting rating from number
+  // with a decimal part works if rating is first or second (e.g. "5つ星のうち4.3")
+  // Returns null when there's no rating or an invalid value.
+  function parseRating(text) {
+    text = text || "";
+    var m = text.match(/(\d[.,]\d+)/) || text.match(/(\d+)/);
+    if (!m) return null;
+    var n = parseFloat(m[1].replace(",", "."));
+    if (isNaN(n) || n < 0 || n > 5) return null;
+    return n;
+  }
+
+  // Parse review count ("1,234", "(89)", "1.2K") to an integer. Null if none.
+  // Abbreviated counts are expanded numerically ("1.2K" → 1200, "3K+" → 3000);
+  function parseReviewCount(text) {
+    text = text || "";
+    var abbr = text.match(/(\d+(?:[.,]\d+)?)\s*([kKmM])\b/);
+    if (abbr) {
+      var n = parseFloat(abbr[1].replace(",", "."));
+      return Math.round(n * (abbr[2].toLowerCase() === "k" ? 1e3 : 1e6));
+    }
+    // Take the LAST number run, so a combined label such as
+    // "4.5 out of 5 stars, 1,234 ratings" yields 1234 — not every digit
+    // concatenated. The count trails the rating in every locale we've seen.
+    var groups = text.match(/\d[\d.,]*/g);
+    if (!groups) return null;
+    var digits = groups[groups.length - 1].replace(/[^\d]/g, "");
+    if (!digits) return null;
+    return parseInt(digits, 10);
+  }
+
+  // Filter a product whose rating is below minRating or whose review count
+  // is below minReviews (each check applies only when that minimum is set).
+  // Products with no rating are filtered only when filterUnrated is set.
+  // Products with unreadable review counts are not filtered.
+  // Returns [] or list of reasons the product is filtered
+  function ratingFailures(rating, reviews, settings) {
+    if (rating === null || rating === undefined) {
+      return settings.filterUnrated ? ["unrated"] : [];
+    }
+    var failures = [];
+    if (settings.minRating > 0 && rating < settings.minRating) failures.push("rating");
+    if (settings.minReviews > 0 && reviews !== null && reviews !== undefined &&
+        reviews < settings.minReviews) failures.push("reviews");
+    return failures;
   }
 
   // ── Script detection ─────────────────────────────────────────────────────
@@ -175,8 +230,31 @@ var Knockoff = (function () {
     return null;
   }
 
+  // Find a brand on the shopper's allowlist anywhere in the title (sliding-start,
+  // whole-title, longest window first). classify() layers this on as a fallback
+  // to spare a trusted brand Amazon buried behind a category noun on
+  // category/browse cards (no dedicated brand element to read there) — but only
+  // when the leading brand hasn't already been blocked or flagged, so junk that
+  // merely name-drops a trusted brand for compatibility isn't rescued.
+  // allowKeys is the user's allowlist as normalized keys.
+  function allowedBrandInTokens(tokens, allowKeys) {
+    if (!allowKeys || !allowKeys.size) return null;
+    var ascii = tokens.filter(function (t) { return normalize(t).length > 0; });
+    for (var start = 0; start < ascii.length; start++) {
+      var maxWin = Math.min(idx.knownMaxWords, 4, ascii.length - start);
+      for (var n = maxWin; n >= 1; n--) {
+        var key = normalize(ascii.slice(start, start + n).join(""));
+        if (key && allowKeys.has(key)) {
+          return { name: ascii.slice(start, start + n).join(" "), key: key, listed: true };
+        }
+      }
+    }
+    return null;
+  }
+
   function extractBrand(title, userKeys) {
     if (!title) return null;
+    title = stripBaitBracket(title);
 
     // Local-script lead (Japanese, Arabic, …): the leading brand can't be read
     // or scored, so only the blocklist is reliable here. Find a listed
@@ -210,10 +288,22 @@ var Knockoff = (function () {
     var fkey = normalize(first);
     if (!fkey || fkey.length < 2) return null;
     if (/^\d/.test(first)) return null;             // "2-Piece", "26Pcs", "1/4"
-    // Model/spec codes ("CR2032", "MR16", "ESP32") are parts, not brands.
-    // Real brands of this shape (WD-40, K2, No7) are on the lists, which
-    // matched above; this only rejects unlisted candidates.
-    if (/^[a-z]{1,3}\d+[a-z]?$/.test(fkey)) return null;
+    // Model/spec codes ("CR2032", "MR16", "ESP32") and metric fastener sizes
+    // ("M6x1.0", "M6/M8/M10", "M6*20mm" → "m6x10", "m6m8m10", "m620mm") are
+    // parts, not brands: a short letter prefix then digits, with at most
+    // 2-letter runs between digit groups. Real brands of this shape (WD-40,
+    // K2, No7) are on the lists, which matched above; this only rejects
+    // unlisted candidates.
+    if (/^[a-z]{1,3}\d+(?:[a-z]{0,2}\d+)*[a-z]{0,2}$/.test(fkey)) return null;
+    // A short, all-caps, vowelless leading token is a spec/material/connector
+    // acronym (CCT, RGB, SMD, PWM, PVC, BNC), not the brand — real short brands
+    // (IBM, TCL, HP, RCA) sit on the lists and matched above. Read as the brand
+    // it mislabels the listing ("CCT" is color temperature) and, being all-caps
+    // and vowelless, scores a confident pseudo-brand. Treat as unbranded so the
+    // listing is judged on having no readable brand. Scripture codes (KJV,
+    // NKJV...) are exempt: they route to the Bible/media skip in classify().
+    if (/^[A-Z]+$/.test(first) && fkey.length <= 4 && !/[aeiouy]/.test(fkey) &&
+        !SCRIPTURE_VERSIONS.has(fkey)) return null;
     if (idx.generic.has(fkey)) return null;         // "Magnetic Bit Driver..."
     return { name: first, key: fkey, listed: false };
   }
@@ -232,7 +322,11 @@ var Knockoff = (function () {
   function scoreBrand(name) {
     var s = 0;
     var reasons = [];
-    var letters = name.replace(/[^a-zA-Z]/g, "");
+    // Fold diacritics before dropping non-letters, the same way normalize()
+    // does. Stripping ä/ö/ü outright would delete the vowel and glue the
+    // surrounding consonants into a fake run ("Kaltwasserzähler" → "…zhler",
+    // a bogus "rzhl"), flagging ordinary German/Nordic compound words.
+    var letters = name.normalize("NFD").replace(/\p{Mn}/gu, "").replace(/[^a-zA-Z]/g, "");
     if (!letters) return { score: 0, reasons: reasons };
 
     // A non-Latin-script letter inside an otherwise-Latin name (CJK, or a
@@ -254,7 +348,11 @@ var Knockoff = (function () {
     else if (ratio < 0.28) { s += 1; reasons.push("few vowels"); }
     else if (ratio > 0.62) { s += 1; reasons.push("mostly vowels"); }
 
-    if (/[bcdfghjklmnpqrstvwxz]{4,}/i.test(letters)) {
+    // A run spanning a lowercase→uppercase seam is a compound of two
+    // pronounceable words ("SuperStroke" → r|Str), not gibberish — break at
+    // the seams first. Squat names are all-caps or all-lower, so no seams.
+    var seamed = letters.replace(/([a-z])([A-Z])/g, "$1 $2");
+    if (/[bcdfghjklmnpqrstvwxz]{4,}/i.test(seamed)) {
       s += 3; reasons.push("unpronounceable consonant run");
     }
 
@@ -271,6 +369,68 @@ var Knockoff = (function () {
     if (flips >= 2) { s += 2; reasons.push("random capitalization"); }
 
     return { score: s, reasons: reasons };
+  }
+
+  // ── Compatibility bait ─────────────────────────────────────────────────────
+  // Accessory junk courts the big ecosystems by name ("Compatible with
+  // Samsung Galaxy S24, iPhone 16..."). Established accessory brands write
+  // identical titles, but they sit on the known lists, which short-circuit
+  // before the heuristics run — so this only has to be safe for unlisted
+  // brands, and an unlisted brand name-dropping Apple/Samsung hardware is
+  // the pseudo-brand signature.
+  var COMPAT_BAIT = new Set([
+    "apple", "iphone", "ipad", "ipod", "macbook", "airpods",
+    "samsung", "galaxy"
+  ]);
+
+  var COMPAT_MARKERS = new Set([
+    "compatible", "for", "fits", "fit", "with", "works", "support", "supports"
+  ]);
+
+  function hasCompatMarker(words, index) {
+    var start = Math.max(0, index - 3);
+    for (var i = start; i < index; i++) {
+      if (COMPAT_MARKERS.has(words[i].toLowerCase())) return true;
+    }
+    return false;
+  }
+
+  // A *leading* bracket that pitches certification or compatibility — "[Apple
+  // MFi Certified]", "[Compatible with iPhone]" — is bait, not the brand. Left
+  // in place, brand extraction latches onto the ecosystem name inside ("Apple")
+  // and greenlights the listing as that brand. Strip such a bracket so the brand
+  // is read from what follows: a real brand after it is still recognized (it's
+  // on a list), while pure junk falls through to unbranded/heuristics. A bracket
+  // holding the seller's own brand ("[SZHLUX]") carries no pitch word, so it's
+  // kept and scored normally.
+  var BRACKET_CERT_BAIT = new Set(["certified", "certification", "mfi"]);
+
+  function stripBaitBracket(title) {
+    var m = /^\s*[[(【]([^\])】]*)[\])】]\s*/.exec(title);
+    if (!m) return title;
+    var words = m[1].split(/[^A-Za-z0-9]+/).map(function (w) {
+      return w.toLowerCase();
+    }).filter(Boolean);
+    var certified = words.some(function (k) { return BRACKET_CERT_BAIT.has(k); });
+    var compatible = words.some(function (k) { return COMPAT_BAIT.has(k); }) &&
+      words.some(function (k) {
+        return k === "compatible" || COMPAT_MARKERS.has(k);
+      });
+    var baited = certified || compatible;
+    var rest = title.slice(m[0].length);
+    return baited && rest.trim() ? rest : title;
+  }
+
+  // First ecosystem word in a compatibility phrase that isn't the brand itself,
+  // as written in the title ("iPhone"), or null. Split on non-alphanumerics so
+  // "iPhone/iPad" and "(Samsung)" still read.
+  function compatBait(title, brandKey) {
+    var words = (title || "").split(/[^A-Za-z0-9]+/);
+    for (var i = 0; i < words.length; i++) {
+      var key = words[i].toLowerCase();
+      if (COMPAT_BAIT.has(key) && key !== brandKey && hasCompatMarker(words, i)) return words[i];
+    }
+    return null;
   }
 
   // ── Media categories ───────────────────────────────────────────────────────
@@ -305,28 +465,38 @@ var Knockoff = (function () {
     return alias.indexOf("stripbooks") === 0 || MEDIA_ALIASES.has(alias);
   }
 
+  // Bibles are books, but on an all-departments search they slip past the
+  // department media-skip and reach the heuristics — where the translation
+  // code that leads the title (KJV, ESV, NKJV, NIV...) reads as a vowel-starved,
+  // all-caps gibberish brand and gets flagged. A leading version code paired
+  // with a scripture word ("Bible"/"Testament") is usually a book, so we sit
+  // out the same way a media category does. Version-led Bible accessories
+  // ("NIV Bible Tabs", "KJV Bible Cover") still fall through to the heuristics.
+  var SCRIPTURE_VERSIONS = new Set([
+    "kjv", "nkjv", "esv", "niv", "tniv", "nasb", "nlt", "csb", "hcsb",
+    "nrsv", "nrsvue", "rsv", "asv", "amp", "ampc", "msg", "net", "cev",
+    "gnt", "gnb", "ncv", "erv", "web", "ylt", "nabre"
+  ]);
+
+  var SCRIPTURE_MARKER = /\b(bible|testament|scripture|scriptures|gospels?)\b/i;
+  var SCRIPTURE_ACCESSORY_MARKER =
+    /\b(tabs?|covers?|cases?|highlighters?|markers?|pens?|stickers?)\b/i;
+
+  function isScriptureTitle(title, brandKey) {
+    return SCRIPTURE_VERSIONS.has(brandKey) &&
+      SCRIPTURE_MARKER.test(title) &&
+      !SCRIPTURE_ACCESSORY_MARKER.test(title);
+  }
+
   // ── Verdict ────────────────────────────────────────────────────────────────
   // settings: { level, flagChineseMajor }
   // userAllow / userBlock: Sets of normalized keys.
 
-  function classify(title, settings, userAllow, userBlock) {
-    var userKeys = new Set();
-    userAllow.forEach(function (k) { userKeys.add(k); });
-    userBlock.forEach(function (k) { userKeys.add(k); });
-
-    var b = extractBrand(title, userKeys);
-    if (!b) {
-      // Local-script title with no listed pseudo-brand: we can't read it, so
-      // fail open. "foreign" is acted on by no filter level (unlike "unbranded",
-      // which standard would filter — dimming whole pages on .co.jp/.sa/.eg).
-      if (startsWithLocalScript(title)) {
-        return { verdict: "foreign", brand: null, key: null,
-                 reason: "listing isn't in a script Knockoff can read yet" };
-      }
-      return { verdict: "unbranded", brand: null, key: null,
-               reason: "no brand at the front of the listing title" };
-    }
-
+  // Given an extracted brand {name, key} plus the surrounding title (only used
+  // for the compatibility-bait signal), run the list checks then the name
+  // heuristics. Shared by classify() (brand read from the title) and
+  // classifyBrand() (brand Amazon handed us in a dedicated element).
+  function verdictFor(b, title, settings, userAllow, userBlock) {
     var r = { brand: b.name, key: b.key };
 
     if (userAllow.has(b.key)) {
@@ -351,6 +521,16 @@ var Knockoff = (function () {
     }
 
     var h = scoreBrand(b.name);
+    // An unlisted brand whose title name-drops ecosystem hardware it doesn't
+    // make ("...for iPhone 16, Samsung Galaxy") is selling compatibility
+    // bait. Worth "suspect" on its own, but never "flagged": small legit
+    // makers write these titles too, so hiding at relaxed level still
+    // requires name-shape evidence from scoreBrand().
+    var bait = compatBait(title, b.key);
+    if (bait && h.score < 6) {
+      h.score = Math.min(h.score + 3, 5);
+      h.reasons.push("name-drops " + bait + " for compatibility");
+    }
     r.score = h.score;
     if (h.score >= 6) {
       r.verdict = "flagged"; r.reason = "looks like a pseudo-brand: " + h.reasons.join(", ");
@@ -360,6 +540,237 @@ var Knockoff = (function () {
       r.verdict = "unknown"; r.reason = "brand not on any list";
     }
     return r;
+  }
+
+  function classify(title, settings, userAllow, userBlock) {
+    var userKeys = new Set();
+    userAllow.forEach(function (k) { userKeys.add(k); });
+    userBlock.forEach(function (k) { userKeys.add(k); });
+
+    var result = leadingBrandVerdict(title, settings, userAllow, userBlock, userKeys);
+
+    // A brand the shopper allowlisted, appearing anywhere in the title, spares
+    // the listing — this rescues a trusted brand Amazon buried behind a category
+    // noun on category/browse cards, where there's no dedicated brand element to
+    // read. But it must NOT rescue a listing whose own leading brand is blocked
+    // or a pseudo-brand: junk that name-drops a trusted brand for compatibility
+    // ("SZHLUX … für Bosch") keeps its verdict, and an explicit blocklist entry
+    // still wins. So only reach for a later allowlisted brand when the leading
+    // brand hasn't already decided the listing against the shopper. (suspect
+    // stays overridable: it's the low-confidence tier, and sparing a trusted
+    // brand matters more than the rare junk name that scores there — false
+    // positives are worse than false negatives.)
+    if (result.verdict !== "allowed" && result.verdict !== "blocked" &&
+        result.verdict !== "flagged") {
+      var allowed = allowedBrandInTokens(stripBaitBracket(title).trim().split(/\s+/), userAllow);
+      if (allowed) return verdictFor(allowed, title, settings, userAllow, userBlock);
+    }
+    return result;
+  }
+
+  // The verdict from the brand at the front of the title — Amazon's leading-word
+  // brand model. classify() layers the allowlist fallback on top of this.
+  function leadingBrandVerdict(title, settings, userAllow, userBlock, userKeys) {
+    var b = extractBrand(title, userKeys);
+    if (!b) {
+      // Local-script title with no listed pseudo-brand: we can't read it, so
+      // fail open. "foreign" is acted on by no filter level (unlike "unbranded",
+      // which standard would filter — dimming whole pages on .co.jp/.sa/.eg).
+      if (startsWithLocalScript(stripBaitBracket(title))) {
+        return { verdict: "foreign", brand: null, key: null,
+                 reason: "listing isn't in a script Knockoff can read yet" };
+      }
+      return { verdict: "unbranded", brand: null, key: null,
+               reason: "no brand at the front of the listing title" };
+    }
+
+    // A Bible edition (leading version code + a scripture word) is a book, not
+    // a brand-led product — skip it like a media category so the version code
+    // isn't read as a gibberish pseudo-brand. See SCRIPTURE_VERSIONS above.
+    if (isScriptureTitle(title, b.key)) {
+      return { verdict: "media", brand: null, key: null,
+               reason: "Bible edition (a book, not a brand-led product)" };
+    }
+
+    return verdictFor(b, title, settings, userAllow, userBlock);
+  }
+
+  // Classify a brand string Amazon gave us in a dedicated element — a search
+  // tile's brand byline (newer layouts render it in its own row above the
+  // title) or a product-page byline. The whole string IS the brand, so the
+  // title-leading-word guards don't apply and the result is never "unbranded":
+  // a real brand whose name opens with an ordinary word ("Pet Junkie") reads
+  // correctly even after Amazon strips it from the title. Junk names still
+  // score flagged/suspect; an unremarkable unlisted name is "unknown" (passes
+  // at standard, so we err toward not filtering a listing that has a brand).
+  function classifyBrand(brandText, settings, userAllow, userBlock, titleContext) {
+    var name = (brandText || "").trim();
+    var key = normalize(name);
+    // Nothing readable (e.g. a non-Latin byline): fail open like a foreign
+    // title — acted on by no level, and left unbadged on product pages.
+    if (!key) {
+      return { verdict: "foreign", brand: null, key: null,
+               reason: "brand isn't in a script Knockoff can read yet" };
+    }
+    return verdictFor({ name: name, key: key }, titleContext || name, settings, userAllow, userBlock);
+  }
+
+  // ── Seller names (product pages) ───────────────────────────────────────────
+  // The "Sold by" line speaks the same language as pseudo-brand names: junk
+  // sellers are usually "<gibberish> Direct/Official Store/US". Score the
+  // distinctive tokens with the same engine, ignoring commerce boilerplate.
+  // Conservative on purpose (false positives are worse): a known brand
+  // anywhere in the seller name vetoes the heuristics, and only a strong
+  // heuristic hit warns — never nag about clean sellers.
+
+  var SELLER_NOISE = new Set([
+    "co", "ltd", "inc", "llc", "limited", "company", "corp", "gmbh",
+    "store", "shop", "shops", "mall", "outlet", "retail", "market",
+    "direct", "official", "authorized", "flagship", "online", "global",
+    "international", "trading", "trade", "technology", "tech", "group",
+    "industry", "industries", "supply", "supplies", "service", "services",
+    "seller", "sales", "warehouse", "depot", "express", "home", "life",
+    "us", "usa", "uk", "eu", "ca", "de", "fr", "jp", "na", "the", "and"
+  ]);
+
+  function classifySeller(name, userAllow, userBlock) {
+    var key = normalize(name);
+    if (!key) return { verdict: "unknown", name: name, reason: "no readable seller name" };
+    var r = { name: name.trim() };
+    if (userAllow && userAllow.has(key)) {
+      r.verdict = "allowed"; r.reason = "seller is on your allowlist"; return r;
+    }
+    if (userBlock && userBlock.has(key)) {
+      r.verdict = "blocked"; r.reason = "seller is on your blocklist"; return r;
+    }
+    if (idx.flagged.has(key)) {
+      r.verdict = "flagged"; r.reason = "seller name is on the known pseudo-brand list"; return r;
+    }
+    if (idx.known.has(key)) {
+      r.verdict = "known"; r.reason = "storefront of an established brand"; return r;
+    }
+
+    var tokens = name.trim().split(/\s+/);
+    var best = { score: 0, reasons: [] };
+    for (var i = 0; i < tokens.length; i++) {
+      var tkey = normalize(tokens[i]);
+      if (!tkey || SELLER_NOISE.has(tkey) || /^\d+$/.test(tkey)) continue;
+      // Per-token list checks: "SZHLUX Direct" → flagged token; a known-brand
+      // token ("Anker Direct") vetoes, same as the title pipeline.
+      if (idx.flagged.has(tkey) || (userBlock && userBlock.has(tkey))) {
+        r.verdict = "flagged"; r.reason = "seller name contains a listed pseudo-brand"; return r;
+      }
+      if (idx.known.has(tkey) || (userAllow && userAllow.has(tkey))) {
+        r.verdict = "known"; r.reason = "storefront of an established brand"; return r;
+      }
+      var h = scoreBrand(tokens[i]);
+      if (h.score > best.score) best = h;
+    }
+    r.score = best.score;
+    // Flagged-only surface: warn only on a strong hit (several signals at once).
+    // A lone all-caps token scores 3 on its own, but on a seller line that's
+    // usually a normal storefront ("ABC Distributors", "MEGA Deals"), not junk —
+    // so the middling band stays quiet rather than crying wolf on every
+    // marketplace seller. False positives are worse than misses.
+    if (best.score >= 6) {
+      r.verdict = "flagged"; r.reason = "seller name looks like a pseudo-brand: " + best.reasons.join(", ");
+    } else {
+      r.verdict = "unknown"; r.reason = "seller not on any list";
+    }
+    return r;
+  }
+
+  // ── Seller country ───────────────────────────────────────────────────────
+  // Pure pieces of the seller-country feature; the network + DOM work lives
+  // in content.js. Countries are display-only — a flag on listings — never
+  // an input to the filtering verdict.
+
+  // Amazon seller IDs run 13-14 chars ("A" + uppercase alphanumerics); the
+  // range leaves headroom without accepting arbitrary page garbage.
+  var MERCHANT_ID_RE = /^A[0-9A-Z]{9,20}$/;
+
+  function isMerchantId(s) {
+    return typeof s === "string" && MERCHANT_ID_RE.test(s);
+  }
+
+  // Seller-profile addresses end with an ISO 3166-1 alpha-2 code on its own
+  // line ("CN", "US"). Scan from the end so a trailing blank line can't hide
+  // it; anything else (a localized country name, a postcode) is no match —
+  // reporting nothing is always safe.
+  function countryFromAddressLines(lines) {
+    if (!Array.isArray(lines)) return null;
+    for (var i = lines.length - 1; i >= 0; i--) {
+      var line = (lines[i] || "").trim();
+      if (!line) continue;
+      return /^[A-Z]{2}$/.test(line) ? line : null;
+    }
+    return null;
+  }
+
+  // A seller page's detail section as [{text, indent}] rows: indented rows are
+  // address lines, everything else is a label ("Business Address:"). US pages
+  // carry one address; EU pages add a customer-services address, often a mail
+  // forwarder in a different country. When every block agrees, the answer is
+  // unambiguous. When they differ, only a block sitting under a recognized
+  // business-address label (bizLabels: lowercased substrings, per UI language)
+  // is trusted; an unrecognized layout reports nothing rather than guessing.
+  function countryFromSellerRows(rows, bizLabels) {
+    if (!Array.isArray(rows)) return null;
+    var blocks = [];
+    var current = null;
+    var label = "";
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i] || {};
+      if (r.indent) {
+        if (!current) {
+          current = { label: label.toLowerCase(), lines: [] };
+          blocks.push(current);
+        }
+        current.lines.push(r.text);
+      } else {
+        current = null;
+        label = (r.text || "").trim();
+      }
+    }
+    var located = [];
+    for (var b = 0; b < blocks.length; b++) {
+      var c = countryFromAddressLines(blocks[b].lines);
+      if (c) located.push({ label: blocks[b].label, country: c });
+    }
+    if (!located.length) return null;
+    var countries = new Set(located.map(function (x) { return x.country; }));
+    if (countries.size === 1) return located[0].country;
+    var biz = located.filter(function (x) {
+      return (bizLabels || []).some(function (l) {
+        // Normalize here, not just in the defaults: a mixed-case remote
+        // config push must degrade to "still works", never "silently off".
+        return x.label.indexOf(String(l).toLowerCase()) !== -1;
+      });
+    });
+    var bizCountries = new Set(biz.map(function (x) { return x.country; }));
+    return bizCountries.size === 1 ? biz[0].country : null;
+  }
+
+  // Leading zero bits of a hex digest — the difficulty check for the
+  // proof-of-work the report endpoint requires (content.js grinds nonces
+  // until a digest clears the server's bit threshold).
+  function hexLeadingZeroBits(hex) {
+    var bits = 0;
+    for (var i = 0; i < (hex || "").length; i++) {
+      var v = parseInt(hex[i], 16);
+      if (isNaN(v)) return 0;
+      if (v === 0) { bits += 4; continue; }
+      bits += Math.clz32(v) - 28;
+      break;
+    }
+    return bits;
+  }
+
+  // ISO alpha-2 → 🇨🇳-style emoji via regional-indicator letters.
+  function flagEmoji(cc) {
+    if (!/^[A-Z]{2}$/.test(cc || "")) return "";
+    return String.fromCodePoint(0x1f1e6 + cc.charCodeAt(0) - 65,
+                                0x1f1e6 + cc.charCodeAt(1) - 65);
   }
 
   // Which verdicts get acted on at each filter level.
@@ -379,11 +790,21 @@ var Knockoff = (function () {
 
   return {
     normalize: normalize,
+    parseRating: parseRating,
+    parseReviewCount: parseReviewCount,
+    ratingFailures: ratingFailures,
     buildIndexes: buildIndexes,
     extractBrand: extractBrand,
     scoreBrand: scoreBrand,
     classify: classify,
+    classifyBrand: classifyBrand,
+    classifySeller: classifySeller,
     shouldAct: shouldAct,
+    isMerchantId: isMerchantId,
+    countryFromAddressLines: countryFromAddressLines,
+    countryFromSellerRows: countryFromSellerRows,
+    hexLeadingZeroBits: hexLeadingZeroBits,
+    flagEmoji: flagEmoji,
     isMediaAlias: isMediaAlias,
     displayName: displayName,
     _idx: idx // exposed for tests/debugging

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Knockoff — Amazon Brand Filter",
-  "version": "0.2.0",
-  "description": "Filters pseudo-brand junk out of Amazon and optionally hides sponsored listings. Buy from real, established brands.",
+  "name": "Knockoff - Amazon Brand Filter",
+  "version": "0.7.2",
+  "description": "Filters pseudo-brand junk out of Amazon and can hide sponsored listings. Buy from real, established brands.",
   "permissions": ["storage"],
   "icons": {
     "16": "icons/icon16.png",
@@ -31,8 +31,11 @@
       "id": "knockoff@knockoff.shopping",
       "strict_min_version": "140.0",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": ["websiteContent"]
       }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
     }
   },
   "content_scripts": [
@@ -68,6 +71,7 @@
         "data/chinese-major.js",
         "data/flagged-brands.js",
         "data/generic-words.js",
+        "data/config.js",
         "src/detector.js",
         "src/pdp-brand.js",
         "src/content.js"

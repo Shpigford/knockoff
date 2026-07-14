@@ -27,7 +27,7 @@ WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$BUILD_DIR" "$WORK_DIR"' EXIT
 
 cd "$ROOT_DIR"
-cp -R manifest.json src data options icons "$BUILD_DIR/"
+cp -R manifest.json src data options onboarding icons "$BUILD_DIR/"
 
 echo "Linting Knockoff v${VERSION} for Firefox..."
 npx --yes web-ext@10 lint --source-dir "$BUILD_DIR"

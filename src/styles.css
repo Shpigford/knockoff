@@ -8,7 +8,7 @@
 
    Filter actions:
      .ko-hide : remove from view (floating pill offers reveal)
-     .ko-dim  : fade + desaturate, restore on hover
+     .ko-dim  : fade + desaturate (stable — no hover reveal)
      .ko-label: badge only
    ──────────────────────────────────────────────────────────────────────────── */
 
@@ -31,6 +31,20 @@ html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-spon
   display: none !important;
 }
 
+/* Sponsored *modules* — full-width widget rows, not search-result tiles, so
+   the rule above never matches them: "Shop X by type" (SHOPPING_ADVISER),
+   "Picks from Amazon Influencers" (FEATURED_ASINS_LIST), sponsored video rows
+   (VIDEO_SINGLE_PRODUCT). Matched by Amazon's ad-disclosure classes, which
+   unlike the label text are not localized, so no aria-label list here:
+   .s-widget-sponsored-label-text is the widget-level "Sponsored" link, and
+   the video row's only reliable marker is its label wrapper (its "Sponsored"
+   is plain text with no aria-label). Hide the .s-result-item row, not the
+   inner .s-widget-container, or an empty grid row is left behind. */
+html.ko-hide-sponsored .s-result-item.s-widget:has(
+  .s-widget-sponsored-label-text, .sponsored-brand-label-info-desktop) {
+  display: none !important;
+}
+
 /* "Show" was clicked: hidden items come back in the dim treatment. No
    borders or outlines here: Amazon's tile elements extend into the grid
    gutters, so any ring drawn on them clips and merges between cards. The
@@ -40,16 +54,20 @@ html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-spon
 }
 
 /* Dim Amazon's content but never our own chrome: opacity on the tile
-   itself would wash out the badge and menu with it. */
-.ko-act.ko-dim > :not(.ko-badge):not(.ko-menu),
-.ko-revealed .ko-act.ko-hide > :not(.ko-badge):not(.ko-menu) {
-  opacity: 0.32;
-  filter: grayscale(0.85);
+   itself would wash out the badge and menu with it. The dim is stable — it
+   stays put on hover so the grid reads consistently instead of flickering
+   back to full color under the pointer. Resting opacity is high enough to
+   still judge and click the listing without needing to reveal it. */
+.ko-act.ko-dim > :not(.ko-badge):not(.ko-menu):not(.ko-flag),
+.ko-revealed .ko-act.ko-hide > :not(.ko-badge):not(.ko-menu):not(.ko-flag) {
+  opacity: 0.5;
+  filter: grayscale(0.6);
   transition: opacity 0.18s ease, filter 0.18s ease;
 }
 
-.ko-act.ko-dim:hover > :not(.ko-badge):not(.ko-menu),
-.ko-revealed .ko-act.ko-hide:hover > :not(.ko-badge):not(.ko-menu) {
+/* Only items the user explicitly un-hid (clicked "Show") brighten on hover —
+   there the reveal is opt-in. A plain dimmed tile never restores on hover. */
+.ko-revealed .ko-act.ko-hide:hover > :not(.ko-badge):not(.ko-menu):not(.ko-flag) {
   opacity: 1;
   filter: none;
 }
@@ -66,6 +84,7 @@ html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-spon
 .ko-v-unknown   { --ko-tint: #52525b; --ko-on-tint: #fff;    --ko-text: #52525b; }
 .ko-v-known,
 .ko-v-allowed   { --ko-tint: #047857; --ko-on-tint: #fff;    --ko-text: #047857; }
+.ko-v-lowrated  { --ko-tint: #4f46e5; --ko-on-tint: #fff;    --ko-text: #4f46e5; }
 
 /* ── Badge chip ─────────────────────────────────────────────────────────────
    Filled with the verdict color: a status chip must be readable at a
@@ -117,12 +136,92 @@ html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-spon
   white-space: nowrap;
 }
 
-/* Product-page chip sits in normal flow beside the byline */
+/* Product-page chips sit in normal flow beside the byline. One pinned
+   height for all of them: the flag emoji renders on taller font metrics
+   than Latin text, so equal padding alone leaves side-by-side chips a
+   couple of pixels apart. */
 .ko-pdp-badge {
   position: static;
   margin-left: 10px;
   vertical-align: middle;
   font-size: 12px;
+  height: 24px;
+  box-sizing: border-box;
+}
+
+/* Seller chip is informational only: no menu behind it, so no pointer */
+.ko-pdp-seller {
+  cursor: default;
+}
+
+/* ── Seller-country chips ───────────────────────────────────────────────── */
+/* Tile chip: flag emoji + ISO code, over the product image's top-left — at
+   eye level with the verdict badge (tile top-right) instead of lost at the
+   bottom of a tall tile. Amazon's own overlays keep clear of this corner:
+   Overall Pick / Best Seller ribbons render above the image, deal badges
+   below it. A direct child of the tile (positioned onto the image by
+   measurement in content.js) so the dim treatment — which fades every tile
+   child except Knockoff chrome — leaves it fully legible, same as the badge.
+   Same visual language as the verdict badge: solid dark fill, white 600 11px —
+   translucent fills washed out over Amazon's white cards.
+   Informational only: no menu behind it, so clicks pass through. */
+.ko-flag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: #27272a;
+  font: 600 11px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.02em;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+/* Unknown seller: a clickable chip — dashed circle + "Where from?" linking to
+   the seller's page, where a visit contributes the country for everyone (and
+   gets the #ko-origin toast as confirmation). It's an <a> on Amazon's page,
+   whose a:link rules out-specify a lone class — hence the !importants. */
+a.ko-flag-unknown {
+  background: #52525b;
+  color: #fff !important;
+  text-decoration: none !important;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.1s ease;
+}
+
+a.ko-flag-unknown:hover {
+  background: #27272a;
+  color: #fff !important;
+  text-decoration: none !important;
+}
+
+a.ko-flag-unknown:active {
+  transform: scale(0.96);
+}
+
+.ko-flag-unknown svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: currentColor;
+  opacity: 0.95;
+}
+
+/* On the product page it sits in normal flow beside the "Sold by" link */
+.ko-pdp-flag {
+  position: static;
+  margin-left: 8px;
+  vertical-align: middle;
+  font-size: 12px;
+  height: 24px;
+  box-sizing: border-box;
 }
 
 /* ── Popover menu ───────────────────────────────────────────────────────── */
@@ -132,7 +231,8 @@ html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-spon
   top: 34px;
   right: 8px;
   z-index: 60;
-  width: 232px;
+  /* Clamp to the viewport so the popover never overflows a narrow tile. */
+  width: min(232px, calc(100vw - 24px));
   padding: 4px;
   border-radius: 10px;
   background: #fff;
@@ -272,6 +372,36 @@ html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-spon
   color: #047857;
 }
 
+/* Report editor: inline name field + icon send, same register as the menu rows */
+.ko-report-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+}
+
+.ko-report-input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid rgba(17, 17, 17, 0.14);
+  border-radius: 6px;
+  background: #fff;
+  font: 400 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #18181b;
+}
+
+.ko-report-input:focus {
+  outline: none;
+  border-color: #a1a1aa;
+}
+
+.ko-report-send {
+  width: auto;
+  flex: 0 0 auto;
+}
+
 /* ── Control panel ──────────────────────────────────────────────────────────
    Toggled by the toolbar button. Same visual system as the popover menu:
    white card, hairline structure, zinc neutrals, one red accent. */
@@ -281,7 +411,8 @@ html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-spon
   top: 12px;
   right: 12px;
   z-index: 2147483647;
-  width: 296px;
+  /* Clamp to the viewport so it fits a phone instead of pinning off-edge. */
+  width: min(296px, calc(100vw - 24px));
   padding: 14px;
   border-radius: 14px;
   background: #fff;
@@ -367,6 +498,56 @@ html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-spon
   font-size: 11px;
   color: #71717a;
   font-variant-numeric: tabular-nums;
+}
+
+/* Community-contribution card: reuses the stats-row anatomy; green is the
+   contribution color (the filter count above is red). */
+.ko-panel-mapped .ko-panel-num {
+  color: #047857;
+}
+
+/* The passport row: flag emoji per country collected, discovery order. */
+.ko-panel-flags {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  letter-spacing: 1px;
+}
+
+/* Copy-my-stats button on the contribution card: labeled, because an icon
+   alone says nothing about the clipboard. Flips to a green "Copied!". */
+.ko-mapped-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin-top: 7px;
+  padding: 4px 8px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #fff;
+  color: #52525b;
+  font: 600 10.5px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ko-mapped-share:hover {
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+.ko-mapped-share svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.ko-mapped-share.ko-share-done {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
 }
 
 .ko-panel-card {
@@ -577,4 +758,171 @@ html.ko-hide-sponsored div[data-component-type="s-search-result"]:has(.puis-spon
 #ko-pill i {
   font-style: normal;
   color: #a1a1aa;
+}
+
+/* ── First-catch toast ──────────────────────────────────────────────────── */
+
+#ko-intro {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483646;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 440px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #18181b;
+  color: #fafafa;
+  font: 400 13.5px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+#ko-intro.ko-intro-raised {
+  bottom: 64px;
+}
+
+.ko-intro-logo {
+  flex-shrink: 0;
+}
+
+.ko-intro-logo svg {
+  display: block;
+  width: 30px;
+  height: 34px;
+}
+
+#ko-intro b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Slide in with a slight overshoot, then ping twice with the brand red —
+   motion and color do the attention work so the toast itself can stay quiet. */
+@media (prefers-reduced-motion: no-preference) {
+  #ko-intro {
+    animation:
+      ko-intro-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15) both,
+      ko-intro-ping 1.4s ease-out 0.7s 2;
+  }
+}
+
+/* ── Seller-country toast ───────────────────────────────────────────────────
+   Shown on a seller page the moment the country is read off it: the visit —
+   often a "Where from?" click — must visibly pay off. Same visual language as
+   the intro toast; auto-dismisses (see content.js). */
+#ko-origin {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483646;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 400px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #18181b;
+  color: #fafafa;
+  font: 400 13.5px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.ko-origin-flag {
+  font-size: 26px;
+  line-height: 1;
+}
+
+#ko-origin b {
+  display: block;
+  font-weight: 650;
+}
+
+.ko-origin-sub {
+  display: block;
+  margin-top: 2px;
+  color: #a1a1aa;
+  font-size: 12.5px;
+}
+
+/* Share button on the dark toast: white pill, quiet until hover. */
+.ko-origin-share {
+  flex-shrink: 0;
+  margin-left: 4px;
+  padding: 6px 11px;
+  border: 0;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #18181b;
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  cursor: pointer;
+}
+
+.ko-origin-share:hover {
+  background: #e4e4e7;
+}
+
+#ko-origin.ko-origin-out {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #ko-origin {
+    animation: ko-intro-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  }
+}
+
+@keyframes ko-intro-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ko-intro-ping {
+  0%   { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 0 rgba(224, 16, 36, 0.55); }
+  70%  { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 14px rgba(224, 16, 36, 0); }
+  100% { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 0 rgba(224, 16, 36, 0); }
+}
+
+#ko-intro button {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  background: transparent;
+  color: #fafafa;
+  font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  cursor: pointer;
+}
+
+#ko-intro button:hover {
+  border-color: #71717a;
+}
+
+/* ── Touch devices ──────────────────────────────────────────────────────────
+   Lift the count pill clear of Amazon's mobile bottom bar. Dimmed listings
+   already sit at a stable, readable opacity on every device (see above), so
+   there's no longer a touch-specific dim override to make. */
+@media (hover: none) {
+  #ko-pill {
+    bottom: 72px;
+  }
+
+  #ko-intro {
+    bottom: 72px;
+  }
+
+  #ko-intro.ko-intro-raised {
+    bottom: 118px;
+  }
 }
