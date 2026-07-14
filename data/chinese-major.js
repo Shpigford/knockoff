@@ -4,10 +4,10 @@
 var KO_CHINESE_MAJOR = [
   "1More", "70mai", "Acebeam", "Aigo", "Amaran", "Amazfit", "Anbernic", "Anker",
   "AnkerWork", "Anycubic", "Aputure", "Aqara", "Aventon", "Avantree", "Bambu Lab", "Baseus",
-  "Beelink", "BigTreeTech", "Bluetti", "Choetech", "Chuwi", "Convoy", "Cosori",
+  "Beelink", "BETAFPV", "BigTreeTech", "Bluetti", "Choetech", "Chuwi", "Convoy", "Cosori",
   "Creality", "DJI", "Dongcheng", "Dreame", "Dreame Hair", "Dreo", "EcoFlow",
   "Ecovacs", "Edifier", "Elegoo", "Engwe", "Epomaker", "Eufy", "EUY", "FeiyuTech", "Fenix",
-  "Fiido", "FiiO", "Flashforge", "GMKtec", "Godox", "Gotrax", "Govee", "Gree",
+  "Fiido", "FiiO", "Flashforge", "GEPRC", "GMKtec", "Godox", "Gotrax", "Govee", "Gree",
   "Haier", "Hiboy", "Hidizs", "Hisense", "Hollyland", "Holy Stone", "Honor",
   "Hoto", "Huawei", "Hubsan", "Hychika", "Ikko", "ILIFE", "Imalent", "Insta360", 
   "Jackery", "Kasa", "Kimo", "Kingroon", "KZ", "Laifen", "Lectric", "Lenovo",
