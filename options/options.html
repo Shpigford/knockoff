@@ -54,17 +54,6 @@
         </span>
         <span class="switch"><input type="checkbox" id="hideSponsored"><span class="slider"></span></span>
       </label>
-      <label class="row">
-        <span class="row-copy">
-          <span class="row-title">Show seller country</span>
-          <span class="row-sub">Flags listings with where the seller is based (🇨🇳 CN, 🇺🇸 US…),
-          built by the community: sellers you come across are looked up on api.knockoff.co, and
-          seller pages you visit contribute the country printed on them. Only seller IDs and
-          countries are ever sent or stored — nothing about you, your searches, or the products.
-          Display-only — never affects filtering.</span>
-        </span>
-        <span class="switch"><input type="checkbox" id="sellerCountry"><span class="slider"></span></span>
-      </label>
     </section>
 
     <section>
@@ -152,11 +141,10 @@
       <h3>How detection works</h3>
       <p>
         Every listing's brand is checked against a curated register of roughly
-        5,000 established brands, refreshed daily. Unknown names are scored on the linguistic signature
+        5,000 established brands bundled with the extension. Unknown names are scored on the linguistic signature
         of trademark-squat brands: all-caps strings, vanishing vowels,
         unpronounceable consonant runs. Your lists above override everything.
-        It all runs locally; the only network request is the daily list
-        refresh from api.knockoff.co.
+        It all runs locally on your machine, with no network requests of any kind.
       </p>
       <p class="listmeta">
         <span id="listStatus"></span>

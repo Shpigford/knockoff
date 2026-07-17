@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Knockoff is a cross-browser MV3 extension (Chrome/Firefox/Safari) that filters trademark-squat pseudo-brands out of Amazon search results. Plain classic JavaScript — **no build step, no dependencies, no frameworks, no modules**. The repo root IS the extension; load it unpacked at `chrome://extensions`.
 
+This public repo is a **frozen, self-contained snapshot**: active development has moved to a private monorepo, and out of the box the extension makes **no calls to any Knockoff server** (the endpoint constants at the top of `src/content.js` — `BRANDS_URL`, `CONFIG_URL`, `REPORT_ENDPOINT` — ship blank). Point them at a backend to re-enable the optional networked features described below.
+
 ## Commands
 
 - **Run tests:** `node tests/run.js` — the only test command. No test framework; it loads the data files + detector into a `vm` sandbox and checks every fixture in `tests/fixtures.js`. There is no lint step.
@@ -24,23 +26,23 @@ Knockoff is a cross-browser MV3 extension (Chrome/Firefox/Safari) that filters t
 All files in `manifest.json`'s `content_scripts.js` are classic scripts sharing one page scope, loaded in order: the five `data/*.js` files define global brand arrays → `src/detector.js` consumes them into the global `Knockoff` object → `src/content.js` drives everything. Adding a data file means adding it to `manifest.json` AND to the load list in `tests/run.js`.
 
 - **`src/detector.js`** — the detection engine. Pure logic, zero DOM access, unit-testable. Exposes `Knockoff.buildIndexes()` and `Knockoff.classify(title, settings, userAllow, userBlock)`.
-- **`src/content.js`** — all DOM work: tile scanning (`TILE_SELECTORS` is the extension point for new layouts), badges, hide/dim/label actions, in-page control panel, misclassification reporting, and the daily runtime refresh of the community list + curated flags from `api.knockoff.co`.
+- **`src/content.js`** — all DOM work: tile scanning (`TILE_SELECTORS` is the extension point for new layouts), badges, hide/dim/label actions, in-page control panel, and misclassification reporting (opens a prefilled GitHub issue when no report endpoint is configured). When `BRANDS_URL`/`CONFIG_URL` are set it also runs a daily refresh of the community list + config; blank (the default here) means the bundled snapshots are authoritative.
 - **`src/background.js`** — trivial; toolbar button → panel toggle.
 - Brand matching is on normalized keys: lowercase alphanumerics only (`"Black+Decker"` ≡ `"blackdecker"`). Never add capitalization/punctuation variants to the data files.
 
 ### Verdict pipeline (first match wins)
 
-user allowlist → user blocklist → seed blocklist (`data/flagged-brands.js`) → Chinese-major list (`known`, or `flagged` if the user enables that setting) → known-brands lists (`data/known-brands.js` + `data/community-brands.js` + daily-refreshed community list) → name heuristics (`scoreBrand()`: score ≥ 6 `flagged`, ≥ 3 `suspect`, else `unknown`) → no brand at all = `unbranded`. Filter levels (relaxed/standard/strict) decide which verdicts get acted on; strict is allowlist-only.
+user allowlist → user blocklist → seed blocklist (`data/flagged-brands.js`) → Chinese-major list (`known`, or `flagged` if the user enables that setting) → known-brands lists (`data/known-brands.js` + bundled `data/community-brands.js`) → name heuristics (`scoreBrand()`: score ≥ 6 `flagged`, ≥ 3 `suspect`, else `unknown`) → no brand at all = `unbranded`. Filter levels (relaxed/standard/strict) decide which verdicts get acted on; strict is allowlist-only.
 
 Media/digital categories (Books, Kindle, Audible, music, movies, apps…) are skipped before any of this: their titles are works, not brand-led product names. `content.js` reads the page's department (`#searchDropdownBox` value, URL `i=` fallback) and sits out when `Knockoff.isMediaAlias()` matches.
 
 **The known-brands list always vetoes the heuristics** — real brands like ASICS, HOKA, RYOBI would otherwise look like gibberish. So a new heuristic signal only needs to be safe for brands *not* on any list.
 
-### Server side (all optional to the shopping path)
+### Server side (optional; not in this repo)
 
-The API — a Cloudflare Worker + D1 at `api.knockoff.co` — lives in a separate private repo. It accepts one-click misclassification reports, serves the community allowlist (`/brands`; `data/community-brands.js` is its bundled snapshot, regenerated at release time), curated blocklist additions (`/flagged`), and runtime config (`/config`, whose shape must stay in sync with `data/config.js` here), and hosts the curation dashboard. Curated verdicts reach installs on their next daily refresh — no extension release needed. The **marketing site** (knockoff.co) is likewise a separate private repo (Next.js on Vercel). This repo is just the extension.
+None of this ships in this snapshot — the endpoint constants are blank, so the extension is fully local. It's documented for anyone wiring up their own backend. A compatible server accepts one-click misclassification reports (`/report`), serves a community allowlist (`/brands`; `data/community-brands.js` is a bundled snapshot), curated blocklist additions (`/flagged`), and runtime config (`/config`, whose shape must stay in sync with `data/config.js` here). With `BRANDS_URL`/`CONFIG_URL`/`REPORT_ENDPOINT` pointed at such a host, curated verdicts and layout fixes reach installs on their next daily refresh — no extension release needed.
 
-Everything else runs locally in the content script; the extension's only first-party network dependency is `api.knockoff.co`. Older installs still call the legacy host `api.knockoff.shopping` — both hostnames route to the same worker, and the legacy one is kept alive indefinitely because installed extensions can't be force-updated.
+With those constants blank (the default), the content script runs entirely locally and has no first-party network dependency.
 
 ## Conventions and judgment calls
 
@@ -48,4 +50,3 @@ Everything else runs locally in the content script; the extension's only first-p
 - **False positives (real brands filtered) are worse than false negatives (junk passing).** Junk that slips through is recoverable via Strict mode, blocklists, and reports; filtering a real brand erodes trust in the whole extension. Bias heuristic tuning accordingly.
 - When adding a heuristic signal to `scoreBrand()`, add a fixture to `tests/fixtures.js` showing what it catches.
 - Brand list placement: real established brands → `data/known-brands.js` (keep rough alphabetical order within category sections); prolific pseudo-brand offenders only → `data/flagged-brands.js` (heuristics catch the long tail); established Chinese-owned brands (Anker/DJI tier) → `data/chinese-major.js`; generic title words misread as brands → `data/generic-words.js`.
-- Seller country (`sellerCountry`, on by default on every browser — the gecko manifest declares `data_collection_permissions` `"websiteContent"` to cover the seller IDs the feature sends, so a default-on Firefox stays truthful on AMO) is **display-only** — a flag chip on listings, never an input to the filtering verdict. It is the one feature allowed to add network calls to the shopping path: batch lookup + sighting counts (`/merchants`, `/merchants/seen`) and a country report parsed from seller pages the user organically visits (`/merchants/report`). Only seller IDs and countries cross the wire — never anything about the user, the search, or the products. Lookups are cached locally for 7 days; everything is fire-and-forget and failure-silent. Unknown sellers get a clickable dashed-circle chip linking to the seller page, because a visit there is what backfills the map.

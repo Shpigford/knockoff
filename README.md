@@ -11,19 +11,28 @@ Brand Registry, selling commodity goods with no company, no warranty, and no
 reputation behind them. Knockoff detects those listings and hides, dims, or
 labels them, right in the search results.
 
+> [!NOTE]
+> **This is a frozen public snapshot.** Active development has moved to a
+> private repository, and future versions are no longer built in the open — so
+> nothing here phones home. Loaded as-is, this build makes **zero calls to any
+> Knockoff server**: it runs entirely on the brand lists bundled in the repo,
+> and it won't receive further updates. For the maintained, auto-updating
+> extension, install from the stores below. To run the fully local build
+> yourself, see [Self-contained by default](#self-contained-by-default).
+
 ## Install
 
 **[Add to Chrome](https://chromewebstore.google.com/detail/pjgickchbiikhdfpmecaabkphmofpdce)** from the Chrome Web Store, or
 **[Add to Firefox](https://addons.mozilla.org/en-US/firefox/addon/knockoff-amazon-brand-filter/)** from Firefox Add-ons.
 
-Or load it unpacked for development:
+Or run the fully local build straight from this repo:
 
 1. Clone this repo
 2. Open `chrome://extensions`
 3. Turn on **Developer mode** (top right)
 4. Click **Load unpacked** and select the repo folder
 
-Works on every Amazon marketplace.
+Works on every Amazon marketplace, with no server behind it.
 
 ### Safari
 
@@ -51,7 +60,7 @@ Some of the coverage since launch:
 ## How it works
 
 Everything runs locally in a content script. No accounts, no tracking, no
-server round-trips on the shopping path. Each product tile's brand is
+network requests of any kind. Each product tile's brand is
 resolved through this pipeline (first match wins):
 
 | # | Check | Verdict |
@@ -60,7 +69,7 @@ resolved through this pipeline (first match wins):
 | 2 | Your blocklist | `blocked`, always filtered |
 | 3 | Seed list of notorious pseudo-brands ([`data/flagged-brands.js`](data/flagged-brands.js)) | `flagged` |
 | 4 | Established Chinese-owned brands ([`data/chinese-major.js`](data/chinese-major.js)) | `known`, or `flagged` if you enable that setting |
-| 5 | ~5,000 established brands ([`data/known-brands.js`](data/known-brands.js) + the community allowlist in [`data/community-brands.js`](data/community-brands.js), refreshed daily from `api.knockoff.co/brands`) | `known` |
+| 5 | ~5,000 established brands ([`data/known-brands.js`](data/known-brands.js) + the bundled community allowlist in [`data/community-brands.js`](data/community-brands.js)) | `known` |
 | 6 | Name heuristics (see below) | `flagged` / `suspect` / `unknown` |
 | - | No brand at the front of the title at all | `unbranded` |
 
@@ -73,7 +82,7 @@ characters, random iNternal caPitalization. High scores are `flagged`,
 mid scores `suspect`. The known-brands list always vetoes the heuristics:
 plenty of real brands (ASICS, RYOBI, HOKA) would otherwise look suspicious.
 Scoring lives in [`src/detector.js`](src/detector.js) and is deliberately
-readable, and tuning it is a great first contribution.
+readable, and easy to tune for your own build.
 
 ### Filter levels
 
@@ -93,20 +102,47 @@ the item once, or report a misclassification.
 Product detail pages get a verdict chip next to the brand byline. The page
 is never hidden out from under you.
 
+## Self-contained by default
+
+This build talks to no server. Every feature that could make a network request
+is either satisfied from bundled data or turned off:
+
+- **Brand lists** — the ~5,000 known brands and the community allowlist ship in
+  [`data/`](data/). There is no daily refresh; the bundled snapshot is the
+  whole list.
+- **DOM config** — the selectors the scanner uses live in
+  [`data/config.js`](data/config.js). There is no config push; the bundled copy
+  is authoritative.
+- **Reports** — the one-click "wrong verdict" button opens a prefilled GitHub
+  issue instead of POSTing to an API.
+
+The switches for all of this are the three constants at the top of
+[`src/content.js`](src/content.js) — `BRANDS_URL`, `CONFIG_URL`, and
+`REPORT_ENDPOINT` — which ship blank. Point them at your own host to re-enable
+on-demand list refresh, config pushes, and structured reports. (The server
+itself is not part of this repo.)
+
 ## Reporting misclassifications
 
 The badge menu has one-click reporting ("this is junk" / "this is a real
-brand"). Reports go to a small API (a Cloudflare Worker backed by D1) and are
-reviewed by hand to improve the bundled lists. No PII: the payload is brand,
-verdict, ASIN, marketplace, and extension version; reporter IPs are stored
-only as salted hashes for rate limiting. If no endpoint is configured the
-extension falls back to opening a prefilled GitHub issue.
+brand"). Because this snapshot ships with no report endpoint configured, a
+report opens a prefilled GitHub issue rather than posting anywhere. Wire up your
+own endpoint (see [Self-contained by default](#self-contained-by-default)) to
+collect them as structured POSTs instead — brand, verdict, ASIN, marketplace,
+and extension version, no PII.
 
-## Contributing
+## Editing the brand lists
 
-The easiest, highest-value contributions are brand list fixes; see
-[CONTRIBUTING.md](CONTRIBUTING.md). There is no build step; the extension is
-plain JavaScript, loadable directly from the repo.
+There is no build step — the extension is plain JavaScript, loadable directly
+from the repo — so the lists are easy to tune for your own copy. A real brand
+getting filtered goes in [`data/known-brands.js`](data/known-brands.js); a
+pseudo-brand getting through goes in
+[`data/flagged-brands.js`](data/flagged-brands.js); the full rundown is in
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+Because this repository is a frozen snapshot, pull requests here won't ship to
+the published extension — but your edits take effect immediately in a local
+build.
 
 ```
 manifest.json             MV3 manifest
@@ -128,11 +164,7 @@ scripts/                  maintenance scripts
 
 - **Mixed-case gibberish** ("Geinxurn", "Mulwark") scores below the suspect
   threshold at standard level; Strict mode catches it. A bundled character
-  bigram model would fix this properly; PRs welcome.
-- Seller **country-of-origin lookup** (fetching seller profile addresses) is
-  deliberately not implemented: it costs two rate-limited page fetches per
-  product and Amazon 503s aggressive scrapers. The name-based approach needs
-  zero network calls.
+  bigram model would fix this properly.
 - Carousels and a few exotic tile layouts aren't scanned yet
   (`TILE_SELECTORS` in `src/content.js` is the extension point).
 - Non-English stores are best-effort. Brand lists and the product-page chip work
@@ -143,13 +175,15 @@ scripts/                  maintenance scripts
 ## Prior art
 
 Research that shaped this design: [AmazonBrandFilter](https://github.com/chris-mosley/AmazonBrandFilter)
-(allowlist approach; its MIT-licensed community list seeded Knockoff's own),
-[SoldBy](https://github.com/tadwohlrapp/soldby)
-(seller-country lookup and its rate-limit lessons), and The Markup's
+(allowlist approach; its MIT-licensed community list seeded Knockoff's own)
+and The Markup's
 [Amazon Brand Detector](https://github.com/the-markup/tool-amazon-brand-detector).
 Knockoff's contribution is combining a community allowlist with a
 heuristic scorer, with the allowlist as veto.
 
 ## License
 
-[FSL-1.1-MIT](LICENSE). Code converts to MIT after two years.
+This snapshot is released under [FSL-1.1-MIT](LICENSE) (each version converts to
+MIT two years after its release). Knockoff is no longer developed as an
+open-source project: active work happens in a private repository, and future
+versions are not published here.
