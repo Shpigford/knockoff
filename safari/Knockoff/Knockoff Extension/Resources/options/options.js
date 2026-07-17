@@ -2,7 +2,7 @@
 // arrays of display names in chrome.storage.sync (normalization happens in
 // the detector at lookup time).
 
-var FIELDS = ["enabled", "hideSponsored", "sellerCountry", "flagChineseMajor", "showKnownBadge", "filterUnrated"];
+var FIELDS = ["enabled", "hideSponsored", "flagChineseMajor", "showKnownBadge", "filterUnrated"];
 
 var SEGS = ["action", "level"];
 var save = document.getElementById("save");
@@ -37,7 +37,6 @@ var SYNC_DEFAULTS = {
   action: "dim",
   level: "standard",
   hideSponsored: false,
-  sellerCountry: true,
   flagChineseMajor: false,
   showKnownBadge: false,
   allow: [],
@@ -92,13 +91,13 @@ function parseList(id) {
 
 // ── Community brand list ───────────────────────────────────────────────────
 // Mirrors the daily refresh in content.js loadCommunityList (separate scopes,
-// keep in sync). The button exists so a curation fix can be pulled on demand
-// instead of waiting out the 24-hour cycle; content scripts pick the new list
-// up via storage.onChanged.
+// keep in sync). This self-contained snapshot has no backend, so the URLs ship
+// blank and the "Refresh now" button is inert — the bundled list is the whole
+// list. Point these at your own deployment to re-enable on-demand refresh.
 
-var BRANDS_URL = "https://api.knockoff.co/brands";
-var FLAGGED_URL = "https://api.knockoff.co/flagged";
-var CONFIG_URL = "https://api.knockoff.co/config";
+var BRANDS_URL = "";
+var FLAGGED_URL = "";
+var CONFIG_URL = "";
 var refreshBtn = document.getElementById("refreshList");
 var listStatus = document.getElementById("listStatus");
 
@@ -111,6 +110,8 @@ function renderListStatus() {
   });
 }
 renderListStatus();
+// No server configured — nothing to pull; the bundled list stands.
+if (!BRANDS_URL) refreshBtn.disabled = true;
 
 refreshBtn.addEventListener("click", function () {
   refreshBtn.disabled = true;
@@ -142,7 +143,7 @@ refreshBtn.addEventListener("click", function () {
     .catch(function (err) {
       listStatus.textContent = err === "short list"
         ? "The server sent back an implausibly short list — kept the current one."
-        : "Couldn't reach api.knockoff.co — try again in a minute.";
+        : "Couldn't reach the brand-list server — try again in a minute.";
     })
     .finally(function () { refreshBtn.disabled = false; });
 });
@@ -154,7 +155,7 @@ refreshBtn.addEventListener("click", function () {
 function sanitizeSettings(s) {
   var out = {};
   if (!s || typeof s !== "object") return out;
-  ["enabled", "hideSponsored", "sellerCountry", "flagChineseMajor", "showKnownBadge", "filterUnrated"].forEach(function (k) {
+  ["enabled", "hideSponsored", "flagChineseMajor", "showKnownBadge", "filterUnrated"].forEach(function (k) {
     if (typeof s[k] === "boolean") out[k] = s[k];
   });
   if (["hide", "dim", "label"].indexOf(s.action) >= 0) out.action = s.action;

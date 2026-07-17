@@ -1,5 +1,11 @@
 # Contributing to Knockoff
 
+> [!NOTE]
+> This repository is a frozen public snapshot; active development has moved to a
+> private repository. Pull requests here won't be merged into the published
+> extension. The guidance below still applies to tuning the lists for your own
+> local build — every edit takes effect immediately, with no build step.
+
 Thanks for helping. Most contributions are one-line brand list edits. You
 don't need to know Chrome extension development to make the filter better.
 

@@ -9,22 +9,29 @@
 (function () {
   "use strict";
 
-  // Community allowlist refresh: once a day, re-fetch our curated brand list
-  // so new brands don't require an extension update. Served from our own API,
-  // so the extension has exactly one first-party network dependency.
-  var BRANDS_URL = "https://api.knockoff.co/brands";
+  // ── Server endpoints ────────────────────────────────────────────────────────
+  // This public snapshot is self-contained: out of the box it makes ZERO calls
+  // to any Knockoff server and runs entirely on the bundled data files. The
+  // three URLs below are the extension's only first-party network dependency,
+  // and they ship blank. If you run your own backend, point them at it to
+  // re-enable the optional networked features documented on each; leaving them
+  // blank keeps everything local.
+
+  // Community allowlist refresh: with a URL set, re-fetch the curated brand list
+  // once a day so new brands don't require an extension update. Blank = the
+  // bundled snapshot in data/community-brands.js is the whole list.
+  var BRANDS_URL = "";
   var BRANDS_REFRESH_MS = 24 * 60 * 60 * 1000;
 
-  // Runtime config (DOM selectors + parsing tunables) refreshed daily alongside
-  // the brand list, so an Amazon layout fix ships as a config push, not a
-  // release. Bundled default in data/config.js; the remote copy replaces it only
-  // after mergeConfig validates it.
-  var CONFIG_URL = "https://api.knockoff.co/config";
+  // Runtime config (DOM selectors + parsing tunables). With a URL set it's
+  // refreshed daily so an Amazon layout fix can ship as a config push instead of
+  // a release. Blank = the bundled data/config.js is authoritative.
+  var CONFIG_URL = "";
   var CONFIG = KO_DEFAULT_CONFIG;
 
-  // One-click misclassification reports. Set this to your deployed endpoint.
-  // Leave empty to fall back to opening a GitHub issue.
-  var REPORT_ENDPOINT = "https://api.knockoff.co";
+  // One-click misclassification reports POST here. Blank = a report opens a
+  // prefilled GitHub issue instead.
+  var REPORT_ENDPOINT = "";
   var REPO_URL = "https://github.com/Shpigford/knockoff";
 
   var DEFAULTS = {
@@ -34,9 +41,6 @@
     flagChineseMajor: false,  // also flag established Chinese brands
     showKnownBadge: false,    // show a ✓ badge on recognized brands too
     hideSponsored: false,     // hide Amazon "Sponsored" search tiles (opt-in)
-    sellerCountry: true,      // flag listings with the seller's country (all
-                              // browsers; Firefox manifest declares
-                              // data_collection_permissions "websiteContent")
     allow: [],                // user allowlist (display names)
     block: [],                // user blocklist (display names)
     minRating: 0,             // rating filter: 0 = off, else 3.0–5.0
@@ -98,8 +102,7 @@
     ban:      S + '<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></svg>',
     x:        S + '<path d="m6 6 12 12M18 6 6 18"/></svg>',
     flag:     S + '<path d="M5 21V4.5C7.7 3 10.3 3 13 4.5c2 1.1 4 1.3 6 .6V15c-2 .7-4 .5-6-.6-2.7-1.5-5.3-1.5-8 0"/></svg>',
-    star:     S + '<path d="M12 3.2l2.6 5.27 5.82.85-4.21 4.1.99 5.8L12 16.9l-5.2 2.73.99-5.8-4.21-4.1 5.82-.85z"/></svg>',
-    share:    S + '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="m8 6 4-4 4 4"/><path d="M12 2v13"/></svg>'
+    star:     S + '<path d="M12 3.2l2.6 5.27 5.82.85-4.21 4.1.99 5.8L12 16.9l-5.2 2.73.99-5.8-4.21-4.1 5.82-.85z"/></svg>'
   };
 
   var VERDICT_META = {
@@ -162,19 +165,12 @@
         title: selectorList(rs.title, d.selectors.title),
         titleFallback: selectorList(rs.titleFallback, d.selectors.titleFallback),
         brandRow: selectorList(rs.brandRow, d.selectors.brandRow),
-        mediaWork: isSelector(rs.mediaWork) ? rs.mediaWork : d.selectors.mediaWork,
-        merchantId: selectorList(rs.merchantId, d.selectors.merchantId),
-        sellerInfoRow: selectorList(rs.sellerInfoRow, d.selectors.sellerInfoRow),
-        sellerAddressRow: selectorList(rs.sellerAddressRow, d.selectors.sellerAddressRow),
-        sellerName: selectorList(rs.sellerName, d.selectors.sellerName),
-        merchantChipAnchor: selectorList(rs.merchantChipAnchor, d.selectors.merchantChipAnchor)
+        mediaWork: isSelector(rs.mediaWork) ? rs.mediaWork : d.selectors.mediaWork
       },
       limits: {
         brandRowMaxLen: (typeof maxLen === "number" && maxLen >= 5 && maxLen <= 200)
           ? maxLen : d.limits.brandRowMaxLen
-      },
-      sellerBizLabels: stringList(remote.sellerBizLabels, d.sellerBizLabels),
-      amazonSellerIds: stringList(remote.amazonSellerIds, d.amazonSellerIds, /^A[0-9A-Z]{9,20}$/)
+      }
     };
   }
 
@@ -186,7 +182,7 @@
       CONFIG = mergeConfig(c.koConfig);
 
       var stale = !c.communityFetchedAt || Date.now() - c.communityFetchedAt > BRANDS_REFRESH_MS;
-      if (stale) {
+      if (stale && BRANDS_URL) {
         Promise.all([
           fetch(BRANDS_URL).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); }),
           // curated blocklist additions; an empty *successful* response is a
@@ -216,7 +212,7 @@
       // bad/absent config never blocks a brand refresh or vice versa. Stored raw
       // and validated on apply, so an install always has the bundled fallback.
       var cfgStale = !c.koConfigAt || Date.now() - c.koConfigAt > BRANDS_REFRESH_MS;
-      if (cfgStale) {
+      if (cfgStale && CONFIG_URL) {
         fetch(CONFIG_URL).then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
           .then(function (cfg) {
             chrome.storage.local.set({ koConfig: cfg, koConfigAt: Date.now() });
@@ -705,7 +701,6 @@
   function processProductPage() {
     processPdpByline();
     processPdpSeller();
-    processPdpSellerCountry();
   }
 
   function processPdpByline() {
@@ -774,562 +769,6 @@
     var anchor = document.querySelector(".ko-pdp-brand") ||
       document.getElementById("bylineInfo") || el;
     anchor.insertAdjacentElement("afterend", badge);
-  }
-
-  // ── Seller country ─────────────────────────────────────────────────────────
-  // Community-sourced seller→country map: tiles carry the featured offer's
-  // seller ID, so we batch-look it up (GET /merchants) and put a flag on
-  // listings whose seller is resolved. The same IDs are batch-reported once
-  // per page (POST /merchants/seen) so the backfill queue knows which sellers
-  // people actually encounter, and a seller page a user organically visits
-  // reports the country printed in its business address (POST
-  // /merchants/report). On by default; the only things ever sent or stored
-  // are seller IDs and countries — nothing about the user, the search, or the
-  // products. Display-only: never an input to the filter verdict.
-
-  var MERCHANTS_URL = REPORT_ENDPOINT + "/merchants";
-  var MERCHANT_TTL_MS = 7 * 24 * 60 * 60 * 1000; // sellers relocate rarely
-  var MERCHANT_BATCH = 60;                       // server's per-request cap
-  var MERCHANT_CACHE_MAX = 3000;                 // koMerchants entry cap
-
-  // Amazon retail sells on a large share of tiles, and each marketplace has
-  // its own retail seller ID — a flag on half the page is noise, so all of
-  // them (CONFIG.amazonSellerIds) are skipped client-side: no chip, no
-  // lookup, no sighting.
-  function isAmazonSeller(id) {
-    return CONFIG.amazonSellerIds.indexOf(id) !== -1;
-  }
-
-  var merchantCountries = {};      // id → ISO code (cache + this session's lookups)
-  var merchantLookupPending = new Set();
-  var merchantQueried = new Set(); // looked up this page load (resolved or not)
-  var merchantUnresolved = new Set(); // looked up and came back with no country
-  var merchantSeenPending = new Set();
-  var merchantSeenSent = new Set(); // sighted-reported this page load
-  var merchantFlushTimer = null;
-  var sellerPageReported = false;
-
-  function loadMerchantCache() {
-    return chrome.storage.local.get({ koMerchants: {} }).then(function (s) {
-      var now = Date.now();
-      Object.keys(s.koMerchants).forEach(function (id) {
-        var e = s.koMerchants[id];
-        if (e && e.at > now - MERCHANT_TTL_MS) merchantCountries[id] = e.c;
-      });
-    });
-  }
-
-  // Fold fresh resolutions into the persisted cache; prune stale entries and
-  // cap the map so it can't grow without bound. Concurrent-tab drift is fine —
-  // it's a cache, the server is the source of truth.
-  function saveMerchantCache(resolved) {
-    chrome.storage.local.get({ koMerchants: {} }).then(function (s) {
-      var map = s.koMerchants;
-      var now = Date.now();
-      Object.keys(resolved).forEach(function (id) { map[id] = { c: resolved[id], at: now }; });
-      var ids = Object.keys(map);
-      ids.forEach(function (id) { if (!(map[id].at > now - MERCHANT_TTL_MS)) delete map[id]; });
-      ids = Object.keys(map);
-      if (ids.length > MERCHANT_CACHE_MAX) {
-        ids.sort(function (a, b) { return map[a].at - map[b].at; })
-          .slice(0, ids.length - MERCHANT_CACHE_MAX)
-          .forEach(function (id) { delete map[id]; });
-      }
-      chrome.storage.local.set({ koMerchants: map });
-    });
-  }
-
-  // The featured offer's seller ID from a tile: an add-to-cart hidden input's
-  // value, or a csa-instrumented element's data attribute. Selectors live in
-  // CONFIG; both carry the same "A..." ID.
-  function tileMerchantId(tile) {
-    for (var i = 0; i < CONFIG.selectors.merchantId.length; i++) {
-      var node = tile.querySelector(CONFIG.selectors.merchantId[i]);
-      var v = node && (node.value || node.getAttribute("data-csa-c-merchant-id"));
-      if (v && Knockoff.isMerchantId(v)) return v;
-    }
-    return null;
-  }
-
-  function countryName(cc) {
-    try {
-      var n = new Intl.DisplayNames(undefined, { type: "region" }).of(cc);
-      if (n && n !== cc) return n;
-    } catch (e) { /* rare locale data gap; the code alone still reads */ }
-    return cc;
-  }
-
-  function flagChip(country, inline) {
-    var chip = el("span", "ko-flag" + (inline ? " ko-pdp-flag" : ""));
-    chip.textContent = Knockoff.flagEmoji(country) + " " + country;
-    chip.title = "Knockoff: seller based in " + countryName(country) +
-      " (community-sourced)";
-    return chip;
-  }
-
-  // Unknown-seller chip: the map is crowd-built, so the empty state IS the
-  // ask. A labeled link to the seller's own page — visiting it is literally
-  // all it takes: the content script there reads the country off the business
-  // address, contributes it, and confirms with a toast (showOriginToast).
-  function helpChip(id, inline) {
-    var chip = document.createElement("a");
-    chip.className = "ko-flag ko-flag-unknown" + (inline ? " ko-pdp-flag" : "");
-    chip.href = "/sp?seller=" + id;
-    chip.target = "_blank";
-    chip.rel = "noopener noreferrer";
-    chip.innerHTML = ICONS.dashed; // static markup only; label added as text
-    var label = document.createElement("span");
-    label.textContent = "Where from?";
-    chip.appendChild(label);
-    chip.title = "Nobody's checked where this seller is based yet. Open their " +
-      "seller page and Knockoff will read the country off it, for everyone.";
-    // Keep the click ours; Amazon binds handlers on the tile around us.
-    chip.addEventListener("click", function (e) { e.stopPropagation(); });
-    return chip;
-  }
-
-  // Chip every annotated node: a flag once the seller has resolved, the
-  // help-us chip once a lookup has confirmed nobody knows yet (never before —
-  // flashing "unknown" ahead of the answer would be wrong half the time).
-  // Tiles get a corner chip; the PDP "Sold by" line (data-ko-inline) gets an
-  // inline chip after the seller link. A help chip upgrades to a flag in
-  // place when the country arrives (e.g. back from the seller page).
-  function renderMerchantChips() {
-    document.querySelectorAll("[data-ko-merchant]").forEach(function (node) {
-      var id = node.getAttribute("data-ko-merchant");
-      var inline = node.hasAttribute("data-ko-inline");
-      var country = merchantCountries[id];
-      // The PDP chip renders on the byline row, outside the tracked buy-box
-      // node, so its dedupe guard is document-wide (one PDP, one chip).
-      var existing = inline
-        ? document.querySelector(".ko-pdp-flag")
-        : node.querySelector(".ko-flag");
-      var chip;
-      if (country) {
-        if (existing && !existing.classList.contains("ko-flag-unknown")) return;
-        if (existing) existing.remove();
-        chip = flagChip(country, inline);
-      } else if (!existing && merchantUnresolved.has(id)) {
-        chip = helpChip(id, inline);
-      } else {
-        return;
-      }
-      if (inline) {
-        // Last spot on the byline row, after the brand-verdict and junk-seller
-        // chips, so all Knockoff chrome reads as one line under the title.
-        // Fallback for bylineless pages: beside the buy box's Sold-by link
-        // (:not(.ko-flag) — the help chip is itself a seller= link).
-        var anchor = document.querySelector(".ko-pdp-seller") ||
-          document.querySelector(".ko-pdp-brand") ||
-          document.getElementById("bylineInfo") ||
-          node.querySelector('a[href*="seller="]:not(.ko-flag)');
-        if (anchor) anchor.insertAdjacentElement("afterend", chip);
-      } else {
-        // The chip sits over the product image's top-left (like Amazon's
-        // "Overall Pick"), but it must be a DIRECT child of the tile, same
-        // as the verdict badge: the dim treatment fades every other tile
-        // child, and ancestor opacity can't be undone from inside — a chip
-        // nested in the image container would fade with the product. So
-        // measure the image's corner and place the chip there from outside.
-        var anchor = firstMatch(node, CONFIG.selectors.merchantChipAnchor);
-        node.style.position = "relative";
-        if (anchor) {
-          var aRect = anchor.getBoundingClientRect();
-          var tRect = node.getBoundingClientRect();
-          if (aRect.width) { // hidden tiles measure 0: leave the CSS default
-            chip.style.top = Math.round(aRect.top - tRect.top + 8) + "px";
-            chip.style.left = Math.round(aRect.left - tRect.left + 8) + "px";
-          }
-        }
-        node.appendChild(chip);
-      }
-    });
-  }
-
-  function scheduleMerchantFlush() {
-    if (merchantFlushTimer) return;
-    merchantFlushTimer = setTimeout(function () {
-      merchantFlushTimer = null;
-      flushMerchants();
-    }, 800);
-  }
-
-  function chunk(arr, size) {
-    var out = [];
-    for (var i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-    return out;
-  }
-
-  function flushMerchants() {
-    // The toggle may have flipped off during the debounce window; once it's
-    // off, nothing leaves the browser.
-    if (!settings.sellerCountry) {
-      merchantSeenPending.clear();
-      merchantLookupPending.clear();
-      return;
-    }
-    var seen = Array.from(merchantSeenPending);
-    merchantSeenPending.clear();
-    seen.forEach(function (id) { merchantSeenSent.add(id); });
-    chunk(seen, MERCHANT_BATCH).forEach(function (ids) {
-      fetch(MERCHANTS_URL + "/seen", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: ids })
-      }).catch(function () { /* fire-and-forget */ });
-    });
-
-    var lookup = Array.from(merchantLookupPending);
-    merchantLookupPending.clear();
-    // Marked queried before the fetch: a failed lookup waits for the next
-    // page load rather than retrying on every rescan.
-    lookup.forEach(function (id) { merchantQueried.add(id); });
-    chunk(lookup, MERCHANT_BATCH).forEach(function (ids) {
-      fetch(MERCHANTS_URL + "?ids=" + ids.join(","))
-        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-        .then(function (resolved) {
-          var fresh = {};
-          ids.forEach(function (id) {
-            if (typeof resolved[id] === "string" && /^[A-Z]{2}$/.test(resolved[id])) {
-              merchantCountries[id] = resolved[id];
-              fresh[id] = resolved[id];
-            } else {
-              merchantUnresolved.add(id); // confirmed unknown → show the ask
-            }
-          });
-          if (Object.keys(fresh).length) saveMerchantCache(fresh);
-          renderMerchantChips();
-        })
-        .catch(function () { /* offline; flags just don't show this page */ });
-    });
-  }
-
-  // Annotate a node with its seller and queue the network work it needs.
-  function trackMerchant(node, id) {
-    node.setAttribute("data-ko-merchant", id);
-    if (!merchantSeenSent.has(id)) { merchantSeenPending.add(id); scheduleMerchantFlush(); }
-    if (!merchantCountries[id] && !merchantQueried.has(id)) {
-      merchantLookupPending.add(id);
-      scheduleMerchantFlush();
-    }
-  }
-
-  function scanSellerCountry() {
-    if (!settings.sellerCountry) return;
-    document.querySelectorAll(CONFIG.selectors.tiles.join(",")).forEach(function (tile) {
-      if (tile.hasAttribute("data-ko-merchant")) return;
-      var id = tileMerchantId(tile);
-      if (id && !isAmazonSeller(id)) trackMerchant(tile, id);
-    });
-    renderMerchantChips();
-  }
-
-  // The PDP "Sold by" link carries the seller ID in its href; flag it inline.
-  function processPdpSellerCountry() {
-    if (!settings.sellerCountry) return;
-    var link = document.getElementById("sellerProfileTriggerId") ||
-      document.querySelector('#merchant-info a[href*="seller="]');
-    var host = link && link.parentElement;
-    if (!host || host.hasAttribute("data-ko-merchant")) return;
-    var m = (link.getAttribute("href") || "").match(/[?&]seller=([0-9A-Z]+)/);
-    if (!m || !Knockoff.isMerchantId(m[1]) || isAmazonSeller(m[1])) return;
-    host.setAttribute("data-ko-inline", "1");
-    trackMerchant(host, m[1]);
-    renderMerchantChips();
-  }
-
-  // ── Contribution rewards ──────────────────────────────────────────────────
-  // Milestones + a country "passport" + pioneer moments, all from the local
-  // contribution log ({at, c: country, f: first-ever}). Uncapped cumulative
-  // progress by design: collections and counts never saturate, and countries
-  // (novelty) are celebrated over raw clicks.
-
-  var SELLER_MILESTONES = [1, 5, 10, 25, 50, 100, 250, 500, 1000];
-
-  // Countries collected, ordered by when each was first pinned down.
-  function passportCountries(log) {
-    var firstSeen = {};
-    Object.keys(log).forEach(function (k) {
-      var e = log[k];
-      if (!e || !e.c) return;
-      if (!(e.c in firstSeen) || e.at < firstSeen[e.c]) firstSeen[e.c] = e.at;
-    });
-    return Object.keys(firstSeen).sort(function (a, b) {
-      return firstSeen[a] - firstSeen[b];
-    });
-  }
-
-  function helpedLine(n) {
-    if (n === 1) return "That's your first seller pinned down — thanks!";
-    if (SELLER_MILESTONES.indexOf(n) !== -1) {
-      return "🎉 " + n.toLocaleString() + " sellers pinned down — milestone!";
-    }
-    var next = null;
-    for (var i = 0; i < SELLER_MILESTONES.length; i++) {
-      if (SELLER_MILESTONES[i] > n) { next = SELLER_MILESTONES[i]; break; }
-    }
-    return "That's " + n.toLocaleString() + " sellers you've helped pin down" +
-      (next ? " — " + (next - n) + " more to " + next + "." : ".");
-  }
-
-  // The one line under the toast title, picked by how special this visit was:
-  // a first-ever mapping beats a new passport country beats the running count.
-  function contribLine(log, opts) {
-    var n = Object.keys(log).length;
-    if (opts.repeat) return "Already on Knockoff's community map. " + helpedLine(n);
-    if (opts.first) {
-      return "You're the first person anywhere to map this seller. " + helpedLine(n);
-    }
-    if (opts.newCountry) {
-      var c = passportCountries(log).length;
-      return "New country in your collection — that's " + c + ". " + helpedLine(n);
-    }
-    return "Added to Knockoff's community map. " + helpedLine(n);
-  }
-
-  // Community aggregates for the "your N of the community's M" framing.
-  // Anonymous two-number endpoint, cached an hour; stale beats absent, and
-  // absent (old worker, offline) just means the copy stays personal-only.
-  var STATS_TTL_MS = 60 * 60 * 1000;
-  // Failures are throttled per tab: without this, a failing endpoint would be
-  // re-fetched on every scan tick while the panel is open (Amazon pages
-  // mutate constantly — deal countdowns tick once a second).
-  var STATS_RETRY_MS = 5 * 60 * 1000;
-  var statsLastAttempt = 0;
-  // Last known aggregates, kept in memory so share clicks never wait on the
-  // network (a fetch between click and clipboard write can outlive the
-  // user-activation window that clipboard access requires).
-  var communityStats = null;
-  function getCommunityStats() {
-    return chrome.storage.local.get({ koStats: null }).then(function (s) {
-      // A cached blob without `reported` predates that field — treat as stale.
-      if (s.koStats && s.koStats.reported != null &&
-          s.koStats.at > Date.now() - STATS_TTL_MS) {
-        communityStats = s.koStats;
-        return s.koStats;
-      }
-      if (Date.now() - statsLastAttempt < STATS_RETRY_MS) return s.koStats;
-      statsLastAttempt = Date.now();
-      return fetch(MERCHANTS_URL + "/stats")
-        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-        .then(function (j) {
-          var stats = { total: j.total, resolved: j.resolved, reported: j.reported, at: Date.now() };
-          chrome.storage.local.set({ koStats: stats });
-          communityStats = stats;
-          return stats;
-        })
-        .catch(function () { return s.koStats; });
-    });
-  }
-
-  // The Wordle lesson: the lowest-friction share is plain text + emoji that
-  // reads well pasted anywhere. Built only from stats the user chooses to
-  // publish; nothing else rides along.
-  function buildShareText(log, communityMapped) {
-    var n = Object.keys(log).length;
-    var countries = passportCountries(log);
-    var firsts = Object.keys(log).filter(function (k) { return log[k] && log[k].f; }).length;
-    var lines = [];
-    lines.push("🕵️ I've mapped " + n.toLocaleString() + " Amazon seller" + (n === 1 ? "" : "s") +
-      " for Knockoff's community map" +
-      (communityMapped ? " (" + communityMapped.toLocaleString() + " and counting)" : ""));
-    if (countries.length) {
-      lines.push(countries.slice(0, 8).map(Knockoff.flagEmoji).join("") +
-        (countries.length > 8 ? " +" + (countries.length - 8) : "") +
-        " — " + countries.length + (countries.length === 1 ? " country" : " countries") + " collected" +
-        (firsts ? " · " + firsts + " first-ever find" + (firsts === 1 ? "" : "s") : ""));
-    }
-    lines.push("https://knockoff.co");
-    return lines.join("\n");
-  }
-
-  // Clipboard with the un-permissioned fallback; both need the user gesture
-  // we always have (share is click-only).
-  // Resolves true only when a copy actually happened, so buttons never
-  // claim "Copied!" over an empty clipboard.
-  function copyText(text) {
-    var fallback = function () {
-      var ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      var ok = false;
-      try { ok = document.execCommand("copy"); } catch (e) { /* stays false */ }
-      ta.remove();
-      return ok;
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text).then(
-        function () { return true; },
-        function () { return fallback(); }
-      );
-    }
-    return Promise.resolve(fallback());
-  }
-
-  // The payoff for checking a seller page: confirm on the spot that the visit
-  // did something. Without this, a shopper who clicked "Where from?" lands on
-  // a seller page with zero sign anything happened. The running count +
-  // passport + share button are the collector loop that keeps people
-  // clicking the chips. Auto-dismisses.
-  function showOriginToast(country, subText) {
-    if (document.getElementById("ko-origin")) return;
-    var toast = el("div", "");
-    toast.id = "ko-origin";
-    toast.setAttribute("role", "status");
-    var flag = el("span", "ko-origin-flag");
-    flag.textContent = Knockoff.flagEmoji(country);
-    toast.appendChild(flag);
-    var msg = el("span", "");
-    var title = document.createElement("b");
-    title.textContent = "Seller based in " + countryName(country);
-    msg.appendChild(title);
-    var sub = el("span", "ko-origin-sub");
-    sub.textContent = subText;
-    msg.appendChild(sub);
-    toast.appendChild(msg);
-    function out() {
-      toast.classList.add("ko-origin-out");
-      setTimeout(function () { toast.remove(); }, 400);
-    }
-    var dismiss = setTimeout(out, 10000);
-    getCommunityStats(); // prime the in-memory aggregates before any click
-    var share = document.createElement("button");
-    share.type = "button";
-    share.className = "ko-origin-share";
-    share.textContent = "Copy stats";
-    share.title = "Copies your mapping stats to the clipboard, ready to paste anywhere";
-    share.addEventListener("click", function () {
-      clearTimeout(dismiss);
-      // Storage read only — a network fetch here could outlive the
-      // user-activation window the clipboard write needs.
-      chrome.storage.local.get({ koMerchantReported: {} }).then(function (s) {
-        var total = communityStats && communityStats.reported;
-        copyText(buildShareText(s.koMerchantReported, total)).then(function (ok) {
-          if (ok) share.textContent = "Copied!";
-          dismiss = setTimeout(out, 2000);
-        });
-      });
-    });
-    toast.appendChild(share);
-    document.body.appendChild(toast);
-  }
-
-  // Proof-of-work for /merchants/report: fetch a signed challenge, grind
-  // nonces with WebCrypto until the digest clears the server's difficulty
-  // (sub-second at the current 14 bits), bound to this exact report so a
-  // solution can't be replayed for a different seller or country. Bounded:
-  // gives up after ~8x the expected work or 15s and reports without proof —
-  // the server then declines the vote, and the local experience (toast,
-  // passport, counts) is untouched. This is what makes bare-curl spam cost
-  // an implementation instead of a one-liner.
-  function sha256Hex(str) {
-    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str))
-      .then(function (buf) {
-        var b = new Uint8Array(buf);
-        var out = "";
-        for (var i = 0; i < b.length; i++) out += (b[i] < 16 ? "0" : "") + b[i].toString(16);
-        return out;
-      });
-  }
-
-  function solvePow(payload) {
-    return fetch(MERCHANTS_URL + "/challenge")
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function (ch) {
-        if (typeof ch.c !== "string" || typeof ch.bits !== "number" || ch.bits > 24) {
-          return null;
-        }
-        var deadline = Date.now() + 15000;
-        var maxTries = Math.pow(2, ch.bits) * 8;
-        var n = 0;
-        function attempt() {
-          if (n > maxTries || Date.now() > deadline) return null;
-          var nonce = (n++).toString(36);
-          return sha256Hex(ch.c + ":" + nonce + ":" + payload).then(function (digest) {
-            return Knockoff.hexLeadingZeroBits(digest) >= ch.bits
-              ? { c: ch.c, n: nonce }
-              : attempt();
-          });
-        }
-        return attempt();
-      })
-      .catch(function () { return null; }); // old worker/offline: report unproofed
-  }
-
-  // Seller profile pages (/sp?seller=...) print the business address; each
-  // address block's last line is an ISO country code. Report it once per
-  // seller per while — this is the crowd source the whole map is built from.
-  // Also trust it locally right away: the user is looking at the ground truth.
-  function processSellerProfilePage() {
-    if (!settings.sellerCountry || sellerPageReported) return;
-    var id = new URLSearchParams(location.search).get("seller") || "";
-    if (!Knockoff.isMerchantId(id) || isAmazonSeller(id)) return;
-    var rows = document.querySelectorAll(CONFIG.selectors.sellerInfoRow.join(","));
-    if (!rows.length) return;
-    // Label rows vs address lines, so the parser can tell the business
-    // address from an EU customer-services address in another country.
-    var addressSel = CONFIG.selectors.sellerAddressRow.join(",");
-    var country = Knockoff.countryFromSellerRows(
-      Array.prototype.map.call(rows, function (r) {
-        return { text: r.textContent || "", indent: r.matches(addressSel) };
-      }),
-      CONFIG.sellerBizLabels
-    );
-    sellerPageReported = true; // detail section seen; don't re-parse every rescan
-    if (!country) return;
-    var fresh = {};
-    fresh[id] = country;
-    merchantCountries[id] = country;
-    saveMerchantCache(fresh);
-    // koMerchantReported doubles as the local contribution history (per
-    // seller: when, which country, whether it was a first-ever mapping —
-    // never sent anywhere): its size is the "sellers you've helped" stat,
-    // its countries are the passport, and its timestamps throttle re-reports
-    // to one per seller per TTL. Never pruned — one entry per manually
-    // visited seller page can't grow past what a human can click.
-    chrome.storage.local.get({ koMerchantReported: {} }).then(function (s) {
-      var log = s.koMerchantReported;
-      var now = Date.now();
-      var entry = log[id];
-      if (entry && entry.at > now - MERCHANT_TTL_MS) {
-        showOriginToast(country, contribLine(log, { repeat: true }));
-        return;
-      }
-      var newCountry = passportCountries(log).indexOf(country) === -1;
-      log[id] = { at: now, c: country };
-      chrome.storage.local.set({ koMerchantReported: log });
-      // The storefront name rides along so the backfill queue shows who a
-      // seller ID is. It's the page's own h1 — no user data.
-      var nameEl = firstMatch(document, CONFIG.selectors.sellerName);
-      var name = (nameEl && nameEl.textContent || "").replace(/\s+/g, " ").trim()
-        .slice(0, 100) || null;
-      // The response says whether this seller was unmapped by everyone —
-      // the pioneer moment. Toast waits on the proof-of-work grind (sub-
-      // second) plus one round-trip; on failure (offline, old worker) it
-      // degrades to the plain celebration.
-      solvePow(id + ":" + country).then(function (pow) {
-        return fetch(MERCHANTS_URL + "/report", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: id, country: country, name: name, pow: pow || undefined })
-        });
-      })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (resp) {
-          var first = !!(resp && resp.first);
-          if (first) {
-            log[id].f = 1;
-            chrome.storage.local.set({ koMerchantReported: log });
-          }
-          showOriginToast(country, contribLine(log, { first: first, newCountry: newCountry }));
-        })
-        .catch(function () {
-          showOriginToast(country, contribLine(log, { newCountry: newCountry }));
-        });
-    });
   }
 
   // ── Control panel ──────────────────────────────────────────────────────────
@@ -1425,70 +864,6 @@
     statsRow.appendChild(copy);
     panel.appendChild(statsRow);
 
-    // Community contribution: a different kind of stat than the filter
-    // counts, so it gets its own card — same anatomy as the stats row (big
-    // number + overline + sub) so the panel reads as a stack of matching
-    // stat tiles. Hidden until they've mapped one.
-    var mapped = el("div", "ko-panel-stats ko-panel-mapped");
-    mapped.id = "ko-panel-mapped";
-    mapped.style.display = "none";
-    var mappedNum = el("span", "ko-panel-num");
-    mappedNum.id = "ko-panel-mapped-num";
-    var mappedCopy = el("span", "ko-panel-statcopy");
-    var mappedOver = el("span", "ko-panel-overline");
-    mappedOver.textContent = "Sellers mapped";
-    // Two deliberate sub-lines, not one wrapping sentence: the community
-    // count (shown once stats arrive) and the tagline (nbsp keeps its break
-    // clean at the narrow width).
-    var mappedSub = el("span", "ko-panel-sub");
-    mappedSub.id = "ko-panel-mapped-sub";
-    mappedSub.style.display = "none";
-    var mappedTag = el("span", "ko-panel-sub");
-    mappedTag.textContent = "Helping everyone shop\u00a0smarter";
-    // The passport: one flag per country collected, in discovery order.
-    var mappedFlags = el("span", "ko-panel-flags");
-    mappedFlags.id = "ko-panel-flags";
-    mappedCopy.appendChild(mappedOver);
-    mappedCopy.appendChild(mappedSub);
-    mappedCopy.appendChild(mappedTag);
-    mappedCopy.appendChild(mappedFlags);
-    // Labeled, honest: this copies text to the clipboard, so say so — before
-    // (label) and after (Copied!).
-    function setShareBtn(btn, icon, text) {
-      btn.innerHTML = ICONS[icon]; // static markup; label added as text node
-      var label = document.createElement("span");
-      label.textContent = text;
-      btn.appendChild(label);
-    }
-    var mappedShare = document.createElement("button");
-    mappedShare.type = "button";
-    mappedShare.className = "ko-mapped-share";
-    setShareBtn(mappedShare, "share", "Copy stats");
-    mappedShare.title = "Copies your mapping stats to the clipboard, ready to paste anywhere";
-    mappedShare.addEventListener("click", function () {
-      // Storage read only — a network fetch here could outlive the
-      // user-activation window the clipboard write needs. The community
-      // total comes from the in-memory copy updatePanelState keeps fresh.
-      chrome.storage.local.get({ koMerchantReported: {} }).then(function (st) {
-        var total = communityStats && communityStats.reported;
-        copyText(buildShareText(st.koMerchantReported, total)).then(function (ok) {
-          if (!ok) return;
-          mappedShare.classList.add("ko-share-done");
-          setShareBtn(mappedShare, "seal", "Copied!");
-          setTimeout(function () {
-            mappedShare.classList.remove("ko-share-done");
-            setShareBtn(mappedShare, "share", "Copy stats");
-          }, 2000);
-        });
-      });
-    });
-    // The button lives inside the copy column as its own row: sharing the
-    // flex row with the text squeezes every line into wrapping.
-    mappedCopy.appendChild(mappedShare);
-    mapped.appendChild(mappedNum);
-    mapped.appendChild(mappedCopy);
-    panel.appendChild(mapped);
-
     // controls
     var card = el("div", "ko-panel-card");
     var l1 = el("div", "ko-panel-label");
@@ -1529,24 +904,6 @@
     spRow.appendChild(spText);
     spRow.appendChild(spSwitch);
     card.appendChild(spRow);
-    // Seller country is display-only (a flag on listings), grouped here with
-    // the other non-verdict toggle.
-    card.appendChild(el("div", "ko-panel-rule"));
-    var scRow = el("label", "ko-panel-toggle");
-    var scText = el("span", "ko-panel-toggle-label");
-    scText.textContent = "Show seller country";
-    var scSwitch = el("span", "ko-switch");
-    var scInput = document.createElement("input");
-    scInput.type = "checkbox";
-    scInput.id = "ko-panel-seller-country";
-    scInput.addEventListener("change", function () {
-      chrome.storage.sync.set({ sellerCountry: scInput.checked });
-    });
-    scSwitch.appendChild(scInput);
-    scSwitch.appendChild(el("span", "ko-switch-slider"));
-    scRow.appendChild(scText);
-    scRow.appendChild(scSwitch);
-    card.appendChild(scRow);
 
     // Rating & review cutoffs: coarse presets for honing results while
     // shopping. Exact thresholds live on the options page. Values are numeric
@@ -1617,7 +974,6 @@
     panel.classList.toggle("ko-panel-off", !settings.enabled);
     document.getElementById("ko-panel-enabled").checked = settings.enabled;
     document.getElementById("ko-panel-sponsored").checked = settings.hideSponsored;
-    document.getElementById("ko-panel-seller-country").checked = settings.sellerCountry;
     document.getElementById("ko-panel-unrated").checked = settings.filterUnrated;
     document.getElementById("ko-panel-num").textContent = stats.filtered;
     document.getElementById("ko-panel-hint").textContent = LEVEL_HINTS[settings.level];
@@ -1630,38 +986,11 @@
         b.classList.toggle("ko-seg-active", b.getAttribute("data-v") === String(settings[key]));
       });
     });
-    chrome.storage.local.get({ lifetimeFiltered: 0, koMerchantReported: {} }).then(function (s) {
+    chrome.storage.local.get({ lifetimeFiltered: 0 }).then(function (s) {
       var sub = document.getElementById("ko-panel-sub");
       if (!sub) return;
       sub.textContent = "of " + stats.scanned + " listings · " +
         s.lifetimeFiltered.toLocaleString() + " all-time";
-      var mapped = document.getElementById("ko-panel-mapped");
-      var helped = Object.keys(s.koMerchantReported).length;
-      if (mapped) {
-        mapped.style.display = helped ? "" : "none";
-        document.getElementById("ko-panel-mapped-num").textContent = helped.toLocaleString();
-        var countries = passportCountries(s.koMerchantReported);
-        var flagsEl = document.getElementById("ko-panel-flags");
-        flagsEl.style.display = countries.length ? "" : "none";
-        flagsEl.textContent = countries.slice(0, 12).map(Knockoff.flagEmoji).join(" ") +
-          (countries.length > 12 ? "  +" + (countries.length - 12) : "");
-        if (helped) {
-          // "Your N of the community's M": the pairing that makes a collective
-          // total motivating instead of diluting. Silent when unavailable.
-          getCommunityStats().then(function (stats) {
-            var subEl = document.getElementById("ko-panel-mapped-sub");
-            // `reported` counts distinct sellers with at least one crowd vote —
-            // the same universe as the personal count above it, so this line
-            // can never read smaller than the big number (unlike `resolved`,
-            // which lags on the two-reporter consensus rule).
-            if (subEl && stats && stats.reported) {
-              subEl.textContent = "of the community's " +
-                stats.reported.toLocaleString();
-              subEl.style.display = "";
-            }
-          });
-        }
-      }
     });
   }
 
@@ -1704,11 +1033,7 @@
       tile.removeAttribute("data-ko-brand");
       tile.classList.remove("ko-act", "ko-hide", "ko-dim", "ko-label");
     });
-    document.querySelectorAll("[data-ko-merchant]").forEach(function (node) {
-      node.removeAttribute("data-ko-merchant");
-      node.removeAttribute("data-ko-inline");
-    });
-    document.querySelectorAll(".ko-badge, .ko-menu, .ko-flag, #ko-pill").forEach(function (el) {
+    document.querySelectorAll(".ko-badge, .ko-menu, #ko-pill").forEach(function (el) {
       el.remove();
     });
   }
@@ -1733,13 +1058,11 @@
       } else {
         searchAllow = pageSearchTokens();
         document.querySelectorAll(CONFIG.selectors.tiles.join(",")).forEach(processTile);
-        scanSellerCountry();
       }
       // Product pages stay badged regardless: the dropdown can carry a stale
       // department onto a PDP, and book PDPs are inherently safe (their
       // byline is an author div the brand extractor returns nothing for).
       processProductPage();
-      processSellerProfilePage();
     }
     updatePill();
     updatePanelState();
@@ -1770,16 +1093,6 @@
     // config first (validated in mergeConfig; a bad push falls back to
     // defaults) so any rescan below runs with the new selectors.
     if (area === "local") {
-      // A seller page (this tab or another) just learned a country; upgrade
-      // any waiting help chips to flags in place — the visit paying off right
-      // where the shopper is looking is what makes contributing feel worth it.
-      if (changes.koMerchants && settings.sellerCountry) {
-        var merchants = changes.koMerchants.newValue || {};
-        Object.keys(merchants).forEach(function (id) {
-          if (merchants[id] && merchants[id].c) merchantCountries[id] = merchants[id].c;
-        });
-        renderMerchantChips();
-      }
       if (changes.koConfig) CONFIG = mergeConfig(changes.koConfig.newValue);
       if (changes.communityBrands || changes.remoteFlagged) {
         chrome.storage.local.get(["communityBrands", "remoteFlagged"]).then(function (c) {
@@ -1814,9 +1127,8 @@
     introShown = s.introShown;
   });
 
-  Promise.all([loadSettings().then(loadCommunityList), loadMerchantCache()])
-    .then(function (results) {
-      var cached = results[0];
+  loadSettings().then(loadCommunityList)
+    .then(function (cached) {
       Knockoff.buildIndexes(cached.communityBrands || null, cached.remoteFlagged || null);
       scan();
       new MutationObserver(scheduleScan).observe(document.body, {
